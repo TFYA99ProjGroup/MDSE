@@ -13,5 +13,3 @@ def read_file(filename):
     with open(filename,"r") as f:
         data = list(yaml.load_all(f,Loader=SafeLoader))
         return data
-
-print(read_file("test_file.yaml"))
