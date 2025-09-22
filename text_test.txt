@@ -1,0 +1,15 @@
+#
+a:2
+Atom:Cu
+Temp:100
+lattice: 34
+#
+#
+Atom:Al
+Time:5
+#
+#
+Atom:Fe
+lattice: 1
+Temp:9
+#
