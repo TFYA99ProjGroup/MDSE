@@ -9,8 +9,6 @@ def read_file(filename):
 
     Returns:
         A list. Each element is a dictionary, containing information on a MD simulation.
-
-    
     """
     with open(filename,"r") as f:
         data = list(yaml.load_all(f,Loader=SafeLoader))
