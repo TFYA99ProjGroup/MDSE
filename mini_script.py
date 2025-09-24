@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from ase import units
 from ase.md.verlet import VelocityVerlet
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from asap3 import EMT, Trajectory
@@ -34,6 +33,7 @@ def simulateNVE(atoms, timestep, length):
     dyn.run(length)
 
 if __name__ == "main":
+    from ase import units
     from ase.build import molecule
     from ase.visualize import view
     from ase.build import bulk
