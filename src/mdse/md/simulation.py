@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 from ase.md.verlet import VelocityVerlet
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-from asap3 import EMT, Trajectory
+from asap3 import Trajectory
+from ase.build import bulk
 # TODO Axel/Oskar: Check if asap is better optimized for all following functions instead of ase.
 # Add more params to createCrystal
 
-def createCrystal(chem_notation='H', structure='sc', positions=None, a=1.0, b=None, c=None, cubic=True):
+def create_crystal(chem_notation='H', structure='sc', positions=None, a=1.0, b=None, c=None, cubic=True):
     """Create the atom or molecule or crystal object from the specified params.
 
     Key args:
@@ -25,28 +25,9 @@ def createCrystal(chem_notation='H', structure='sc', positions=None, a=1.0, b=No
     #else
     
 
-def simulateNVE(atoms, timestep, length, trajInterval=10):
+def simulate_nve(atoms, timestep, length, trajInterval=10):
     dyn = VelocityVerlet(atoms, timestep=timestep)
     traj = Trajectory(f"{"".join(set(atoms.get_chemical_symbols()))}.traj", "w", atoms)
     dyn.attach(traj.write, interval=trajInterval)
 
     dyn.run(length)
-
-if __name__ == "main":
-    from ase import units
-    from ase.build import molecule
-    from ase.visualize import view
-    from ase.build import bulk
-    from ase.build import nanotube
-
-    # Cubic non-prim unit cell
-    mg_cube= bulk("Mg", "fcc", a=3.6, cubic=True)
-    mg_super_cube = mg_cube*(4,4,4)
-
-    MaxwellBoltzmannDistribution(mg_super_cube, temperature_K=800)
-
-    mg_super_cube.calc = EMT()
-    simulateNVE(mg_super_cube, timestep=2 * units.fs, length=400)
-
-    test_crystal = createCrystal(chem_notation = 'Cu', structure = 'fcc', a = 3.6, cubic=True)
-    view(test_crystal)
