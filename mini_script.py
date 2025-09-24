@@ -25,10 +25,10 @@ def createCrystal(chem_notation='H', structure='sc', positions=None, a=1.0, b=No
     #else
     
 
-def simulateNVE(atoms, timestep, length):
+def simulateNVE(atoms, timestep, length, trajInterval=10):
     dyn = VelocityVerlet(atoms, timestep=timestep)
     traj = Trajectory(f"{"".join(set(atoms.get_chemical_symbols()))}.traj", "w", atoms)
-    dyn.attach(traj.write, interval=10)
+    dyn.attach(traj.write, interval=trajInterval)
 
     dyn.run(length)
 
@@ -46,6 +46,7 @@ if __name__ == "main":
     MaxwellBoltzmannDistribution(mg_super_cube, temperature_K=800)
 
     mg_super_cube.calc = EMT()
-    #simulateNVE(mg_super_cube, timestep=2 * units.fs, length=400)
+    simulateNVE(mg_super_cube, timestep=2 * units.fs, length=400)
+
     test_crystal = createCrystal(chem_notation = 'Cu', structure = 'fcc', a = 3.6, cubic=True)
     view(test_crystal)
