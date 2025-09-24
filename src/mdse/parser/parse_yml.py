@@ -109,11 +109,3 @@ def main_read(filename):
     """
     all_simulations = read_yaml_simulations(filename)
     return unnest_simulation_parameters(all_simulations)
-
-
-##-----Test------
-
-test = main_read("test_file.yaml")
-# Print each expanded simulation configuration
-for sim in test:
-    print(sim)
