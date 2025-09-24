@@ -1,6 +1,6 @@
 
 # ASE files
-*.traj
+.traj
 
 
 
