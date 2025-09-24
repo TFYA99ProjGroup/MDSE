@@ -10,6 +10,9 @@
 Simulation_testing:
   Temp: 10
   Type: Cu
+  Structure: fcc
+  Lattice: 3.6
+  Cubic : True
 Our_Simulation:
   Temp_list:
     - 20
