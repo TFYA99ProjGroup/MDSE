@@ -6,7 +6,7 @@ from yaml.loader import SafeLoader
 #-Make sure the dictionaries are properly copied. Use .deepcopy() instead of .copy()? Since dictionary can contain lists
 
 
-def read_file(filename):
+def read_yaml_simulations(filename):
     """Read yaml file.
 
     Args:
@@ -15,93 +15,72 @@ def read_file(filename):
     Returns:
         A list. Each element is a dictionary, containing information on a MD simulation.
     """
-    with open(filename,"r") as f:
-        data = list(yaml.load_all(f,Loader=SafeLoader))
-        return data
+    with open(filename, "r") as f:
+        simulations_config = yaml.safe_load(f)
+        return simulations_config
     
-def unnest_temp(MD_obj, p = "Temp"):
-    """Takes a dictionary for a MD simulation. Check if any parameter is nested, an un-nests it.
-    Can be nested as a list or range
-    
-    Args:
-        MD_obj (dictionary): The dictionary representing an simulation
-        p (str): The parameter to un-nest
-
-    Returns:
-        List of MD objects un-nessted.
+def unnest_simulation_parameters(all_simulations):
     """
-    un_nest = []
+    Expands nested parameters (lists or ranges) in the simulations_config dictionary for each simulation.
+    Returns a list of fully un-nested simulation dictionaries.
+    """
+    parameters_to_expand = ["Temp", "Type", "Time"]
+    final_simulations = []
+    for sim_name, sim_params in all_simulations.items():
+        current_simulations = [(sim_name, sim_params)]
+        for parameter in parameters_to_expand:
+            expanded_simulations = []
+            for sim_pair in current_simulations:
+                expanded_simulations.extend(expand_parameter(sim_pair, parameter))
+            current_simulations = expanded_simulations
+        final_simulations.extend({name: conf} for name, conf in current_simulations)
+    return final_simulations
 
-    #Extract the dictionary containing all information
-    name_of_MD_temp = list(MD_obj.keys())
-    name_of_MD = name_of_MD_temp[0]
-    dic_org_temp = list(MD_obj.values())
-    dic_org = dic_org_temp[0]
+def expand_parameter(sim_pair, parameter):
+    result = []
+    sim_name, sim_params = sim_pair
 
-    #Variables used
-    p_list = p + "_list"
-    p_range = p + "_range"
+    param_list = parameter + "_list"
+    param_range = parameter + "_range"
 
-    #If p exists, leave
-    if (dic_org.get(p)):
-        return [{name_of_MD:dic_org}]
+    # If parameter exists, leave as is
+    if sim_params.get(parameter):
+        return [(sim_name, sim_params)]
 
-    #If p is a list
-    Temp_list = dic_org.get(p_list)
-    if (Temp_list):
-        i = 0
-        for temps in Temp_list: #Loop over list
-            new_dic = dic_org.copy()
-            new_dic.pop(p_list)
-            new_dic[p] = temps
-            un_nest.append({name_of_MD + "_" +str(i) :new_dic})
-            i = i +1
+    # If parameter is a list
+    values_as_list = sim_params.get(param_list)
+    if values_as_list:
+        for i, value in enumerate(values_as_list):
+            new_params = sim_params.copy()
+            new_params.pop(param_list)
+            new_params[parameter] = value
+            result.append((f"{sim_name}_{i}", new_params))
+        return result
 
-        return un_nest
-    
-    #If p is a range
-    Temp_range = dic_org.get(p_range)
-    if (Temp_range):
-        i = 0
-        for index in range(Temp_range["Start"],Temp_range["Stop"],Temp_range["Step"]):
-            new_dic = dic_org.copy()
-            new_dic.pop(p_range)
-            new_dic[p] = index
-            un_nest.append({name_of_MD + "_" + str(i):new_dic})
-            i = i + 1
-        return un_nest
+    # If parameter is a range
+    values_as_range = sim_params.get(param_range)
+    if values_as_range:
+        for i, index in enumerate(range(values_as_range["Start"], values_as_range["Stop"], values_as_range["Step"])):
+            new_params = sim_params.copy()
+            new_params.pop(param_range)
+            new_params[parameter] = index
+            result.append((f"{sim_name}_{i}", new_params))
+        return result
 
-    #If no p is mentioned, leave it as is
-    return [{name_of_MD:dic_org}]
+    # If no parameter is mentioned, leave as is
+    return [(sim_name, sim_params)]
 
 def main_read(filename):
-    """The main read functions.
-    Reads from .yaml file, then un-nestes the MD simulations.
-
-    Args:
-        filename (str): Name of the .yaml config file
-    
-    Returns:
-        List where each element is a MD simulation, as a dictionary.
     """
-    nested_MD = read_file(filename)
-
-    #Un-nest temperature
-    un_nested_MD_1 = []
-    for MDs in nested_MD:
-        un_nested_MD_1 = un_nested_MD_1 + unnest_temp(MDs,"Temp")
-
-    #Un-nest type
-    un_nested_MD_2 = []
-    for MDs in un_nested_MD_1:
-        un_nested_MD_2 = un_nested_MD_2 + unnest_temp(MDs,"Type")
-
-
-    return un_nested_MD_2
+    Reads from .yaml file, then un-nests the MD simulations.
+    Returns a list where each element is a MD simulation, as a dictionary.
+    """
+    all_simulations = read_yaml_simulations(filename)
+    return unnest_simulation_parameters(all_simulations)
 
 
 ##-----Test------
 
 test = main_read("test_file.yaml")
-for finals in test:
-    print(finals)
+for sim in test:
+    print(sim)
