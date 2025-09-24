@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -25,10 +25,11 @@ jobs:
           pip install -r requirements.txt
           pip install flake8
 
-      - name: Run flake8
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+      - name: Run flake8 critical
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run flake8 style warnings
+        run: flake8 . --count --max-complexity=10 --max-line-length=88 --statistics
   
   test_example:
     runs-on: ubuntu-latest
@@ -40,6 +41,6 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pip install pytest
-      
+
       - name: Run pytest
         run: python -m tests.test_main
