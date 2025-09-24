@@ -79,7 +79,7 @@ def expand_parameter(simulation_to_expand, parameter):
             new_params = sim_params.copy()  # Shallow copy, might need more for nested structures
             new_params.pop(param_list)
             new_params[parameter] = value
-            result.append((f"{sim_name}_{i}", new_params))
+            result.append((f"{sim_name}_{value}", new_params))
         return result
 
     # If parameter is a range, expand for each value in the range
@@ -89,7 +89,7 @@ def expand_parameter(simulation_to_expand, parameter):
             new_params = sim_params.copy()
             new_params.pop(param_range)
             new_params[parameter] = index
-            result.append((f"{sim_name}_{i}", new_params))
+            result.append((f"{sim_name}_{index}", new_params))
         return result
 
     # If parameter is not present, leave as is
