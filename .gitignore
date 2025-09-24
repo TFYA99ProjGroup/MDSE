@@ -1,3 +1,12 @@
+
+# ASE files
+*.traj
+
+
+
+###
+### Python auto generated
+###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -76,6 +85,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+*.ipynb
 .ipynb_checkpoints
 
 # IPython
@@ -205,3 +215,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
