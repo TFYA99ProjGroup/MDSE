@@ -5,3 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mdse"
 version = "0.0.1"
+dependencies = [
+    "Cython==3.1.4",
+    "ase==3.26.0",
+    "numpy==1.26.4",
+    "scipy==1.16.2",
+    "matplotlib==3.10.6",
+    "mpi4py==4.1.0",
+    "ipython==9.5.0",
+    "Sphinx==8.2.3",
+    "sphinx-rtd-theme==3.0.2",
+    "asap3==3.13.9",
+]
