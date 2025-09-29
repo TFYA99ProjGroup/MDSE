@@ -8,9 +8,6 @@ from ase import units
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 
 
-from mdse.parser.parse_yml import main_read
-
-
 class SimulateMD:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
@@ -112,7 +109,8 @@ class SimulateMD:
 
         Key args:
         chemNotation -- the chemical notation of the object (default: 'H')
-        structure -- The Lattice types or Crystal structure of the object (default: 'sc')
+        structure -- The Lattice types or Crystal structure 
+                     of the object (default: 'sc')
         positions -- Individual atomic positions (optional argument)
         a (float) -- lattice constant
         b (float) -- secondary lattice constant (optional argument)
@@ -120,7 +118,7 @@ class SimulateMD:
         cubic --
         """
         # Define if we're using structure or positions
-        if self.positions == None:
+        if self.positions is None:
             crystal = bulk(self.chem_notation, self.structure,
                            a=self.a, b=self.b, c=self.c, cubic=self.cubic)
             return crystal
@@ -133,8 +131,8 @@ class SimulateMD:
         -----
         Requires ASE's `view` function to be available.
         """
-        if self.positions == None:
-            super_crystal = self.crystal*(4, 4, 4)
+        if self.positions is None:
+            super_crystal = self.crystal * (4, 4, 4)
             view(super_crystal)
         else:
             raise RuntimeError(
@@ -204,8 +202,8 @@ class SimulateMD:
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            traj = Trajectory(
-                f"{"".join(set(self.crystal.get_chemical_symbols()))}.traj", "w", self.crystal)
+            symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            traj = Trajectory(f"{symbols}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             dyn.attach(self.print_energy, interval=self.traj_interval)
