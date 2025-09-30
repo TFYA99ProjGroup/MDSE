@@ -78,7 +78,7 @@ class SimulateMD:
     print_energy()
         Print current potential, kinetic, and total energy, as well as
         instantaneous temperature.
-    add_distribution(distribution)
+    _add_distribution(distribution)
         Apply a velocity distribution (e.g., Maxwell-Boltzmann) to the system at
         the given temperature.
     simulate_nve(calculator=EMT(),
@@ -158,7 +158,7 @@ class SimulateMD:
                 "Energy calculation failed. Ensure calculator is attached."
             ) from e
 
-    def add_distribution(self, distribution):
+    def _add_distribution(self, distribution):
         """
         Apply a velocity distribution to initialize atomic velocities.
 
@@ -198,7 +198,7 @@ class SimulateMD:
         # TODO: Check w. Petter and Oskar
         # self.crystal = self.crystal*(4, 4, 4)
         try:
-            self.add_distribution(distribution)
+            self._add_distribution(distribution)
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
