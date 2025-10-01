@@ -4,7 +4,6 @@ from mdse.md.simulateMD import SimulateMD
 
 
 def test_mdobject():
-
     sim = {
         'Type': 'Cu',
         'Structure': 'fcc',

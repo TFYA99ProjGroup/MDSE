@@ -44,4 +44,4 @@ jobs:
       - run: pip install -e .
 
       - name: Run pytest
-        run: python -m tests.test_main
+        run: pytest
