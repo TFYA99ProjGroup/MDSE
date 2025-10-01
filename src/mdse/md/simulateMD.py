@@ -87,22 +87,38 @@ class SimulateMD:
         Verlet dynamics.
     """
 
-    def __init__(self, chem_notation='H', structure='sc', positions=None,
-                 a=3.6, b=None, c=None, cubic=True, temperature=800,
-                 timestep=2, length=400, traj_interval=10):
-        self.chem_notation = chem_notation
-        self.structure = structure
-        self.positions = positions
-        self.a = a
-        self.b = b
-        self.c = c
-        self.cubic = cubic
-        self.temperature = temperature
-        self.timestep = timestep * units.fs
-        self.length = length
-        self.traj_interval = traj_interval
+    def __init__(self, config:dict={}):
+        default = {
+            'Type': 'H',
+            'Structure': 'sc',
+            'Positions': None,
+            'Lattice_a': 3.6,
+            'Lattice_b': None,
+            'Lattice_c': None,
+            'Cubic': True,
+            'Temp': 800,
+            'Timestep': 2,
+            'Length': 400,
+            'TrajInterval': 10
+        }
 
-        self.crystal = self.create_crystal()
+        for key, value in default.items():
+            if config.get(key) is None:
+                config[key] = value
+
+        self.chem_notation = config.get('Type')
+        self.structure = config.get('Structure')
+        self.positions = config.get('Positions')
+        self.a = config.get('Lattice_a')
+        self.b = config.get('Lattice_b')
+        self.c = config.get('Lattice_c')
+        self.cubic = config.get('Cubic')
+        self.temperature = config.get('Temp')
+        self.timestep = config.get('Timestep') * units.fs
+        self.length = config.get('Length')
+        self.traj_interval = config.get('TrajInterval')
+
+        self.crystal = self.create_crystal() * (5, 5, 5)
 
     def create_crystal(self) -> Atoms:
         """Create the atom or molecule or crystal object from the specified params.
@@ -176,7 +192,7 @@ class SimulateMD:
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
-    def simulate_nve(self, calculator=EMT(), distribution=MaxwellBoltzmannDistribution):
+    def simulate_nve(self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=False):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
         Velocity Verlet integration.
@@ -198,15 +214,19 @@ class SimulateMD:
         # TODO: Check w. Petter and Oskar
         # self.crystal = self.crystal*(4, 4, 4)
         try:
+            if calculator is None:
+                calculator = EMT()
+
             self._add_distribution(distribution)
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}.traj", "w", self.crystal)
-
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            
             dyn.attach(traj.write, interval=self.traj_interval)
-            dyn.attach(self.print_energy, interval=self.traj_interval)
+            if print:
+                dyn.attach(self.print_energy, interval=self.traj_interval)
 
             dyn.run(self.length)
         except IOError as e:
