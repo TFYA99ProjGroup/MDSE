@@ -213,3 +213,19 @@ class SimulateMD:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
             raise RuntimeError("NVE simulation failed.") from e
+
+    def simulate_nvt(self, calculator=EMT(), distribution=MaxwellBoltzmannDistribution):
+        try:
+            self._add_distribution(distribution)
+            self.crystal.calc = calculator
+
+            dyn = Langevin(self.crystal, timestep=self.timestep, temperature_K=self.temperatu    re)# TODO: Friction??!?
+
+        except IOError as e:
+            raise IOError("Failed to write trajectory file.") from e
+        except Exception as e:
+            raise RuntimeError("NVT simulation failed.") from e
+
+
+    def calculate_specific_heat(self):
+        mass = self.crystal.get_masses().sum()
