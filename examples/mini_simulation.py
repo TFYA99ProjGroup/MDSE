@@ -8,8 +8,7 @@ from asap3 import EMT
 # from ase.build import bulk
 
 # Cubic non-prim unit cell
-test_crystal = create_crystal(
-    chem_notation='Cu', structure='fcc', a=3.6, cubic=True)
+test_crystal = create_crystal(chem_notation="Cu", structure="fcc", a=3.6, cubic=True)
 super_cube = test_crystal * (4, 4, 4)
 
 MaxwellBoltzmannDistribution(super_cube, temperature_K=800)

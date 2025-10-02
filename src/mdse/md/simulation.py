@@ -9,9 +9,15 @@ from ase.build import bulk
 # Add more params to createCrystal
 
 
-def create_crystal(chem_notation='H', structure='sc', positions=None,
-                   a: float = 1.0, b: float = None, c: float = None,
-                   cubic=True) -> Atoms:
+def create_crystal(
+    chem_notation="H",
+    structure="sc",
+    positions=None,
+    a: float = 1.0,
+    b: float = None,
+    c: float = None,
+    cubic=True,
+) -> Atoms:
     """Create the atom or molecule or crystal object from the specified params.
 
     Key args:
@@ -35,8 +41,8 @@ def print_energy(atoms):
     ekin = atoms.get_kinetic_energy()
     temp = atoms.get_temperature()
     print(
-        f'Energy per atom: Epot ={epot:6.3f}eV  Ekin = {ekin:.3f}eV '
-        f'(T={temp:.3f}K) Etot = {epot + ekin:.3f}eV'
+        f"Energy per atom: Epot ={epot:6.3f}eV  Ekin = {ekin:.3f}eV "
+        f"(T={temp:.3f}K) Etot = {epot + ekin:.3f}eV"
     )
 
 

@@ -11,7 +11,7 @@
 Mini_simulation:
   Type: Cu
   Structure: fcc
-  Lattice: 3.6
+  Lattice_a: 3.6
   Cubic: True
   Temp: 800
   Timestep: 2 #fs

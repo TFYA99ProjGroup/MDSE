@@ -1,0 +1,14 @@
+RunManagerTest:
+  Type_list:
+    - Al
+    - Cu
+    - Au
+  Temp_list:
+    - 50
+    - 300
+    - 800
+  Timestep: 2
+  Length: 800
+  TrajInterval: 10
+  Structure: fcc
+  Lattice_a: 3.6

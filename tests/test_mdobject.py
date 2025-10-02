@@ -1,20 +1,29 @@
 from pathlib import Path
-from mdse.parser.parse_yml import main_read
 from mdse.md.simulateMD import SimulateMD
 
 
 def test_mdobject():
-    path = Path("tests/test_file.yaml")
-    sim_list = main_read(path)
-    sim = next(iter(sim_list[0].values()))
+    sim = {
+        "Type": "Cu",
+        "Structure": "fcc",
+        "Lattice_a": 3.6,
+        "Cubic": True,
+        "Temp": 800,
+        "Timestep": 2,
+        "Length": 800,
+        "TrajInterval": 10,
+    }
 
-    assert (sim == {'Type': 'Cu', 'Structure': 'fcc',
-                    'Lattice': 3.6, 'Cubic': True,
-                    'Temp': 800, 'Timestep': 2,
-                    'Length': 400, 'TrajInterval': 10})
-    sim3 = SimulateMD(chem_notation=sim['Type'], structure=sim.get(
-        'Structure'), a=sim.get('Lattice'), cubic=sim.get('Cubic'),
-        temperature=sim.get('Temp'),
-        timestep=sim.get('Timestep'), length=sim.get('Length'),
-        traj_interval=sim.get('TrajInterval'))
+    sim3 = SimulateMD(sim)
+
+    assert sim3.chem_notation == "Cu"
+    assert sim3.structure == "fcc"
+    assert sim3.a == 3.6
+    assert sim3.temperature == 800
+
     sim3.simulate_nve()
+
+    traj_file = Path("Cu_800.traj")
+
+    assert Path.exists(traj_file)
+    traj_file.unlink()
