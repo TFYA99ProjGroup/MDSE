@@ -1,5 +1,6 @@
 from mdse.md.simulateMD import SimulateMD
 
+
 class RunManager:
     """Manages settings, I/O, and execution of molecular dynamics simulations.
 
@@ -14,6 +15,7 @@ class RunManager:
         md_simulations (list): A list of SimulateMD instances representing simulations to run.
         outputs (list): A list of output destinations (e.g., file paths) where results can be written.
     """
+
     def __init__(self, simulation_config=None) -> None:
         """Initializes RunManager with optional simulation configurations.
 
@@ -46,13 +48,12 @@ class RunManager:
     def write_results(self):
         """Writes the results of simulations to the attached output destinations.
 
-            This method is a placeholder and should be implemented to handle writing
-            simulation results (e.g., to files or other storage).
+        This method is a placeholder and should be implemented to handle writing
+        simulation results (e.g., to files or other storage).
         """
         pass
 
     def run_simulations(self):
-        """Executes all simulations managed by this RunManager.
-        """
+        """Executes all simulations managed by this RunManager."""
         for sim in self.md_simulations:
             sim.simulate_nve()

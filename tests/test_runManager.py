@@ -1,4 +1,3 @@
-from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
 
 
