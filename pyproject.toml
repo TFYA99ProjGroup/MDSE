@@ -19,3 +19,5 @@ dependencies = [
     "PyYAML==6.0.3",
     "pytest==8.4.2"
 ]
+[project.scripts]
+mdse = "mdse.cli.ex:main"
