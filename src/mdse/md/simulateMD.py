@@ -87,29 +87,45 @@ class SimulateMD:
         Verlet dynamics.
     """
 
-    def __init__(self, chem_notation='H', structure='sc', positions=None,
-                 a=3.6, b=None, c=None, cubic=True, temperature=800,
-                 timestep=2, length=400, traj_interval=10):
-        self.chem_notation = chem_notation
-        self.structure = structure
-        self.positions = positions
-        self.a = a
-        self.b = b
-        self.c = c
-        self.cubic = cubic
-        self.temperature = temperature
-        self.timestep = timestep * units.fs
-        self.length = length
-        self.traj_interval = traj_interval
+    def __init__(self, config: dict = {}):
+        default = {
+            "Type": "H",
+            "Structure": "sc",
+            "Positions": None,
+            "Lattice_a": 3.6,
+            "Lattice_b": None,
+            "Lattice_c": None,
+            "Cubic": True,
+            "Temp": 800,
+            "Timestep": 2,
+            "Length": 400,
+            "TrajInterval": 10,
+        }
 
-        self.crystal = self.create_crystal()
+        for key, value in default.items():
+            if config.get(key) is None:
+                config[key] = value
+
+        self.chem_notation = config.get("Type")
+        self.structure = config.get("Structure")
+        self.positions = config.get("Positions")
+        self.a = config.get("Lattice_a")
+        self.b = config.get("Lattice_b")
+        self.c = config.get("Lattice_c")
+        self.cubic = config.get("Cubic")
+        self.temperature = config.get("Temp")
+        self.timestep = config.get("Timestep") * units.fs
+        self.length = config.get("Length")
+        self.traj_interval = config.get("TrajInterval")
+
+        self.crystal = self.create_crystal() * (5, 5, 5)
 
     def create_crystal(self) -> Atoms:
         """Create the atom or molecule or crystal object from the specified params.
 
         Key args:
         chemNotation -- the chemical notation of the object (default: 'H')
-        structure -- The Lattice types or Crystal structure 
+        structure -- The Lattice types or Crystal structure
                      of the object (default: 'sc')
         positions -- Individual atomic positions (optional argument)
         a (float) -- lattice constant
@@ -119,8 +135,14 @@ class SimulateMD:
         """
         # Define if we're using structure or positions
         if self.positions is None:
-            crystal = bulk(self.chem_notation, self.structure,
-                           a=self.a, b=self.b, c=self.c, cubic=self.cubic)
+            crystal = bulk(
+                self.chem_notation,
+                self.structure,
+                a=self.a,
+                b=self.b,
+                c=self.c,
+                cubic=self.cubic,
+            )
             return crystal
 
     def view_super_crystal(self):
@@ -135,8 +157,7 @@ class SimulateMD:
             super_crystal = self.crystal * (4, 4, 4)
             view(super_crystal)
         else:
-            raise RuntimeError(
-                "Supercell visualization only works with bulk crystals.")
+            raise RuntimeError("Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -150,8 +171,8 @@ class SimulateMD:
             ekin = self.crystal.get_kinetic_energy()
             temp = self.crystal.get_temperature()
             print(
-                f'Energy per atom: Epot ={epot:6.3f}eV  Ekin = {ekin:.3f}eV '
-                f'(T={temp:.3f}K) Etot = {epot + ekin:.3f}eV'
+                f"Energy per atom: Epot ={epot:6.3f}eV  Ekin = {ekin:.3f}eV "
+                f"(T={temp:.3f}K) Etot = {epot + ekin:.3f}eV"
             )
         except Exception as e:
             raise RuntimeError(
@@ -169,14 +190,18 @@ class SimulateMD:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError(
-                "Temperature must be set to apply a distribution.")
+            raise ValueError("Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
-    def simulate_nve(self, calculator=EMT(), distribution=MaxwellBoltzmannDistribution):
+    def simulate_nve(
+        self,
+        calculator=None,
+        distribution=MaxwellBoltzmannDistribution,
+        print=False,
+    ):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
         Velocity Verlet integration.
@@ -198,15 +223,19 @@ class SimulateMD:
         # TODO: Check w. Petter and Oskar
         # self.crystal = self.crystal*(4, 4, 4)
         try:
+            if calculator is None:
+                calculator = EMT()
+
             self._add_distribution(distribution)
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}.traj", "w", self.crystal)
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
-            dyn.attach(self.print_energy, interval=self.traj_interval)
+            if print:
+                dyn.attach(self.print_energy, interval=self.traj_interval)
 
             dyn.run(self.length)
         except IOError as e:

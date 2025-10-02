@@ -20,6 +20,10 @@ def view_crystal(args):
     subprocess.run(["ase", "gui", args.filepath])
 
 
+def uran():
+    print("lol")
+
+
 def main():
     parser = argparse.ArgumentParser(description="MDSE - ")
 
