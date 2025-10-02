@@ -17,8 +17,11 @@ def calc_self_diff(filename, frames_in_fs = 50):
         D_total (float): The total self-diffusion w.r.t all dimensions
     """
 
+    #If running a unit test make sure calling frames_in_fs correctly (1)
+
     #Start by calculating MSD
     taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = calc_MSD(filename, frames_in_fs)
+
 
     #Now need to plot MDS(tau) vs tau, slope is here related to D
     from scipy.stats import linregress
