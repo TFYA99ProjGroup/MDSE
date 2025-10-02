@@ -9,17 +9,25 @@ from mdse.rm.runmanager import RunManager
 
 
 def view_crystal(args):
-    subprocess.run(["ase", "gui"] + args.filepath)
+    if args.filepath:
+        print(args.filepath)
+        subprocess.run(["ase", "gui"] + args.filepath)
+    else:
+        subprocess.run("ase gui *.traj", shell=True)
 
 
 def remove_all_traj(args):
-    files = glob.glob(os.path.join(args.filepath, "*.traj"))
+    if args.filepath:
+        filepath = args.filepath
+    else:
+        filepath = "."
+    files = glob.glob(os.path.join(filepath, "*.traj"))
     for file in files:
         try:
             os.remove(file)
-            print(f"Tog bort: {file}")
+            print(f"Removed: {file}")
         except OSError as e:
-            print(f"Kunde inte ta bort {file}: {e}")
+            print(f"Could not remove {file}: {e}")
 
 
 def simulate(args):
@@ -40,13 +48,13 @@ def main():
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "--filepath", nargs="+", required=True, help="The filepath to be viewed")
+        "--filepath", nargs="+", help="The filepath to be viewed")
     parser_view_crystal.set_defaults(func=view_crystal)
 
     parser_remove_traj = subparsers.add_parser(
-        "remove_traj", help="Remove all traj files in a directory")
+        "clean", help="Remove all traj files in a directory")
     parser_remove_traj.add_argument(
-        "--filepath", required=True, help="The filepath to directory where traj files should be removed.")
+        "--filepath", help="The filepath to directory where traj files should be removed.")
     parser_remove_traj.set_defaults(func=remove_all_traj)
 
     args = parser.parse_args()
