@@ -12,8 +12,10 @@ class RunManager:
             contains configuration parameters for a simulation. Defaults to None.
 
     Attributes:
-        md_simulations (list): A list of SimulateMD instances representing simulations to run.
-        outputs (list): A list of output destinations (e.g., file paths) where results can be written.
+        md_simulations (list): A list of SimulateMD instances representing simulations
+                                to run.
+        outputs (list): A list of output destinations (e.g., file paths) where results
+                        can be written.
     """
 
     def __init__(self, simulation_config=None) -> None:
@@ -23,7 +25,8 @@ class RunManager:
         for each configuration.
 
         Args:
-            simulation_config (list, optional): A list of dictionaries containing simulation parameters.
+            simulation_config (list, optional): A list of dictionaries containing
+                                                simulation parameters.
         """
         self.md_simulations = []
         self.outputs = []
@@ -39,7 +42,8 @@ class RunManager:
         Currently supports attaching file paths for writing results.
 
         Keyword Args:
-            file (str, optional): Path to the file where simulation results should be written.
+            file (str, optional): Path to the file where simulation results should be
+                                    written.
         """
         for k, value in kwargs.items():
             if k == "file":

@@ -197,7 +197,10 @@ class SimulateMD:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
     def simulate_nve(
-        self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=False
+        self,
+        calculator=None,
+        distribution=MaxwellBoltzmannDistribution,
+        print=False,
     ):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
