@@ -1,27 +1,31 @@
 import argparse
 import subprocess
+import glob
+import os
 
 from mdse.parser.parse_yml import main_read
 from mdse.md.simulateMD import SimulateMD
-
-
-def simulateone(args):
-    sim_list = main_read(args.filepath)
-    sim = next(iter(sim_list[0].values()))
-    sim3 = SimulateMD(chem_notation=sim['Type'], structure=sim.get(
-        'Structure'), a=sim.get('Lattice'), cubic=sim.get('Cubic'),
-        temperature=sim.get('Temp'),
-        timestep=sim.get('Timestep'), length=sim.get('Length'),
-        traj_interval=sim.get('TrajInterval'))
-    sim3.simulate_nve()
+from mdse.rm.runmanager import RunManager
 
 
 def view_crystal(args):
-    subprocess.run(["ase", "gui", args.filepath])
+    subprocess.run(["ase", "gui"] + args.filepath)
 
 
-def uran():
-    print("lol")
+def remove_all_traj(args):
+    files = glob.glob(os.path.join(args.filepath, "*.traj"))
+    for file in files:
+        try:
+            os.remove(file)
+            print(f"Tog bort: {file}")
+        except OSError as e:
+            print(f"Kunde inte ta bort {file}: {e}")
+
+
+def simulate(args):
+    sim_list = main_read(args.filepath)
+    rm = RunManager(sim_list)
+    rm.run_simulations()
 
 
 def main():
@@ -32,12 +36,18 @@ def main():
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
     parser_simulate.add_argument(
         "--filepath", required=True, help="The filepath to be simulated")
-    parser_simulate.set_defaults(func=simulateone)
+    parser_simulate.set_defaults(func=simulate)
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "--filepath", required=True, help="The filepath to be viewed")
+        "--filepath", nargs="+", required=True, help="The filepath to be viewed")
     parser_view_crystal.set_defaults(func=view_crystal)
+
+    parser_remove_traj = subparsers.add_parser(
+        "remove_traj", help="Remove all traj files in a directory")
+    parser_remove_traj.add_argument(
+        "--filepath", required=True, help="The filepath to directory where traj files should be removed.")
+    parser_remove_traj.set_defaults(func=remove_all_traj)
 
     args = parser.parse_args()
 

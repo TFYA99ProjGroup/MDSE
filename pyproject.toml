@@ -25,4 +25,4 @@ lint.select = ["E", "F", "W"]
 lint.ignore = ["E203"]
 
 [project.scripts]
-mdse = "mdse.cli.ex:main"
+mdse = "mdse.cli.cli:main"
