@@ -17,7 +17,7 @@ def calc_self_diff(filename, frames_in_fs = 50):
         D_total (float): The total self-diffusion w.r.t all dimensions
     """
 
-    #If running a unit test make sure calling frames_in_fs correctly (1)
+    #If running a unit test make sure calling frames_in_fs correctly 
 
     #Start by calculating MSD
     taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = calc_MSD(filename, frames_in_fs)
@@ -38,23 +38,3 @@ def calc_self_diff(filename, frames_in_fs = 50):
     D_total = (D_slope_x.slope/(2)+D_slope_y.slope/(2)+D_slope_z.slope/(2))/3
 
     return D_total
-
-def run_calc():
-    my_D = calc_self_diff("test.traj",50)   #10 timesteps, 5fs each
-    print("My calculated D")
-    print(my_D)
-
-
-    #Compare to built in slow function
-    from ase.md.analysis import DiffusionCoefficient
-    my_traj = Trajectory("test.traj")
-    dc = DiffusionCoefficient(my_traj,timestep=50)
-    D_ase = dc.slopes[0]
-    print("D according to ASE")
-    print(numpy.mean(D_ase))
-
- 
-
-
-if __name__ == "__main__":
-    run_calc()

@@ -17,12 +17,23 @@ class SelfDTests(unittest.TestCase):
         ])
 
         D = calc_self_diff(pos,1)
-
-        #What "slow" built in function predicts
-
         self.assertAlmostEqual(D,0.16666666666666666)
 
+        #Comparing to built-in painfully slow function
+        D_traj = calc_self_diff("test.traj")
 
+        #Takes long time to re-compute
+        """
+        from ase.md.analysis import DiffusionCoefficient
+        test_traj = Trajectory("test.traj")
+        dc = DiffusionCoefficient(test_traj,timestep=50)
+        D_ase = dc.slopes[0]
+        D_ase_tot = numpy.mean(D_ase)
+        """
+        D_ase_tot = 7.637147636017926e-06
+
+        relative_error = abs(D_traj - D_ase_tot)/D_ase_tot
+        self.assertLessEqual(relative_error,0.008)
 
 
     
