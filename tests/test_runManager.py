@@ -1,13 +1,14 @@
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
 
-class DummySim:
 
+class DummySim:
     def __init__(self) -> None:
         self.called = False
 
     def simulate_nve(self):
         self.called = True
+
 
 def test_run_simulations(monkeypatch):
     # monkeypatch should be used to mock behaviour outside of the testet class.
@@ -17,12 +18,13 @@ def test_run_simulations(monkeypatch):
 
     rm = RunManager(fake_config)
 
-    assert(len(rm.md_simulations) == 2)
+    assert len(rm.md_simulations) == 2
 
     rm.run_simulations()
 
     for sim in rm.md_simulations:
         assert sim.called is True
+
 
 def test_init_without_config():
     rm = RunManager()
