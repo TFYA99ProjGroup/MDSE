@@ -43,18 +43,18 @@ def main():
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
     parser_simulate.add_argument(
-        "--filepath", required=True, help="The filepath to be simulated")
+        "-f", "--filepath", required=True, metavar="FILEPATH", help="The filepath to be simulated")
     parser_simulate.set_defaults(func=simulate)
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "--filepath", nargs="+", help="The filepath to be viewed")
+        "-f", "--filepath", nargs="+", metavar="FILEPATH", help="The filepath to be viewed")
     parser_view_crystal.set_defaults(func=view_crystal)
 
     parser_remove_traj = subparsers.add_parser(
         "clean", help="Remove all traj files in a directory")
     parser_remove_traj.add_argument(
-        "--filepath", help="The filepath to directory where traj files should be removed.")
+        "-f", "--filepath", metavar="FILEPATH", help="The filepath to directory where traj files should be removed.")
     parser_remove_traj.set_defaults(func=remove_all_traj)
 
     args = parser.parse_args()
