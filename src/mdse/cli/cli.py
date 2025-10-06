@@ -4,7 +4,6 @@ import glob
 import os
 
 from mdse.parser.parse_yml import main_read
-from mdse.md.simulateMD import SimulateMD
 from mdse.rm.runmanager import RunManager
 
 
@@ -16,7 +15,7 @@ def view_crystal(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
-        - filepath (list[str] or None): Paths to files to view. 
+        - filepath (list[str] or None): Paths to files to view.
           If None, opens all `.traj` files in the current directory.
 
     Notes
@@ -38,7 +37,7 @@ def remove_all_traj(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
-        - filepath (str or None): Directory path where `.traj` files 
+        - filepath (str or None): Directory path where `.traj` files
           will be removed. If None, defaults to the current directory.
         - recursive (bool): If True, also search subdirectories.
 
@@ -115,18 +114,21 @@ def main():
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
     parser_simulate.add_argument(
-        "-f", "--filepath", required=True, metavar="FILEPATH", help="The filepath to be simulated")
+        "-f", "--filepath", required=True, metavar="FILEPATH",
+        help="The filepath to be simulated")
     parser_simulate.set_defaults(func=simulate)
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "-f", "--filepath", nargs="+", metavar="FILEPATH", help="The filepath to be viewed")
+        "-f", "--filepath", nargs="+", metavar="FILEPATH",
+        help="The filepath to be viewed")
     parser_view_crystal.set_defaults(func=view_crystal)
 
     parser_remove_traj = subparsers.add_parser(
         "clean", help="Remove all traj files in a directory")
     parser_remove_traj.add_argument(
-        "-f", "--filepath", metavar="FILEPATH", help="The filepath to directory where traj files should be removed.")
+        "-f", "--filepath", metavar="FILEPATH",
+        help="The filepath to directory where traj files should be removed.")
     parser_remove_traj.add_argument(
         "-r", "--recursive", action="store_true",
         help="Remove .traj files recursively in all subdirectories."
