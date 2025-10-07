@@ -20,7 +20,7 @@ class SelfDTests(unittest.TestCase):
         self.assertAlmostEqual(D,0.16666666666666666)
 
         #Comparing to built-in painfully slow function
-        D_traj = calc_self_diff("test.traj")
+        D_traj = calc_self_diff("test2.traj")
 
         #Takes long time to re-compute
         """
