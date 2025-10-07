@@ -48,8 +48,9 @@ def calc_MSD(data,frames_in_fs = 50, to_plot = False):
         
         #MSD has alot of noice in beggning => choose larger starting point
         #Also noice at the end, so cut-off tau
-        tau_start = 7
-        tau_end = frames -7
+        tau_start = 1
+        tau_end = frames
+        #But KEEP noice, can be filtered out later
 
         #Number of particles
         N = len(my_traj[0])
@@ -130,4 +131,6 @@ def calc_MSD(data,frames_in_fs = 50, to_plot = False):
     return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
 if __name__ == "__main__":
-    calc_MSD("test.traj",50,True)
+    #argon needs time_step = 100
+    #Cu needs time_step = 50
+    calc_MSD("argon.traj",50,True)

@@ -3,7 +3,7 @@ import numpy
 from ase import units
 from MSD import calc_MSD
 
-def calc_self_diff(filename, frames_in_fs = 50):
+def calc_self_diff(filename, frames_in_fs = 50, to_plot = False, filter = [0.1,0.1]):
     """
     Generates MSD(tau) in all directions. Plots it vs tau and fits a linje. The slope is related to self-diffusion
     
@@ -12,6 +12,8 @@ def calc_self_diff(filename, frames_in_fs = 50):
                                 dyn = VelocityVerlet(atoms, 5 * units.fs)  # 5 fs time step.
                                 dyn.attach(traj.write, interval=10)
                                 This gives frames_in_fs = 5*10 = 50 fs
+        to_plot (bool): If MSD.py will plot the MSD
+        filter (list): How much of start, and end, to filter out from MSD
 
     Returns:
         D_total (float): The total self-diffusion w.r.t all dimensions
@@ -20,7 +22,19 @@ def calc_self_diff(filename, frames_in_fs = 50):
     #If running a unit test make sure calling frames_in_fs correctly 
 
     #Start by calculating MSD
-    taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = calc_MSD(filename, frames_in_fs)
+    taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = calc_MSD(filename, frames_in_fs, to_plot)
+
+    #Filter out noise, 10% at begining and end
+    #If running a manual test with a list, no noise!
+    if not isinstance(filename,numpy.ndarray):
+        filter_start = int(len(MSD_at_tau_x)*filter[0])
+        filter_end = int(len(MSD_at_tau_x)*(1-filter[0]))
+
+        MSD_at_tau_x = MSD_at_tau_x[filter_start:filter_end]
+        MSD_at_tau_y = MSD_at_tau_y[filter_start:filter_end]
+        MSD_at_tau_z = MSD_at_tau_z[filter_start:filter_end]
+
+        taus_fs = taus_fs[filter_start:filter_end]
 
 
     #Now need to plot MDS(tau) vs tau, slope is here related to D
