@@ -48,8 +48,8 @@ def calc_MSD(data,frames_in_fs = 50, to_plot = False):
         
         #MSD has alot of noice in beggning => choose larger starting point
         #Also noice at the end, so cut-off tau
-        tau_start = 9
-        tau_end = frames -8
+        tau_start = 0
+        tau_end = frames -1
 
         #Number of particles
         N = len(my_traj[0])
@@ -128,3 +128,6 @@ def calc_MSD(data,frames_in_fs = 50, to_plot = False):
     #----------------
 
     return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
+
+if __name__ == "__main__":
+    calc_MSD("test.traj",50,True)
