@@ -1,0 +1,149 @@
+import argparse
+import subprocess
+import glob
+import os
+
+from mdse.parser.parse_yml import main_read
+from mdse.rm.runmanager import RunManager
+
+
+def view_crystal(args):
+    """
+    Open one or more crystal structure files in the ASE GUI.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (list[str] or None): Paths to files to view.
+          If None, opens all `.traj` files in the current directory.
+
+    Notes
+    -----
+    Uses the `ase gui` command under the hood.
+    """
+
+    if args.filepath:
+        subprocess.run(["ase", "gui"] + args.filepath)
+    else:
+        subprocess.run("ase gui *.traj", shell=True)
+
+
+def remove_all_traj(args):
+    """
+    Remove all `.traj` files from a specified directory.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str or None): Directory path where `.traj` files
+          will be removed. If None, defaults to the current directory.
+        - recursive (bool): If True, also search subdirectories.
+
+    Side Effects
+    ------------
+    Deletes files from disk and prints status messages for each file.
+    """
+
+    if args.filepath:
+        filepath = args.filepath
+    else:
+        filepath = "."
+
+    if args.recursive:
+        # Recursively search subdirectories
+        files = glob.glob(os.path.join(
+            filepath, "**", "*.traj"), recursive=True)
+    else:
+        # Only in the specified directory
+        files = glob.glob(os.path.join(filepath, "*.traj"))
+
+    for file in files:
+        try:
+            os.remove(file)
+            print(f"Removed: {file}")
+        except OSError as e:
+            print(f"Could not remove {file}: {e}")
+
+
+def simulate(args):
+    """
+    Run molecular dynamics simulations defined in a YAML configuration.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str): Path to a YAML file describing simulation parameters.
+
+    Notes
+    -----
+    Parses the input YAML using `main_read`, creates a `RunManager`,
+    and executes all simulations sequentially.
+    """
+
+    sim_list = main_read(args.filepath)
+    rm = RunManager(sim_list)
+    rm.run_simulations()
+
+
+def main():
+    """
+    Entry point for the MDSE CLI.
+
+    Provides the following subcommands:
+
+    - `simulate`: Run simulations defined in a YAML file.
+        Usage: `mdse simulate -f config.yml`
+    - `view`: Open structure files with the ASE GUI.
+        Usage: `mdse view -f file1.traj file2.traj`
+    - `clean`: Remove all `.traj` files in a directory.
+        Usage: `mdse clean -f ./results`
+
+    Notes
+    -----
+    The selected subcommand is dispatched to the corresponding function
+    via `argparse`'s `set_defaults(func=...)`.
+    """
+    # ----------Setup----------
+    parser = argparse.ArgumentParser(description="MDSE - ")
+
+    subparsers = parser.add_subparsers(title="subcommands", dest="command")
+    # ----------Subparsers----------
+
+    parser_simulate = subparsers.add_parser("simulate", help="simulate once")
+    parser_simulate.add_argument(
+        "-f", "--filepath", required=True, metavar="FILEPATH",
+        help="The filepath to be simulated")
+    parser_simulate.set_defaults(func=simulate)
+
+    parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
+    parser_view_crystal.add_argument(
+        "-f", "--filepath", nargs="+", metavar="FILEPATH",
+        help="The filepath to be viewed")
+    parser_view_crystal.set_defaults(func=view_crystal)
+
+    parser_remove_traj = subparsers.add_parser(
+        "clean", help="Remove all traj files in a directory")
+    parser_remove_traj.add_argument(
+        "-f", "--filepath", metavar="FILEPATH",
+        help="The filepath to directory where traj files should be removed.")
+    parser_remove_traj.add_argument(
+        "-r", "--recursive", action="store_true",
+        help="Remove .traj files recursively in all subdirectories."
+    )
+
+    parser_remove_traj.set_defaults(func=remove_all_traj)
+
+    # ----------Other----------
+    args = parser.parse_args()
+
+    if hasattr(args, "func"):
+        args.func(args)
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
