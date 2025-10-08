@@ -3,23 +3,45 @@ from asap3 import Trajectory
 
 
 class ResultMD:
-    "a that is created when a simulation is ran, this should be"
+    """Class representing the result of a molecular dynamics (MD) simulation.
+
+    This class stores frames from a simulation and provides methods to
+    calculate and visualize the mean squared displacement (MSD).
+    """
 
     "default constructor, used for list of atoms objects ..."
 
     def __init__(self, data):
-        self.frames = data
+        """Initialize the ResultMD object.
 
-    " ... if we want to construct from file ... "
+        Args:
+            data (list): List of ASE Atoms objects representing simulation frames.
+        """
+        self.frames = data
 
     @classmethod
     def from_file(cls, filepath):
+        """Create a ResultMD object from a trajectory file.
+
+        Args:
+            filepath (str): Path to the trajectory file.
+
+        Returns:
+            ResultMD: An instance of the class containing trajectory frames.
+        """
         traj = Trajectory(filepath)
         return cls([atom for atom in traj])
 
-    "The functions that do some "
-
     def _calc_msd_list(self):
+        """Calculate the mean squared displacement (MSD) for each direction.
+
+        Returns:
+            tuple: A tuple containing:
+                - taus_fs (list): Time lags in femtoseconds.
+                - MSD_at_tau_x (list): MSD values in the x-direction.
+                - MSD_at_tau_y (list): MSD values in the y-direction.
+                - MSD_at_tau_z (list): MSD values in the z-direction.
+        """
         positions = np.array([frame.positions for frame in self.frames])
         # positions[t] gives positions ALL atoms at time t
         # positions[t][i] gives position of atom i, at time t
@@ -73,10 +95,16 @@ class ResultMD:
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
     def calc_msd(self):
+        """Compute the overall mean squared displacement (MSD).
+
+        Returns:
+            float: The average MSD value across all directions.
+        """
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
 
     def visualize_msd(self):
+        """Visualize the mean squared displacement (MSD) as a function of time lag."""
         import matplotlib.pyplot as plt
 
         taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = self._calc_msd_list()
@@ -87,7 +115,7 @@ class ResultMD:
         plt.plot(taus_fs, MSD_at_tau_z, label="MSD Z", marker="^")
 
         plt.xlabel("Time lag τ (fs)")
-        plt.ylabel("MSD (?²)")
+        plt.ylabel("MSD (Å²)")
         plt.title("Mean Squared Displacement vs Time Lag")
         plt.legend()
         plt.grid(True)
