@@ -3,18 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mdse.md.resultMD import ResultMD
 
+
 @pytest.fixture
 def mock_frames():
     """Generate mock ASE-like frames with positions."""
+
     class MockAtoms:
         def __init__(self, positions):
             self.positions = positions
+
         def __len__(self):
             return len(self.positions)
-    
+
     np.random.seed(42)
     frames = [MockAtoms(np.random.rand(5, 3)) for _ in range(20)]
     return frames
+
 
 def test_init_stores_frames(mock_frames):
     """Ensure frames are stored correctly in ResultMD."""
@@ -43,15 +47,17 @@ def test_calc_msd_returns_float(mock_frames):
     assert isinstance(value, float)
     assert value >= 0
 
+
 def test_visualize_msd_runs(monkeypatch, mock_frames):
     """Ensure visualize_msd executes without error."""
     result = ResultMD(mock_frames)
 
-    monkeypatch.setattr(plt,"show", lambda: None)
+    monkeypatch.setattr(plt, "show", lambda: None)
     called_plots = []
 
     def fake_plot(*args, **kwargs):
         called_plots.append((args, kwargs))
+
     monkeypatch.setattr(plt, "plot", fake_plot)
 
     result.visualize_msd()
