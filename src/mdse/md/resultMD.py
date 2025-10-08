@@ -102,6 +102,35 @@ class ResultMD:
         """
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
+    
+    def estimate_nearest_neighbor_distance(positions):
+        """Estimate average nearest-neighbor distance using NumPy only.
+
+        Args:
+            positions (ndarray): shape (N, 3) array of atomic positions.
+
+        Returns:
+            float: average nearest-neighbor distance.
+        """
+        diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        dists = np.sqrt(np.sum(diffs**2, axis=-1))
+        np.fill_diagonal(dists, np.inf)
+        nearest = np.min(dists, axis=1)
+        return np.mean(nearest)
+
+    def calc_lindemann(self, a=None):
+        """Compute the global Lindemann parameter.
+        
+        Args:
+            a (float): Average nearest-neighbor distance.
+        
+        Returns:
+            float: Lindemann parameter δ_L.
+        """
+        if a is None:
+            a = self.estimate_nearest_neighbor_distance(self.frames[0].positions)
+        msd = self.calc_msd()
+        return np.sqrt(msd) / a
 
     def visualize_msd(self):
         """Visualize the mean squared displacement (MSD) as a function of time lag."""
