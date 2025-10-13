@@ -11,17 +11,17 @@
 Mini_simulation:
   Type: Cu
   Structure: fcc
-  Lattice: 3.6
+  Lattice_a: 3.6
   Cubic: True
   Temp: 800
   Timestep: 2 #fs
-  Length: 400
+  Length: 800
   TrajInterval: 10
 Simulation_testing:
   Temp: 10
   Type: Cu
   Structure: fcc
-  Lattice: 3.6
+  Lattice_a: 3.6
   Cubic : True
 Our_Simulation:
   Temp_list:
