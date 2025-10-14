@@ -37,12 +37,10 @@ MaxwellBoltzmannDistribution(atoms, temperature_K=300)
 
 # Pressure
 p_au = 3.85e-2 # atomic units, (1 atm = 3.44e-9)
-T_K = 300
 
 atoms.info['p_au'] = p_au
-atoms.info['T_K'] = T_K
 
-dyn = IsotropicMTKNPT(atoms, 5 * units.fs, temperature_K=T_K, pressure_au=p_au, tdamp=500*units.fs, pdamp=1000*units.fs)  # 5 fs time step.
+dyn = IsotropicMTKNPT(atoms, timestep=1 * units.fs, temperature_K=300, pressure_au=p_au, tdamp=100*units.fs, pdamp=1000*units.fs)  # 5 fs time step.
 traj = Trajectory("test.traj", "w", atoms)
 
 
@@ -62,5 +60,5 @@ def printenergy(a=atoms):  # store a reference to atoms in the definition.
 # Now run the dynamics
 dyn.attach(printenergy, interval=10)
 printenergy()
-dyn.run(5000)
+dyn.run(50000)
 

@@ -5,17 +5,16 @@ from ase import units
 def calc_enthalpy(data):
     #Const
     eV_to_J = 1.602176634e-19
-    A3_to_m3 = 10e-30
+    A3_to_m3 = 1e-30
     au_to_Pa = 1.602176634e11
     u_to_kg = 1.66053906660e-27
     kB = 1.380649e-23
 
     traj = Trajectory(data)
-    E_eV, V_A3 = [], [] # ev electronvolt, A3 Angstrom3
+    E_eV, V_A3, T_K = [], [], [] # ev electronvolt, A3 Angstrom3
 
     atoms0 = traj[0]
     p_au = atoms0.info['p_au']
-    T_K = atoms0.info['T_K']
     print(atoms0.info.keys())
 
     m_u = atoms0.get_masses()
@@ -29,12 +28,14 @@ def calc_enthalpy(data):
     for frame in traj:
         E_eV.append(frame.get_total_energy())
         V_A3.append(frame.get_volume())
+        T_K.append(frame.get_temperature())
 
 
     traj.close()
 
     E_J = np.array(E_eV) * eV_to_J
     V_m3 = np.array(V_A3) * A3_to_m3
+    T_K = np.mean(T_K)
 
 
     # Enthalpy
