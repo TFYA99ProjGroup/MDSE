@@ -1,5 +1,5 @@
 from pathlib import Path
-from mdse.md.simulateMD import SimulateMD
+from mdse.md.simulationmanager import SimulationManager
 
 
 def test_mdobject():
@@ -14,7 +14,7 @@ def test_mdobject():
         "TrajInterval": 10,
     }
 
-    sim3 = SimulateMD(sim)
+    sim3 = SimulationManager(sim)
 
     assert sim3.chem_notation == "Cu"
     assert sim3.structure == "fcc"

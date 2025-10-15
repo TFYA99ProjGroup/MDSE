@@ -11,7 +11,7 @@ class DummySim:
 
 def test_run_simulations(monkeypatch):
     # monkeypatch should be used to mock behaviour outside of the testet class.
-    monkeypatch.setattr("mdse.rm.runmanager.SimulateMD", lambda config: DummySim())
+    monkeypatch.setattr("mdse.rm.runmanager.SimulationManager", lambda config: DummySim())
 
     fake_config = [{"sim1": {}}, {"sim2": {}}]
 
