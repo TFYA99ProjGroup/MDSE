@@ -18,6 +18,7 @@ class ResultMD:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
         self.frames = data
+        self.frames_in_fs = 50
 
     @classmethod
     def from_file(cls, filepath):
@@ -90,7 +91,7 @@ class ResultMD:
             MSD_at_tau_z.append(MSD_final_z)
 
         # Remeber: Tau is in frames now. Convert to fs
-        taus_fs = [tau * 50 for tau in taus]
+        taus_fs = [tau * self.frames_in_fs for tau in taus]
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
@@ -123,7 +124,8 @@ class ResultMD:
         plt.show()
 
     def calc_self_diff(self):
-        """Calculates self diffusion coefficient using MSD. Requires a linear-fit, so filters out noisy tau values.
+        """Calculates self diffusion coefficient using MSD. 
+        Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
 
         Returns:
             D_total (float): Self diffusion coefficent, w.r.t all directions.
@@ -157,18 +159,3 @@ class ResultMD:
         D_total = (Dx+Dy+Dz)/3
 
         return D_total
-
-if __name__ == "__main__":
-    res = ResultMD.from_file("drift.traj")
-
-    #res.visualize_msd()
-
-    print(res.calc_self_diff())
-
-    from ase.md.analysis import DiffusionCoefficient
-    #test_traj = Trajectory("test.traj")
-    frames = [frame.copy() for frame in Trajectory("drift.traj")]
-    dc = DiffusionCoefficient(frames,timestep=50)
-    D_ase = dc.slopes[0]
-    D_ase_tot = np.mean(D_ase)
-    print(D_ase_tot)
