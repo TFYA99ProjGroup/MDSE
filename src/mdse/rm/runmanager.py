@@ -12,8 +12,8 @@ class RunManager:
             contains configuration parameters for a simulation. Defaults to None.
 
     Attributes:
-        md_simulations (list): A list of SimulationManager instances representing simulations
-                                to run.
+        md_simulations (list): A list of SimulationManager instances representing
+                            simulations to run.
         outputs (list): A list of output destinations (e.g., file paths) where results
                         can be written.
     """
@@ -21,8 +21,8 @@ class RunManager:
     def __init__(self, simulation_config=None) -> None:
         """Initializes RunManager with optional simulation configurations.
 
-        If simulation configurations are provided, a SimulationManager instance is created
-        for each configuration.
+        If simulation configurations are provided, a SimulationManager instance is
+        created for each configuration.
 
         Args:
             simulation_config (list, optional): A list of dictionaries containing
