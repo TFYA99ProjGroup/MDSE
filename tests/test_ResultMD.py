@@ -43,7 +43,7 @@ def mock_linear_walk():
 
 @pytest.fixture
 def mock_stationary_walk():
-    """Generate a mock stationary walk, with predictable diffusion coefficient"""        
+    """Generate a mock stationary walk, with predictable diffusion coefficient"""
     pos = np.array([
         [ #Frame 1
             [0,0,1],[0,1,0],[1,0,0]
@@ -76,7 +76,7 @@ def mock_oscillation_walk():
         frames.append(MockAtoms(pos1.copy()))
 
     return frames
-    
+
 def test_init_stores_frames(mock_frames):
     """Ensure frames are stored correctly in ResultMD."""
     result = ResultMD(mock_frames)
@@ -139,7 +139,7 @@ def test_calc_self_diff_linear_walk(mock_linear_walk):
     Diff_coeff = result.calc_self_diff()
 
     assert(Diff_coeff > 0)
-    
+
 def test_calc_self_diff_stationary_walk(mock_stationary_walk):
     """Checks that for a stationary crystal, self diffusion is zero"""
     result = ResultMD(mock_stationary_walk)
@@ -148,7 +148,7 @@ def test_calc_self_diff_stationary_walk(mock_stationary_walk):
     Diff_coeff = result.calc_self_diff()
 
     assert(Diff_coeff == 0)
-    
+
 def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
     """Checks that for a oscillatory crystal, self diffusion is zero"""
     result = ResultMD(mock_oscillation_walk)
@@ -157,4 +157,3 @@ def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
     Diff_coeff = result.calc_self_diff()
 
     assert(Diff_coeff == 0)
-    

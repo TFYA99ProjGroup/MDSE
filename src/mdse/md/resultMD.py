@@ -124,7 +124,7 @@ class ResultMD:
         plt.show()
 
     def calc_self_diff(self):
-        """Calculates self diffusion coefficient using MSD. 
+        """Calculates self diffusion coefficient using MSD.
         Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
 
         Returns:
@@ -132,7 +132,7 @@ class ResultMD:
         """
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
 
-        
+
         #Filter out noisy start/end, 10%
         filter_start = int(len(MSD_of_tau_x)*0.1)
         filter_end = int(len(MSD_of_tau_x)*0.9)
@@ -142,7 +142,7 @@ class ResultMD:
         MSD_of_tau_z = MSD_of_tau_z[filter_start:filter_end]
 
         taus_fs = taus_fs[filter_start:filter_end]
-        
+
 
         #Now need to plot MDS(tau) vs tau, slope is here related to D
         from scipy.stats import linregress
