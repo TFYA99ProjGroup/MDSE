@@ -257,11 +257,11 @@ class SimulateMD:
         except Exception as e:
             raise RuntimeError("NVE simulation failed.") from e
 
-    def simulate_nvp(
+    def simulate_npt(
         self, 
         calculator=EMT(), 
         distribution=MaxwellBoltzmannDistribution,
-        print=false
+        print=False
     ):
 
         try:
