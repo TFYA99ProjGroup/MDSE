@@ -1,4 +1,6 @@
 from mdse.md.simulateMD import SimulateMD
+import logging
+logger = logging.getLogger(__name__)
 
 
 class RunManager:
@@ -28,13 +30,19 @@ class RunManager:
             simulation_config (list, optional): A list of dictionaries containing
                                                 simulation parameters.
         """
+        logger.debug(
+            f"Initializes an instance of RunManager with config {simulation_config}")
+
         self.md_simulations = []
         self.outputs = []
 
         if simulation_config is not None:
             for config in simulation_config:
                 item = list(config.values())[0]
+                logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulateMD(item))
+
+        logger.debug("RunManager init done")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.

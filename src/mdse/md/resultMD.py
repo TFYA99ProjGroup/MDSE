@@ -1,6 +1,9 @@
 import numpy as np
 from asap3 import Trajectory
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class ResultMD:
     """Class representing the result of a molecular dynamics (MD) simulation.
@@ -17,6 +20,7 @@ class ResultMD:
         Args:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
+        logger.debug("Initilizing an instance of ResultMD")
         self.frames = data
 
     @classmethod
@@ -29,6 +33,7 @@ class ResultMD:
         Returns:
             ResultMD: An instance of the class containing trajectory frames.
         """
+        logger.debug(f"Creating instances of ResultMD from {filepath}")
         traj = Trajectory(filepath)
         return cls([atom for atom in traj])
 
@@ -42,6 +47,7 @@ class ResultMD:
                 - MSD_at_tau_y (list): MSD values in the y-direction.
                 - MSD_at_tau_z (list): MSD values in the z-direction.
         """
+        logger.debug("Beginning calculations for MSD")
         positions = np.array([frame.positions for frame in self.frames])
         # positions[t] gives positions ALL atoms at time t
         # positions[t][i] gives position of atom i, at time t
@@ -53,7 +59,9 @@ class ResultMD:
         MSD_at_tau_y = []
         MSD_at_tau_z = []
 
+        logger.debug("Beggining iteration over tau")
         for tau in taus:
+            logger.debug(f"Tau: {tau}")
             MSD_at_all_t_x = []  # Reset per tau
             MSD_at_all_t_y = []  # Reset per tau
             MSD_at_all_t_z = []  # Reset per tau
@@ -85,6 +93,9 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
+            logger.debug(f"MSD_final_x, MSD_final_y, MSD_final_z:",
+                         MSD_final_x, MSD_final_y, MSD_final_z)
+
             MSD_at_tau_x.append(MSD_final_x)
             MSD_at_tau_y.append(MSD_final_y)
             MSD_at_tau_z.append(MSD_final_z)
@@ -100,12 +111,15 @@ class ResultMD:
         Returns:
             float: The average MSD value across all directions.
         """
+        logger.debug("Begginning calc_msd")
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
 
     def visualize_msd(self):
         """Visualize the mean squared displacement (MSD) as a function of time lag."""
         import matplotlib.pyplot as plt
+
+        logger.debug("Beggining visualize_msd")
 
         taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = self._calc_msd_list()
 
