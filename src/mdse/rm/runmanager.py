@@ -68,4 +68,4 @@ class RunManager:
     def run_simulations(self):
         """Executes all simulations managed by this RunManager."""
         for sim in self.md_simulations:
-            sim.simulate_nve()
+            sim.simulate_nvt()

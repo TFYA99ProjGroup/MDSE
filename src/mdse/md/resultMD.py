@@ -212,6 +212,11 @@ class ResultMD:
         return D_total
 
     def calc_isobaric_enthalpy(self):
+        """Calculates isobaric enthalpy after a NPT ensemble.
+
+        Returns:
+            enthalpy_J (float): Enthalpy with unit Joule.
+        """
         #Const
         eV_to_J = 1.602176634e-19
         A3_to_m3 = 1e-30
@@ -234,8 +239,12 @@ class ResultMD:
 
         return enthalpy_J
 
-
     def calc_isobaric_specific_heat(self):
+        """Caluclates isobaric specific heat or c_p after a NPT ensemble.
+
+        Returns:
+            specific heat (float): Specific heat in units J / (kg * K).
+        """
         # Const
         u_to_kg = 1.66053906660e-27
         kB = 1.380649e-23
@@ -260,3 +269,33 @@ class ResultMD:
         tot_mass_kg = tot_mass_u * u_to_kg
 
         return Cp / tot_mass_kg
+
+    def calc_isochoric_heat_capacity_per_atom(self):
+        """Calculates the heat capacity per atom after a NVT ensemble.
+
+        Returns:
+            Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
+        """
+        # Const
+        eV_to_J = 1.602176634e-19
+        kB = 1.380649e-23
+
+        E_eV, T_K = [], []
+
+        for frame in self.frames:
+            E_eV.append(frame.get_total_energy())
+            T_K.append(frame.get_temperature())
+
+        E_J = np.array(E_eV) * eV_to_J
+        T_K = np.mean(T_K)
+
+        frame_skips = 0.5
+        nskip = int(len(E_J) * frame_skips)
+        E_J = E_J[nskip:] # Skip the part of the simulation before equilibration
+
+        varE = np.var(E_J)
+
+        Cv = varE / (kB * T_K**2)
+        n_atoms = (len(self.frames) - 1)
+
+        return Cv / n_atoms
