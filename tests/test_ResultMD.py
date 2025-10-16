@@ -3,11 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mdse.md.resultMD import ResultMD
 
-
-@pytest.fixture
-def mock_frames():
-    """Generate mock ASE-like frames with positions."""
-
 class MockAtoms:
     def __init__(self, positions):
         self.positions = positions
@@ -15,12 +10,34 @@ class MockAtoms:
     def __len__(self):
         return len(self.positions)
 
+
 @pytest.fixture
 def mock_frames():
     """Generate mock ASE-like frames with positions."""
     np.random.seed(42)
     frames = [MockAtoms(np.random.rand(5, 3)) for _ in range(20)]
     return frames
+
+@pytest.fixture
+def mock_frames_simple():
+    """Generate mock ASE-like frames with positions. Only two frames, known distances"""
+    pos1 = np.array([
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 1.0, 0.0]
+    ])
+    pos2 = np.array([
+        [0.0, 0.0, 0.0],
+        [2.0, 0.0, 0.0],
+        [0.0, 2.0, 0.0],
+        [2.0, 2.0, 0.0]
+    ])
+    frame1 = MockAtoms(pos1)
+    frame2 = MockAtoms(pos2)
+    frames = [frame1, frame2]
+    return frames
+
 
 @pytest.fixture
 def mock_linear_walk():
