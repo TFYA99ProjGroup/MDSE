@@ -210,3 +210,53 @@ class ResultMD:
         D_total = (Dx+Dy+Dz)/3
 
         return D_total
+
+    def calc_isobaric_enthalpy(self):
+        #Const
+        eV_to_J = 1.602176634e-19
+        A3_to_m3 = 1e-30
+        au_to_Pa = 1.602176634e11
+
+        E_eV, V_A3 = [], []
+
+        p_au = self.frames[0].info['p_au']
+
+        p_Pa = p_au * au_to_Pa
+
+        for frame in self.frames:
+            E_eV.append(frame.get_total_energy())
+            V_A3.append(frame.get_volume())
+
+        E_J = np.array(E_eV) * eV_to_J
+        V_m3 = np.array(V_A3) * A3_to_m3
+
+        enthalpy_J = E_J + p_Pa * V_m3
+
+        return enthalpy_J
+
+
+    def calc_isobaric_specific_heat(self):
+        # Const
+        u_to_kg = 1.66053906660e-27
+        kB = 1.380649e-23
+
+        T_K = []
+        for frame in self.frames:
+            T_K.append(frame.get_temperature())
+
+        T_K = np.mean(T_K)
+
+        H_J = self.calc_isobaric_enthalpy()
+
+        frame_skips = 0.5
+        nskip = int(len(H_J) * frame_skips)
+        H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
+
+        varH = np.var(H_J)
+        Cp = varH / (kB * T_K**2) # Isobaric heat capacity
+
+        m_u = self.frames[0].get_masses()
+        tot_mass_u = m_u.sum()
+        tot_mass_kg = tot_mass_u * u_to_kg
+
+        return Cp / tot_mass_kg
