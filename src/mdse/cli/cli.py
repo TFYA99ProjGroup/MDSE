@@ -1,3 +1,6 @@
+"""
+Functions for parsing MDSE configuration files.
+"""
 import argparse
 import subprocess
 import glob
@@ -7,6 +10,7 @@ import logging
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
 from mdse.logging.logging_config import setup_logging
+
 
 logger = logging.getLogger(__name__)
 

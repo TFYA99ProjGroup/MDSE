@@ -7,8 +7,9 @@ Documentation
 =============
 
 Welcome to the documentation for the `mdse` package.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    examples
