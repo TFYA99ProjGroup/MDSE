@@ -281,6 +281,23 @@ class SimulationManager:
         distribution=MaxwellBoltzmannDistribution,
         print=True
     ):
+        """
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT integration.
+
+        Parameters
+        ----------
+        calculator : ase.calculators.calculator.Calculator, optional
+            The ASE calculator to use for force and energy evaluation
+            (default: EMT()).
+        distribution : callable, optional
+            Function used to initialize velocities (default:
+            MaxwellBoltzmannDistribution).
+
+        Notes
+        -----
+        Trajectory snapshots are written to a `.traj` file with the chemical
+        symbols of the system as the filename.
+        """
 
         try:
             if calculator is None:
@@ -303,4 +320,3 @@ class SimulationManager:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
             raise RuntimeError("NPT simulation failed.") from e
-
