@@ -11,8 +11,8 @@ import sys
 sys.path.insert(0, os.path.abspath('../../src/mdse'))
 
 project = 'MDSE'
-copyright = '2025, MDSE Group'
-author = 'MDSE Group'
+copyright = '2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas'
+author = 'A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
