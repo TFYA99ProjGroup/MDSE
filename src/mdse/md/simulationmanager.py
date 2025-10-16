@@ -255,7 +255,7 @@ class SimulationManager:
                 dyn.attach(self.print_energy, interval=self.traj_interval)
 
             dyn.run(self.length)
-            logger.debug(f"Simulation done")
+            logger.debug("Simulation done")
         except IOError as e:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:

@@ -94,7 +94,7 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug(f"MSD_final_x, MSD_final_y, MSD_final_z:",
+            logger.debug("MSD_final_x, MSD_final_y, MSD_final_z:",
                          MSD_final_x, MSD_final_y, MSD_final_z)
 
             MSD_at_tau_x.append(MSD_final_x)
@@ -146,8 +146,7 @@ class ResultMD:
         """
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
 
-
-        #Filter out noisy start/end, 10%
+        # Filter out noisy start/end, 10%
         filter_start = int(len(MSD_of_tau_x)*0.1)
         filter_end = int(len(MSD_of_tau_x)*0.9)
 
@@ -157,19 +156,18 @@ class ResultMD:
 
         taus_fs = taus_fs[filter_start:filter_end]
 
-
-        #Now need to plot MDS(tau) vs tau, slope is here related to D
+        # Now need to plot MDS(tau) vs tau, slope is here related to D
         from scipy.stats import linregress
-        D_slope_x = linregress(taus_fs,MSD_of_tau_x)
-        D_slope_y = linregress(taus_fs,MSD_of_tau_y)
-        D_slope_z = linregress(taus_fs,MSD_of_tau_z)
+        D_slope_x = linregress(taus_fs, MSD_of_tau_x)
+        D_slope_y = linregress(taus_fs, MSD_of_tau_y)
+        D_slope_z = linregress(taus_fs, MSD_of_tau_z)
 
-        #Calc D in each dimension
+        # Calc D in each dimension
         Dx = D_slope_x.slope/(2)
         Dy = D_slope_y.slope/(2)
         Dz = D_slope_z.slope/(2)
 
-        #Calc total D
+        # Calc total D
         D_total = (Dx+Dy+Dz)/3
 
         return D_total

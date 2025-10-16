@@ -44,7 +44,7 @@ def unnest_simulation_parameters(all_simulations):
         list: List of dictionaries, each representing
         a fully un-nested simulation configuration.
     """
-    logger.debug(f"Beginning unnesting parameters")
+    logger.debug("Beginning unnesting parameters")
     parameters_to_expand = [
         "Temp",
         "Type",
@@ -70,7 +70,7 @@ def unnest_simulation_parameters(all_simulations):
         final_simulation_configs.extend(
             {name: conf} for name, conf in current_simulations
         )
-    logger.debug(f"Unnesting done")
+    logger.debug("Unnesting done")
     return final_simulation_configs
 
 

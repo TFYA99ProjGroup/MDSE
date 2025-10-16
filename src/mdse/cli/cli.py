@@ -28,10 +28,10 @@ def view_crystal(args):
     """
 
     if args.filepath:
-        logger.info(f"Viewing crystal from %s", args.filepath)
+        logger.info("Viewing crystal from %s", args.filepath)
         subprocess.run(["ase", "gui"] + args.filepath)
     else:
-        logger.info(f"Viewing crystal all crystals in current directory")
+        logger.info("Viewing crystal all crystals in current directory")
         subprocess.run("ase gui *.traj", shell=True)
 
 
@@ -99,7 +99,7 @@ def simulate(args):
 
     rm = RunManager(sim_list)
     rm.run_simulations()
-    logger.info(f"Simulation done!")
+    logger.info("Simulation done!")
 
 
 def main():
@@ -132,24 +132,38 @@ def main():
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
     parser_simulate.add_argument(
-        "-f", "--filepath", required=True, metavar="FILEPATH",
-        help="The filepath to be simulated")
+        "-f",
+        "--filepath",
+        required=True,
+        metavar="FILEPATH",
+        help="The filepath to be simulated",
+    )
     parser_simulate.set_defaults(func=simulate)
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "-f", "--filepath", nargs="+", metavar="FILEPATH",
-        help="The filepath to be viewed")
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be viewed",
+    )
     parser_view_crystal.set_defaults(func=view_crystal)
 
     parser_remove_traj = subparsers.add_parser(
-        "clean", help="Remove all traj files in a directory")
+        "clean", help="Remove all traj files in a directory"
+    )
     parser_remove_traj.add_argument(
-        "-f", "--filepath", metavar="FILEPATH",
-        help="The filepath to directory where traj files should be removed.")
+        "-f",
+        "--filepath",
+        metavar="FILEPATH",
+        help="The filepath to directory where traj files should be removed.",
+    )
     parser_remove_traj.add_argument(
-        "-r", "--recursive", action="store_true",
-        help="Remove .traj files recursively in all subdirectories."
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Remove .traj files recursively in all subdirectories.",
     )
 
     parser_remove_traj.set_defaults(func=remove_all_traj)
