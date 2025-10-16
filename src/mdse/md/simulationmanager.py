@@ -67,11 +67,14 @@ class SimulationManager:
         Interval (in steps) at which to write trajectory snapshots and report
         energy (default: 10).
     pressure_au : float, optional
-        Pressure constant for NPT measured in atomic units. 1 atm = 3.44e-9 au (default: 3.85e-2).
+        Pressure constant for NPT measured in atomic units. 1 atm = 3.44e-9 au
+        (default: 3.85e-2).
     thermo_time : float, optional
-        The characteristic time scale for the thermostat in ASE time units. Typically, it is set to 100 times of timestep (default: 100 * units.fs).
+        The characteristic time scale for the thermostat in ASE time units. Typically,
+        it is set to 100 times of timestep (default: 100 * units.fs).
     baro_time : float, optional
-        The characteristic time scale for the barostat in ASE time units. Typically, it is set to 1000 times of timestep (default: 1000 * units.fs).
+        The characteristic time scale for the barostat in ASE time units. Typically,
+        it is set to 1000 times of timestep (default: 1000 * units.fs).
 
 
     Attributes
@@ -276,13 +279,14 @@ class SimulationManager:
             raise RuntimeError("NVE simulation failed.") from e
 
     def simulate_npt(
-        self, 
-        calculator=None, 
+        self,
+        calculator=None,
         distribution=MaxwellBoltzmannDistribution,
         print=True
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT integration.
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
+        integration.
 
         Parameters
         ----------
@@ -307,10 +311,17 @@ class SimulationManager:
             self.crystal.calc = calculator
 
             self.crystal.info['p_au'] = self.pressure_au
-            dyn = IsotropicMTKNPT(self.crystal, timestep=self.timestep, temperature_K=self.temperature, pressure_au=self.pressure_au, tdamp=self.thermo_time, pdamp=self.baro_time)
+            dyn = IsotropicMTKNPT(
+                self.crystal,
+                timestep=self.timestep,
+                temperature_K=self.temperature,
+                pressure_au=self.pressure_au,
+                tdamp=self.thermo_time,
+                pdamp=self.baro_time
+            )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-            
+
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
                 dyn.attach(self.print_energy, interval=self.traj_interval)
