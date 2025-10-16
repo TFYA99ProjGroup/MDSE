@@ -8,7 +8,7 @@ from ase import units
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 
-class SimulateMD:
+class SimulationManager:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
     simulations with ASE (Atomic Simulation Environment).
@@ -23,7 +23,7 @@ class SimulateMD:
     # sim equals the dictionary of the first simulation
     sim_item = next(iter(sim_list[0].values()))
     # sim_item.get() picks the values from the simulation
-    sim = SimulateMD(chem_notation=sim_item['Type'], structure=sim_item.get(
+    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
         'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
         temperature=sim_item.get('Temp'),
         timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
