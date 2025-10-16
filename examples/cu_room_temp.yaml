@@ -1,0 +1,10 @@
+Mini_simulation:
+  Type: Cu
+  Structure: fcc
+  Lattice_a: 3.6
+  Cubic: True
+  Temp: 300
+  Timestep: 2 #fs
+  Length: 6000
+  TrajInterval: 10
+

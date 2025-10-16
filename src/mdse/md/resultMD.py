@@ -1,5 +1,6 @@
+from matplotlib.pyplot import axis
 import numpy as np
-from asap3 import Trajectory
+from asap3 import Trajectory, units
 
 
 class ResultMD:
@@ -121,3 +122,56 @@ class ResultMD:
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+
+    def calc_debye_temperature(self):
+        frames = self.frames[1:]
+        nframes, natoms = np.shape(frames)
+        timestep = 2 * units.fs
+
+        velocities = [a.get_velocities() for a in frames]
+
+        velocities = np.array(velocities)
+
+        velocities.reshape(nframes, -1)
+
+        mean_velocities = velocities.mean(axis=0)
+
+        centered_velocities = velocities - mean_velocities
+
+        fft_velocities = np.fft.fft(centered_velocities, axis=0)
+        vacf = np.fft.ifft(np.abs(fft_velocities)**2, axis=0).real
+        print(vacf.shape)
+        vacf = vacf.mean(axis=1)
+        vacf /= vacf[0]
+        print(vacf.shape)
+
+        freqs = np.fft.fftfreq(nframes, timestep)
+        vdos = np.abs(np.fft.fft(vacf))
+        mask = freqs > 0
+        freqs = freqs[mask]
+        vdos = vdos[mask]
+
+        de = freqs[1] - freqs[0]
+        g_norm = vdos / np.trapz(vdos, freqs) * (3 * natoms)
+
+        cum_int = np.cumsum(g_norm) * de
+        target = 3 * natoms
+
+        idx = np.searchsorted(cum_int, target)
+
+        if idx == 0:
+            w_D = freqs[0]
+        else:
+            f1, f2 = freqs[idx-1], freqs[idx]
+            c1, c2 = cum_int[idx-1], cum_int[idx]
+            w_D = f1 + (target - c1) * (f2 - f1) / (c2 - c1)
+
+        hbar = 6.582119569e-16
+        kB = 8.617333262e-5
+
+        omega_D = 2 * np.pi * w_D * 1e15
+        Theta_D = (hbar * omega_D) / kB
+
+        print(f"Debye angular frequency ω_D = {omega_D:.3e} rad/s")
+        print(f"Debye temperature Θ_D ≈ {Theta_D:.1f} K")
+
