@@ -103,7 +103,7 @@ class ResultMD:
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
     
-    def estimate_nearest_neighbor_distance(positions):
+    def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance using NumPy only.
 
         Args:
