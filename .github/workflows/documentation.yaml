@@ -25,6 +25,7 @@ jobs:
 
       - name: Build Sphinx HTML
         run: |
+          cd docs/
           sphinx-apidoc -o ./source ../src/mdse -f
           sphinx-build -b html docs/ _build/html
 
