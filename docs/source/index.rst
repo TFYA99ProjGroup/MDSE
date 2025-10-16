@@ -7,6 +7,13 @@ Documentation
 =============
 
 Welcome to the documentation for the `mdse` package.
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   examples
+   installation
+   license
 
 .. automodule:: mdse
    :members:
