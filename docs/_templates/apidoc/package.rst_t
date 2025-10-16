@@ -1,17 +1,6 @@
 {{ fullname }} package
 {{ "=" * (fullname | length + 8) }}
 
-{% if modules %}
-Modules
--------
-
-.. toctree::
-   :maxdepth: {{ maxdepth }}
-{% for module in modules %}
-   {{ module }}
-{% endfor %}
-{% endif %}
-
 {% if subpackages %}
 Subpackages
 -----------
@@ -23,9 +12,17 @@ Subpackages
 {% endfor %}
 {% endif %}
 
-{% if module %}
+{% if modules %}
+{% for module in modules %}
+.. autosummary::
+   :toctree: {{ toctree }}
+   :template: module.rst_t
+
+   {{ module }}
+{% endfor %}
+{% endif %}
+
 .. automodule:: {{ fullname }}
    :members:
    :undoc-members:
    :show-inheritance:
-{% endif %}
