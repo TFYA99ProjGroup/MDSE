@@ -15,11 +15,6 @@ Welcome to the documentation for the `mdse` package.
    installation
    license
 
-.. automodule:: mdse
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. autosummary::
    :toctree: generated
    :recursive:
