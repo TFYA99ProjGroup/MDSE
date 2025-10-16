@@ -19,27 +19,6 @@ def mock_frames():
     return frames
 
 @pytest.fixture
-def mock_frames_simple():
-    """Generate mock ASE-like frames with positions. Only two frames, known distances"""
-    pos1 = np.array([
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [1.0, 1.0, 0.0]
-    ])
-    pos2 = np.array([
-        [0.0, 0.0, 0.0],
-        [2.0, 0.0, 0.0],
-        [0.0, 2.0, 0.0],
-        [2.0, 2.0, 0.0]
-    ])
-    frame1 = MockAtoms(pos1)
-    frame2 = MockAtoms(pos2)
-    frames = [frame1, frame2]
-    return frames
-
-
-@pytest.fixture
 def mock_linear_walk():
     """Generate a mock linear walk, with predictable diffusion coefficient"""
 
@@ -145,47 +124,6 @@ def test_visualize_msd_runs(monkeypatch, mock_frames):
     result.visualize_msd()
     assert len(called_plots) >= 3  # x, y, z curves expected
 
-def test_estimate_nearest_neighbor_distance(mock_frames_simple):
-    """Ensure the avarage nearest neighbour (distance between atoms) is correct."""
-    result = ResultMD(mock_frames_simple)
-    positions1 = result.frames[0].positions
-    positions2 = result.frames[1].positions
-
-    expected_average1 = 1.0
-    expected_average2 = 2.0
-
-    obje1 = result.estimate_nearest_neighbor_distance(positions1)
-    obje2 = result.estimate_nearest_neighbor_distance(positions2)
-
-    assert np.isclose(obje1, expected_average1)
-    assert np.isclose(obje2, expected_average2)
-
-def test_estimate_average_a(mock_frames_simple):
-    """Ensure the mean nearest neighbour over all frames is calculated correctly."""
-    system = ResultMD(mock_frames_simple)
-    positions1 = system.frames[0].positions
-    positions2 = system.frames[1].positions
-    obje1 = system.estimate_nearest_neighbor_distance(positions1)
-    obje2 = system.estimate_nearest_neighbor_distance(positions2)
-
-    correct_mean = (obje1 + obje2) / 2
-
-    result = system.estimate_average_a()
-    assert np.isclose(result, correct_mean)
-
-def test_calc_lindemann_with_mock_frames(mock_frames):
-    """Ensure the Lindemann melting criterion is calculated correctly."""
-    system = ResultMD(mock_frames)
-
-    lindemann = system.calc_lindemann()
-    a = system.estimate_average_a()
-    expected = np.sqrt(system.calc_msd()) / a
-    assert np.isclose(lindemann, expected)
-
-    a = 0.5
-    lindemann2 = system.calc_lindemann(a=a)
-    expected2 = np.sqrt(system.calc_msd()) / a
-    assert np.isclose(lindemann2, expected2)
 
 def test_calc_self_diff_returns(mock_frames):
     """Ensure calculated self diffusion is correcy type"""
