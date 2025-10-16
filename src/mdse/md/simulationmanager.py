@@ -5,11 +5,14 @@ from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
 from ase import units
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.md.nose_hoover_chain import IsotropicMTKNPT
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
+
+import logging
+logger = logging.getLogger(__name__)
 
 
-class SimulateMD:
+class SimulationManager:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
     simulations with ASE (Atomic Simulation Environment).
@@ -24,7 +27,7 @@ class SimulateMD:
     # sim equals the dictionary of the first simulation
     sim_item = next(iter(sim_list[0].values()))
     # sim_item.get() picks the values from the simulation
-    sim = SimulateMD(chem_notation=sim_item['Type'], structure=sim_item.get(
+    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
         'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
         temperature=sim_item.get('Temp'),
         timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
@@ -96,6 +99,8 @@ class SimulateMD:
     """
 
     def __init__(self, config: dict = {}):
+        logger.debug(
+            f"Initialize an instance of SimulateMD with config {config}")
         default = {
             "Type": "H",
             "Structure": "sc",
@@ -134,6 +139,8 @@ class SimulateMD:
 
         self.crystal = self.create_crystal() * (5, 5, 5)
 
+        logger.debug("Init done")
+
     def create_crystal(self) -> Atoms:
         """Create the atom or molecule or crystal object from the specified params.
 
@@ -147,6 +154,8 @@ class SimulateMD:
         c (float) -- third lattice constant (optional argument)
         cubic --
         """
+        logger.debug("Creating crystal")
+
         # Define if we're using structure or positions
         if self.positions is None:
             crystal = bulk(
@@ -167,11 +176,13 @@ class SimulateMD:
         -----
         Requires ASE's `view` function to be available.
         """
+        logger.debug("Viewing super crystal")
         if self.positions is None:
             super_crystal = self.crystal * (4, 4, 4)
             view(super_crystal)
         else:
-            raise RuntimeError("Supercell visualization only works with bulk crystals.")
+            raise RuntimeError(
+                "Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -184,7 +195,7 @@ class SimulateMD:
             epot = self.crystal.get_potential_energy()
             ekin = self.crystal.get_kinetic_energy()
             temp = self.crystal.get_temperature()
-            print(
+            logger.info(
                 f"Energy per atom: Epot ={epot:6.3f}eV  Ekin = {ekin:.3f}eV "
                 f"(T={temp:.3f}K) Etot = {epot + ekin:.3f}eV"
             )
@@ -204,9 +215,11 @@ class SimulateMD:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError("Temperature must be set to apply a distribution.")
+            raise ValueError(
+                "Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
+            Stationary(self.crystal)
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
@@ -237,6 +250,10 @@ class SimulateMD:
         # TODO: Check w. Petter and Oskar
         # self.crystal = self.crystal*(4, 4, 4)
         try:
+            symbols = "".join(set(self.crystal.get_chemical_symbols()))
+
+            logger.debug(
+                f"Beggining simulation of {symbols}_{self.temperature}")
             if calculator is None:
                 calculator = EMT()
 
@@ -244,14 +261,15 @@ class SimulateMD:
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(
+                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
                 dyn.attach(self.print_energy, interval=self.traj_interval)
 
             dyn.run(self.length)
+            logger.debug("Simulation done")
         except IOError as e:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
