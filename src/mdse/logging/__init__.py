@@ -1,4 +1,4 @@
-from . import logging_config
 """
 DOLOR MOND
 """
+from . import logging_config

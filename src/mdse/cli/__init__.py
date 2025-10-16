@@ -1,4 +1,4 @@
-from . import cli
 """
 LOREM IPSUM
 """
+from . import cli
