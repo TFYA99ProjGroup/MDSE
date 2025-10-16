@@ -36,7 +36,7 @@ def test_mdobject():
     assert sim4.a == 3.6
     assert sim4.temperature == 801
 
-    sim4.simulate_nvp()
+    sim4.simulate_npt()
 
     traj_file = Path("Cu_801.traj")
     assert Path.exists(traj_file)
