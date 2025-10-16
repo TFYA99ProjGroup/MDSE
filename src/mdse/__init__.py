@@ -1,5 +1,5 @@
 """
-mdse — Molecular Dynamics Simulation Environment
+Molecular Dynamics Simulation Environment
 
 The mdse package provides tools for running molecular dynamics simulations,
 managing simulation results, parsing YAML input files, logging, and
