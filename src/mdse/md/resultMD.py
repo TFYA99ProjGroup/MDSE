@@ -105,13 +105,13 @@ class ResultMD:
         return np.mean(MSD_x + MSD_y + MSD_z)
 
     def estimate_nearest_neighbor_distance(self, positions):
-        """Estimate average nearest-neighbor distance using NumPy only.
+        """Estimate average nearest-neighbor distance for one frame.
 
         Args:
             positions (ndarray): shape (N, 3) array of atomic positions.
 
         Returns:
-            float: average nearest-neighbor distance.
+            float: average nearest-neighbor distance for one frame.
         """
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
@@ -120,6 +120,11 @@ class ResultMD:
         return np.mean(nearest)
 
     def estimate_average_a(self):
+        """Estimate the average nearest-neighbor distance over all frames.
+
+        Returns:
+            float: The average nearest-neighbor distance across all frames.
+        """
         all_a = [self.estimate_nearest_neighbor_distance(f.positions)
                  for f in self.frames]
         return np.mean(all_a)
