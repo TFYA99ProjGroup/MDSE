@@ -5,7 +5,7 @@ from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
 from ase import units
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 
 class SimulateMD:
@@ -193,6 +193,7 @@ class SimulateMD:
             raise ValueError("Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
+            Stationary(self.crystal)
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
