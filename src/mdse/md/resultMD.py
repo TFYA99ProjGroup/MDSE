@@ -118,6 +118,11 @@ class ResultMD:
         nearest = np.min(dists, axis=1)
         return np.mean(nearest)
 
+    def estimate_average_a(self):
+        all_a = [self.estimate_nearest_neighbor_distance(f.positions)
+                 for f in self.frames]
+        return np.mean(all_a)
+
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
 
@@ -128,7 +133,7 @@ class ResultMD:
             float: Lindemann parameter δ_L.
         """
         if a is None:
-            a = self.estimate_nearest_neighbor_distance(self.frames[0].positions)
+            a = self.estimate_average_a()
         msd = self.calc_msd()
         return np.sqrt(msd) / a
 
