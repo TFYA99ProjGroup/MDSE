@@ -2,9 +2,13 @@ import argparse
 import subprocess
 import glob
 import os
+import logging
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
+from mdse.logging.logging_config import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def view_crystal(args):
@@ -24,8 +28,10 @@ def view_crystal(args):
     """
 
     if args.filepath:
+        logger.info("Viewing crystal from %s", args.filepath)
         subprocess.run(["ase", "gui"] + args.filepath)
     else:
+        logger.info("Viewing crystal all crystals in current directory")
         subprocess.run("ase gui *.traj", shell=True)
 
 
@@ -51,20 +57,25 @@ def remove_all_traj(args):
     else:
         filepath = "."
 
-    if args.recursive:
-        # Recursively search subdirectories
-        files = glob.glob(os.path.join(
-            filepath, "**", "*.traj"), recursive=True)
+    if not os.path.exists(filepath):
+        logger.warning(f"Path does not exist: {filepath}")
+        files = []
     else:
-        # Only in the specified directory
-        files = glob.glob(os.path.join(filepath, "*.traj"))
+        if args.recursive:
+            # Recursively search subdirectories
+            files = glob.glob(os.path.join(
+                filepath, "**", "*.traj"), recursive=True)
+        else:
+            # Only in the specified directory
+            files = glob.glob(os.path.join(filepath, "*.traj"))
 
     for file in files:
         try:
             os.remove(file)
-            print(f"Removed: {file}")
+            logger.debug(f"Removed: {file}")
         except OSError as e:
-            print(f"Could not remove {file}: {e}")
+            logger.warning(f"Could not remove {file}: {e}")
+    logger.info(f"Removed {len(files)} files")
 
 
 def simulate(args):
@@ -84,8 +95,11 @@ def simulate(args):
     """
 
     sim_list = main_read(args.filepath)
+    logger.info(f"Starting {len(sim_list)} simulations")
+
     rm = RunManager(sim_list)
     rm.run_simulations()
+    logger.info("Simulation done!")
 
 
 def main():
@@ -106,38 +120,58 @@ def main():
     The selected subcommand is dispatched to the corresponding function
     via `argparse`'s `set_defaults(func=...)`.
     """
+
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE - ")
+
+    parser.add_argument("--debug", action="store_true",
+                        help="Enable debug logging")
 
     subparsers = parser.add_subparsers(title="subcommands", dest="command")
     # ----------Subparsers----------
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
     parser_simulate.add_argument(
-        "-f", "--filepath", required=True, metavar="FILEPATH",
-        help="The filepath to be simulated")
+        "-f",
+        "--filepath",
+        required=True,
+        metavar="FILEPATH",
+        help="The filepath to be simulated",
+    )
     parser_simulate.set_defaults(func=simulate)
 
     parser_view_crystal = subparsers.add_parser("view", help="view a crystal")
     parser_view_crystal.add_argument(
-        "-f", "--filepath", nargs="+", metavar="FILEPATH",
-        help="The filepath to be viewed")
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be viewed",
+    )
     parser_view_crystal.set_defaults(func=view_crystal)
 
     parser_remove_traj = subparsers.add_parser(
-        "clean", help="Remove all traj files in a directory")
+        "clean", help="Remove all traj files in a directory"
+    )
     parser_remove_traj.add_argument(
-        "-f", "--filepath", metavar="FILEPATH",
-        help="The filepath to directory where traj files should be removed.")
+        "-f",
+        "--filepath",
+        metavar="FILEPATH",
+        help="The filepath to directory where traj files should be removed.",
+    )
     parser_remove_traj.add_argument(
-        "-r", "--recursive", action="store_true",
-        help="Remove .traj files recursively in all subdirectories."
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Remove .traj files recursively in all subdirectories.",
     )
 
     parser_remove_traj.set_defaults(func=remove_all_traj)
 
     # ----------Other----------
     args = parser.parse_args()
+
+    setup_logging(debug=args.debug)
 
     if hasattr(args, "func"):
         args.func(args)

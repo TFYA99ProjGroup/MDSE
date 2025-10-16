@@ -1,4 +1,6 @@
 import yaml
+import logging
+logger = logging.getLogger(__name__)
 # from yaml.loader import SafeLoader
 
 # TODO
@@ -19,6 +21,7 @@ def read_yaml_simulations(filename):
         dict: Dictionary where each key is a simulation name and
         each value is its parameter dictionary.
     """
+    logger.debug(f"Reading from {filename}")
     with open(filename, "r") as f:
         simulations_config = yaml.safe_load(f)
         return simulations_config
@@ -41,6 +44,7 @@ def unnest_simulation_parameters(all_simulations):
         list: List of dictionaries, each representing
         a fully un-nested simulation configuration.
     """
+    logger.debug("Beginning unnesting parameters")
     parameters_to_expand = [
         "Temp",
         "Type",
@@ -48,14 +52,17 @@ def unnest_simulation_parameters(all_simulations):
     ]  # Parameters that may be nested as lists or ranges
     final_simulation_configs = []  # Will hold all expanded simulation configs
     for simulation_name, simulation_full_config in all_simulations.items():
+        logger.debug(f"Unnesting {simulation_name}")
         # Start with the original simulation as a tuple (name, config)
         current_simulations = [(simulation_name, simulation_full_config)]
         # For each parameter, expand all current
         # simulations if the parameter is a list or range
         for parameter in parameters_to_expand:
+            logger.debug(f"Getting parameter {parameter}")
             expanded_simulations = []
             for simulation in current_simulations:
-                expanded_simulations.extend(expand_parameter(simulation, parameter))
+                expanded_simulations.extend(
+                    expand_parameter(simulation, parameter))
             # Update current simulations to the newly expanded list
             # for the next parameter
             current_simulations = expanded_simulations
@@ -63,6 +70,7 @@ def unnest_simulation_parameters(all_simulations):
         final_simulation_configs.extend(
             {name: conf} for name, conf in current_simulations
         )
+    logger.debug("Unnesting done")
     return final_simulation_configs
 
 
@@ -96,11 +104,13 @@ def expand_parameter(simulation_to_expand, parameter):
 
     # If parameter exists as a single value, leave as is
     if sim_params.get(parameter):
+        logger.debug(f"Parameter {parameter} was a single value")
         return [(sim_name, sim_params)]
 
     # If parameter is a list, expand for each value
     values_as_list = sim_params.get(param_list)
     if values_as_list:
+        logger.debug(f"Parameter {parameter} was a list, extracting...")
         for i, value in enumerate(values_as_list):
             # Shallow copy, might need more for nested structures
             new_params = sim_params.copy()
@@ -112,6 +122,7 @@ def expand_parameter(simulation_to_expand, parameter):
     # If parameter is a range, expand for each value in the range
     values_as_range = sim_params.get(param_range)
     if values_as_range:
+        logger.debug(f"Parameter {parameter} was a range, iterating...")
         for i, index in enumerate(
             range(
                 values_as_range["Start"],
@@ -144,4 +155,5 @@ def main_read(filename):
         list: List of expanded MD simulation configurations (dicts)
     """
     all_simulations = read_yaml_simulations(filename)
+    logger.debug(f"Read from {filename} done!")
     return unnest_simulation_parameters(all_simulations)
