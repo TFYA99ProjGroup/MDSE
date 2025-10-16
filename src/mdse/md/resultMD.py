@@ -18,6 +18,7 @@ class ResultMD:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
         self.frames = data
+        self.frames_in_fs = 50
 
     @classmethod
     def from_file(cls, filepath):
@@ -90,7 +91,7 @@ class ResultMD:
             MSD_at_tau_z.append(MSD_final_z)
 
         # Remeber: Tau is in frames now. Convert to fs
-        taus_fs = [tau * 10 for tau in taus]
+        taus_fs = [tau * self.frames_in_fs for tau in taus]
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
@@ -121,3 +122,40 @@ class ResultMD:
         plt.grid(True)
         plt.tight_layout()
         plt.show()
+
+    def calc_self_diff(self):
+        """Calculates self diffusion coefficient using MSD.
+        Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
+
+        Returns:
+            D_total (float): Self diffusion coefficent, w.r.t all directions.
+        """
+        taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
+
+
+        #Filter out noisy start/end, 10%
+        filter_start = int(len(MSD_of_tau_x)*0.1)
+        filter_end = int(len(MSD_of_tau_x)*0.9)
+
+        MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
+        MSD_of_tau_y = MSD_of_tau_y[filter_start:filter_end]
+        MSD_of_tau_z = MSD_of_tau_z[filter_start:filter_end]
+
+        taus_fs = taus_fs[filter_start:filter_end]
+
+
+        #Now need to plot MDS(tau) vs tau, slope is here related to D
+        from scipy.stats import linregress
+        D_slope_x = linregress(taus_fs,MSD_of_tau_x)
+        D_slope_y = linregress(taus_fs,MSD_of_tau_y)
+        D_slope_z = linregress(taus_fs,MSD_of_tau_z)
+
+        #Calc D in each dimension
+        Dx = D_slope_x.slope/(2)
+        Dy = D_slope_y.slope/(2)
+        Dz = D_slope_z.slope/(2)
+
+        #Calc total D
+        D_total = (Dx+Dy+Dz)/3
+
+        return D_total
