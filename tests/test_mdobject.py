@@ -14,6 +14,7 @@ def test_mdobject():
         "TrajInterval": 10,
     }
 
+
     sim3 = SimulateMD(sim)
 
     assert sim3.chem_notation == "Cu"
@@ -24,6 +25,21 @@ def test_mdobject():
     sim3.simulate_nve()
 
     traj_file = Path("Cu_800.traj")
-
     assert Path.exists(traj_file)
     traj_file.unlink()
+
+
+    sim["Temp"] = 801
+    sim4 = SimulateMD(sim)
+
+    assert sim4.chem_notation == "Cu"
+    assert sim4.structure == "fcc"
+    assert sim4.a == 3.6
+    assert sim4.temperature == 801
+
+    sim4.simulate_nvp()
+
+    traj_file = Path("Cu_801.traj")
+    assert Path.exists(traj_file)
+    traj_file.unlink()
+
