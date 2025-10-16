@@ -340,7 +340,8 @@ class SimulationManager:
         print=True
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT integration.
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
+        integration.
 
         Parameters
         ----------
@@ -364,10 +365,15 @@ class SimulationManager:
             self._add_distribution(distribution)
             self.crystal.calc = calculator
 
-            dyn = NoseHooverChainNVT(self.crystal, timestep=self.timestep, temperature_K=self.temperature, tdamp=self.thermo_time)
+            dyn = NoseHooverChainNVT(
+                self.crystal,
+                timestep=self.timestep,
+                temperature_K=self.temperature,
+                tdamp=self.thermo_time
+            )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-            
+
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
                 dyn.attach(self.print_energy, interval=self.traj_interval)
