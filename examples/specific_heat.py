@@ -2,7 +2,7 @@ from ase.io import Trajectory
 import numpy as np
 from ase import units
 
-def calc_enthalpy(data):
+def calc_specific_heat(data):
     #Const
     eV_to_J = 1.602176634e-19
     A3_to_m3 = 1e-30
@@ -62,4 +62,4 @@ def calc_enthalpy(data):
     
 
 if __name__ == "__main__":
-    calc_enthalpy("test.traj")
+    calc_specific_heat("Cu_300.traj")
