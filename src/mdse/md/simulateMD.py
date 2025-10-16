@@ -259,12 +259,15 @@ class SimulateMD:
 
     def simulate_npt(
         self, 
-        calculator=EMT(), 
+        calculator=None, 
         distribution=MaxwellBoltzmannDistribution,
-        print=False
+        print=True
     ):
 
         try:
+            if calculator is None:
+                calculator = EMT()
+
             self._add_distribution(distribution)
             self.crystal.calc = calculator
 
@@ -281,5 +284,5 @@ class SimulateMD:
         except IOError as e:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
-            raise RuntimeError("NVT simulation failed.") from e
+            raise RuntimeError("NPT simulation failed.") from e
 
