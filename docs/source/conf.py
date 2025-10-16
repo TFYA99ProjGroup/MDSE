@@ -8,30 +8,27 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../src/mdse'))
+sys.path.insert(0, os.path.abspath('../../src'))
 
 project = 'MDSE'
-copyright = '2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas'
-author = 'A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas'
+copyright = '2025, MDSE Group'
+author = 'MDSE Group'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.mathjax",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.githubpages",
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',  # For Google and NumPy style docstrings
+    'sphinx.ext.viewcode'   # Optional: to include links to source code
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
+exclude_patterns = []
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 html_static_path = ['_static']
