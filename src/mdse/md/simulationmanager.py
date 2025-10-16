@@ -5,13 +5,13 @@ from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
 from ase import units
-from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class SimulateMD:
+class SimulationManager:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
     simulations with ASE (Atomic Simulation Environment).
@@ -26,7 +26,7 @@ class SimulateMD:
     # sim equals the dictionary of the first simulation
     sim_item = next(iter(sim_list[0].values()))
     # sim_item.get() picks the values from the simulation
-    sim = SimulateMD(chem_notation=sim_item['Type'], structure=sim_item.get(
+    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
         'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
         temperature=sim_item.get('Temp'),
         timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
@@ -205,6 +205,7 @@ class SimulateMD:
                 "Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
+            Stationary(self.crystal)
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
