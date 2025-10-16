@@ -1,0 +1,31 @@
+{{ fullname }} package
+{{ "=" * (fullname | length + 8) }}
+
+{% if modules %}
+Modules
+-------
+
+.. toctree::
+   :maxdepth: {{ maxdepth }}
+{% for module in modules %}
+   {{ module }}
+{% endfor %}
+{% endif %}
+
+{% if subpackages %}
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: {{ maxdepth }}
+{% for subpackage in subpackages %}
+   {{ subpackage }}
+{% endfor %}
+{% endif %}
+
+{% if module %}
+.. automodule:: {{ fullname }}
+   :members:
+   :undoc-members:
+   :show-inheritance:
+{% endif %}

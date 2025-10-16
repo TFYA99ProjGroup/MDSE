@@ -26,6 +26,7 @@ jobs:
 
       - name: Build Sphinx HTML
         run: |
+          sphinx-apidoc -o docs/source src/mdse -f -t docs/_templates/apidoc
           sphinx-build -b html docs/source docs/_build/html
 
       - name: Upload artifact

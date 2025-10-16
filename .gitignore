@@ -78,8 +78,10 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
 docs/source/generated/
+docs/_build/
+docs/source/mdse*.rst
+docs/source/modules.rst
 
 # PyBuilder
 .pybuilder/
