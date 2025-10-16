@@ -12,10 +12,7 @@ Welcome to the documentation for the `mdse` package.
    :toctree: generated
    :recursive:
 
-   mdse.cli
-   mdse.logging
-   mdse.md
-   mdse.parser
+   mdse
 
 Indices and tables
 ==================
