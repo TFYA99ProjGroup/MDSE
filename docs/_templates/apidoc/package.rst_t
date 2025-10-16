@@ -1,8 +1,15 @@
 {{ fullname }} package
 {{ "=" * (fullname | length + 8) }}
 
-{% if docstring %}
-{{ docstring }}
+{% if modules %}
+Modules
+-------
+
+.. toctree::
+   :maxdepth: {{ maxdepth }}
+{% for module in modules %}
+   {{ module }}
+{% endfor %}
 {% endif %}
 
 {% if subpackages %}
@@ -13,16 +20,6 @@ Subpackages
    :maxdepth: {{ maxdepth }}
 {% for subpackage in subpackages %}
    {{ subpackage }}
-{% endfor %}
-{% endif %}
-
-{% if modules %}
-{% for module in modules %}
-.. autosummary::
-   :toctree: {{ toctree }}
-   :template: module.rst_t
-
-   {{ module }}
 {% endfor %}
 {% endif %}
 
