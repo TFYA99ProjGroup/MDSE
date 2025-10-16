@@ -1,0 +1,7 @@
+{{ fullname }} module
+{{ "=" * (fullname | length + 7) }}
+
+.. automodule:: {{ fullname }}
+   :members:
+   :undoc-members:
+   :show-inheritance:

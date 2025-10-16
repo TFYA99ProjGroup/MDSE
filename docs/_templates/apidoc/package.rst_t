@@ -1,6 +1,11 @@
 {{ fullname }} package
 {{ "=" * (fullname | length + 8) }}
 
+.. automodule:: {{ fullname }}
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 {% if subpackages %}
 Subpackages
 -----------
@@ -21,8 +26,3 @@ Subpackages
    {{ module }}
 {% endfor %}
 {% endif %}
-
-.. automodule:: {{ fullname }}
-   :members:
-   :undoc-members:
-   :show-inheritance:
