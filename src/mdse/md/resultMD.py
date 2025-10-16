@@ -102,7 +102,7 @@ class ResultMD:
         """
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
-    
+
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance using NumPy only.
 
@@ -120,10 +120,10 @@ class ResultMD:
 
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
-        
+
         Args:
             a (float): Average nearest-neighbor distance.
-        
+
         Returns:
             float: Lindemann parameter δ_L.
         """

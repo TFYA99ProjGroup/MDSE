@@ -72,11 +72,11 @@ def test_estimate_nearest_neighbor_distance(mock_frames):
         [0.0, 1.0, 0.0],
         [1.0, 1.0, 0.0]
     ])
-    
+
     expected_average = 1.0
-    
+
     obje = result.estimate_nearest_neighbor_distance(positions)
-    
+
     assert np.isclose(obje, expected_average)
 
 def test_calc_lindemann_with_mock_frames(mock_frames):
