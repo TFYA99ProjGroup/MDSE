@@ -1,3 +1,7 @@
+"""
+CLI test
+"""
+
 import argparse
 import subprocess
 import glob
