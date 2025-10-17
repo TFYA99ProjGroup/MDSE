@@ -12,8 +12,8 @@ Welcome to the documentation for the `mdse` package.
    :maxdepth: 4
    :caption: Contents:
 
-   examples
    installation
+   examples
    license
 
 .. autosummary::
