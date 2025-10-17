@@ -1,4 +1,4 @@
 """
 """
-from . import resultMD
-from . import simulationmanager
+from . import resultMD as resultMD
+from . import simulationmanager as simulationmanager

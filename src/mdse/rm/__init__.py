@@ -1,3 +1,3 @@
 """
 """
-from . import runmanager
+from . import runmanager as runmanager

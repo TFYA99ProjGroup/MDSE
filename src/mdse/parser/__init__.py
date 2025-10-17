@@ -1,3 +1,3 @@
 """
 """
-from . import parse_yml
+from . import parse_yml as parse_yml

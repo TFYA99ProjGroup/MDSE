@@ -1,3 +1,3 @@
 """
 """
-from . import logging_config
+from . import logging_config as logging_config
