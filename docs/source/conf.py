@@ -25,7 +25,7 @@ extensions = [
 ]
 autosummary_generate = True
 
-templates_path = ['_templates']
+templates_path = ['_templates','_templates/apidoc']
 exclude_patterns = []
 
 # -- Options for HTML output -------------------------------------------------
