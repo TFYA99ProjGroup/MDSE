@@ -1,0 +1,40 @@
+#MD simulations are written in the format:
+#
+#---
+#Name_Of_simulation:
+#  Parameter1: Value1
+#  Parameter2: value2
+#...
+#
+#Parameters may be nested, via "Parameter_list" or "Parameter_range"
+
+Mini_simulation:
+  Type: Cu
+  Structure: fcc
+  Lattice_a: 3.6
+  Cubic: True
+  Temp: 800
+  Timestep: 2 #fs
+  Length: 400
+  TrajInterval: 10
+Simulation_testing:
+  Temp: 10
+  Type: Cu
+  Structure: fcc
+  Lattice: 3.6
+  Cubic : True
+Our_Simulation:
+  Temp_list:
+    - 20
+    - 30
+  Type: Al
+  Time: 10
+Testing_range:
+  Temp_range:
+    Start: 10
+    Stop: 20
+    Step: 4
+  Type_list: 
+    - Al
+    - Cu
+  Time: 10

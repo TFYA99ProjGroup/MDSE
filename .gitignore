@@ -1,3 +1,12 @@
+
+# ASE files
+*.traj
+
+
+
+###
+### Python auto generated
+###
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -69,6 +78,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
+docs/source/generated/
 docs/_build/
 
 # PyBuilder
@@ -76,6 +86,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+*.ipynb
 .ipynb_checkpoints
 
 # IPython
@@ -186,7 +197,7 @@ cython_debug/
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 #  and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/
 
 # Ruff stuff:
 .ruff_cache/
@@ -205,3 +216,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+

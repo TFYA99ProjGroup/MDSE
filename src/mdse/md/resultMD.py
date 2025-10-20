@@ -1,0 +1,291 @@
+import numpy as np
+from asap3 import Trajectory
+from scipy import constants
+
+import logging
+logger = logging.getLogger(__name__)
+
+
+class ResultMD:
+    """Class representing the result of a molecular dynamics (MD) simulation.
+
+    This class stores frames from a simulation and provides methods to
+    calculate and visualize the mean squared displacement (MSD).
+    """
+
+    "default constructor, used for list of atoms objects ..."
+
+    def __init__(self, data):
+        """Initialize the ResultMD object.
+
+        Args:
+            data (list): List of ASE Atoms objects representing simulation frames.
+        """
+        logger.debug("Initilizing an instance of ResultMD")
+        self.frames = data
+        self.frames_in_fs = 50
+
+    @classmethod
+    def from_file(cls, filepath):
+        """Create a ResultMD object from a trajectory file.
+
+        Args:
+            filepath (str): Path to the trajectory file.
+
+        Returns:
+            ResultMD: An instance of the class containing trajectory frames.
+        """
+        logger.debug(f"Creating instances of ResultMD from {filepath}")
+        traj = Trajectory(filepath)
+        return cls([atom for atom in traj])
+
+    def _calc_msd_list(self):
+        """Calculate the mean squared displacement (MSD) for each direction.
+
+        Returns:
+            tuple: A tuple containing:
+                - taus_fs (list): Time lags in femtoseconds.
+                - MSD_at_tau_x (list): MSD values in the x-direction.
+                - MSD_at_tau_y (list): MSD values in the y-direction.
+                - MSD_at_tau_z (list): MSD values in the z-direction.
+        """
+        logger.debug("Beginning calculations for MSD")
+        positions = np.array([frame.positions for frame in self.frames])
+        # positions[t] gives positions ALL atoms at time t
+        # positions[t][i] gives position of atom i, at time t
+        # positions[t][i][0] gives position of atom i in x-direction, at time t
+
+        taus = range(7, len(self.frames) - 7)
+
+        MSD_at_tau_x = []
+        MSD_at_tau_y = []
+        MSD_at_tau_z = []
+
+        logger.debug("Beggining iteration over tau")
+        for tau in taus:
+            logger.debug(f"Tau: {tau}")
+            MSD_at_all_t_x = []  # Reset per tau
+            MSD_at_all_t_y = []  # Reset per tau
+            MSD_at_all_t_z = []  # Reset per tau
+            for timestep in range(len(positions) - tau):  # timestep != frames.
+                # Calculate |ri(t+tau) - ri(t)|^2
+                # Array containing displacement on x for ALL atoms, durint t=timestep
+                displacement_x = (
+                    positions[timestep, :, 0] - positions[timestep + tau, :, 0]
+                )
+                displacement_y = (
+                    positions[timestep, :, 1] - positions[timestep + tau, :, 1]
+                )
+                displacement_z = (
+                    positions[timestep, :, 2] - positions[timestep + tau, :, 2]
+                )
+
+                # square and average over all atoms
+                MSD_x_t = np.mean(displacement_x**2)
+                MSD_y_t = np.mean(displacement_y**2)
+                MSD_z_t = np.mean(displacement_z**2)
+
+                # Move to next time-step
+                MSD_at_all_t_x.append(MSD_x_t)
+                MSD_at_all_t_y.append(MSD_y_t)
+                MSD_at_all_t_z.append(MSD_z_t)
+
+            # Average over the time
+            MSD_final_x = np.mean(MSD_at_all_t_x)
+            MSD_final_y = np.mean(MSD_at_all_t_y)
+            MSD_final_z = np.mean(MSD_at_all_t_z)
+
+            logger.debug("MSD_final_x, MSD_final_y, MSD_final_z:",
+                         MSD_final_x, MSD_final_y, MSD_final_z)
+
+            MSD_at_tau_x.append(MSD_final_x)
+            MSD_at_tau_y.append(MSD_final_y)
+            MSD_at_tau_z.append(MSD_final_z)
+
+        # Remeber: Tau is in frames now. Convert to fs
+        taus_fs = [tau * self.frames_in_fs for tau in taus]
+
+        return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
+
+    def calc_msd(self):
+        """Compute the overall mean squared displacement (MSD).
+
+        Returns:
+            float: The average MSD value across all directions.
+        """
+        logger.debug("Begginning calc_msd")
+        _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
+        return np.mean(MSD_x + MSD_y + MSD_z)
+
+    def estimate_nearest_neighbor_distance(self, positions):
+        """Estimate average nearest-neighbor distance for one frame.
+        Args:
+            positions (ndarray): shape (N, 3) array of atomic positions.
+        Returns:
+            float: average nearest-neighbor distance for one frame.
+        """
+        diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        dists = np.sqrt(np.sum(diffs**2, axis=-1))
+        np.fill_diagonal(dists, np.inf)
+        nearest = np.min(dists, axis=1)
+        return np.mean(nearest)
+
+    def estimate_average_a(self):
+        """Estimate the average nearest-neighbor distance over all frames.
+        Returns:
+            float: The average nearest-neighbor distance across all frames.
+        """
+        all_a = [self.estimate_nearest_neighbor_distance(f.positions)
+                 for f in self.frames]
+        return np.mean(all_a)
+
+    def calc_lindemann(self, a=None):
+        """Compute the global Lindemann parameter.
+        Args:
+            a (float): Average nearest-neighbor distance.
+        Returns:
+            float: Lindemann parameter δ_L.
+        """
+        if a is None:
+            a = self.estimate_average_a()
+        msd = self.calc_msd()
+        return np.sqrt(msd) / a
+
+    def visualize_msd(self):
+        """Visualize the mean squared displacement (MSD) as a function of time lag."""
+        import matplotlib.pyplot as plt
+
+        logger.debug("Beggining visualize_msd")
+
+        taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = self._calc_msd_list()
+
+        plt.figure(figsize=(6, 4))
+        plt.plot(taus_fs, MSD_at_tau_x, label="MSD X", marker="o")
+        plt.plot(taus_fs, MSD_at_tau_y, label="MSD Y", marker="s")
+        plt.plot(taus_fs, MSD_at_tau_z, label="MSD Z", marker="^")
+
+        plt.xlabel("Time lag τ (fs)")
+        plt.ylabel("MSD (Å²)")
+        plt.title("Mean Squared Displacement vs Time Lag")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    def calc_self_diff(self):
+        """Calculates self diffusion coefficient using MSD.
+        Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
+
+        Returns:
+            D_total (float): Self diffusion coefficent, w.r.t all directions.
+        """
+        taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
+
+        # Filter out noisy start/end, 10%
+        filter_start = int(len(MSD_of_tau_x)*0.1)
+        filter_end = int(len(MSD_of_tau_x)*0.9)
+
+        MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
+        MSD_of_tau_y = MSD_of_tau_y[filter_start:filter_end]
+        MSD_of_tau_z = MSD_of_tau_z[filter_start:filter_end]
+
+        taus_fs = taus_fs[filter_start:filter_end]
+
+        # Now need to plot MDS(tau) vs tau, slope is here related to D
+        from scipy.stats import linregress
+        D_slope_x = linregress(taus_fs, MSD_of_tau_x)
+        D_slope_y = linregress(taus_fs, MSD_of_tau_y)
+        D_slope_z = linregress(taus_fs, MSD_of_tau_z)
+
+        # Calc D in each dimension
+        Dx = D_slope_x.slope/(2)
+        Dy = D_slope_y.slope/(2)
+        Dz = D_slope_z.slope/(2)
+
+        # Calc total D
+        D_total = (Dx+Dy+Dz)/3
+
+        return D_total
+
+    def calc_isobaric_enthalpy(self):
+        """Calculates isobaric enthalpy after a NPT ensemble.
+
+        Returns:
+            enthalpy_J (float): Enthalpy with unit Joule.
+        """
+        E_eV, V_A3 = [], []
+
+        p_au = self.frames[0].info['p_au']
+
+        p_Pa = p_au * (constants.eV / (constants.angstrom ** 3))
+        print("au_to_Pa: ",constants.eV / (constants.angstrom ** 3))
+
+        for frame in self.frames:
+            E_eV.append(frame.get_total_energy())
+            V_A3.append(frame.get_volume())
+
+        E_J = np.array(E_eV) * constants.eV
+        V_m3 = np.array(V_A3) * (constants.angstrom ** 3)
+        print("ev_to_J: ",constants.eV)
+        print("angstrom: ", constants.angstrom)
+
+        enthalpy_J = E_J + p_Pa * V_m3
+
+        return enthalpy_J
+
+    def calc_isobaric_specific_heat(self):
+        """Caluclates isobaric specific heat or c_p after a NPT ensemble.
+
+        Returns:
+            specific heat (float): Specific heat in units J / (kg * K).
+        """
+        T_K = []
+        for frame in self.frames:
+            T_K.append(frame.get_temperature())
+
+        T_K = np.mean(T_K)
+
+        H_J = self.calc_isobaric_enthalpy()
+
+        frame_skips = 0.5
+        nskip = int(len(H_J) * frame_skips)
+        H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
+
+        varH = np.var(H_J)
+        # Isobaric heat capacity
+        Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
+        print("boltzmann: ", constants.value("Boltzmann constant"))
+
+        m_u = self.frames[0].get_masses()
+        tot_mass_u = m_u.sum()
+        tot_mass_kg = tot_mass_u * constants.atomic_mass
+        print("atomic_mass: ",constants.atomic_mass)
+
+        return Cp / tot_mass_kg
+
+    def calc_isochoric_heat_capacity_per_atom(self):
+        """Calculates the heat capacity per atom after a NVT ensemble.
+
+        Returns:
+            Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
+        """
+        E_eV, T_K = [], []
+
+        for frame in self.frames:
+            E_eV.append(frame.get_total_energy())
+            T_K.append(frame.get_temperature())
+
+        E_J = np.array(E_eV) * constants.eV
+        T_K = np.mean(T_K)
+
+        frame_skips = 0.5
+        nskip = int(len(E_J) * frame_skips)
+        E_J = E_J[nskip:] # Skip the part of the simulation before equilibration
+
+        varE = np.var(E_J)
+
+        Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
+
+        n_atoms = (len(self.frames) - 1)
+
+        return Cv / n_atoms
