@@ -118,10 +118,8 @@ class ResultMD:
 
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance for one frame.
-
         Args:
             positions (ndarray): shape (N, 3) array of atomic positions.
-
         Returns:
             float: average nearest-neighbor distance for one frame.
         """
@@ -133,7 +131,6 @@ class ResultMD:
 
     def estimate_average_a(self):
         """Estimate the average nearest-neighbor distance over all frames.
-
         Returns:
             float: The average nearest-neighbor distance across all frames.
         """
@@ -143,10 +140,8 @@ class ResultMD:
 
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
-
         Args:
             a (float): Average nearest-neighbor distance.
-
         Returns:
             float: Lindemann parameter δ_L.
         """
