@@ -289,7 +289,7 @@ class ResultMD:
         varE = np.var(E_J)
 
         Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
-        
+
         n_atoms = (len(self.frames) - 1)
 
         return Cv / n_atoms
