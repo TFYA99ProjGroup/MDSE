@@ -94,7 +94,7 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug(f"MSD_final_x, MSD_final_y, MSD_final_z:",
+            logger.debug("MSD_final_x, MSD_final_y, MSD_final_z:",
                          MSD_final_x, MSD_final_y, MSD_final_z)
 
             MSD_at_tau_x.append(MSD_final_x)
