@@ -334,8 +334,8 @@ class SimulationManager:
 
 
     def simulate_nvt(
-        self, 
-        calculator=None, 
+        self,
+        calculator=None,
         distribution=MaxwellBoltzmannDistribution,
         print=True
     ):
