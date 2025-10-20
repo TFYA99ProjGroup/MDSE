@@ -94,7 +94,7 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug("MSD_final_x, MSD_final_y, MSD_final_z:",
+            logger.debug(f"MSD_final_x, MSD_final_y, MSD_final_z:",
                          MSD_final_x, MSD_final_y, MSD_final_z)
 
             MSD_at_tau_x.append(MSD_final_x)
@@ -115,6 +115,40 @@ class ResultMD:
         logger.debug("Begginning calc_msd")
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
+
+    def estimate_nearest_neighbor_distance(self, positions):
+        """Estimate average nearest-neighbor distance for one frame.
+        Args:
+            positions (ndarray): shape (N, 3) array of atomic positions.
+        Returns:
+            float: average nearest-neighbor distance for one frame.
+        """
+        diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        dists = np.sqrt(np.sum(diffs**2, axis=-1))
+        np.fill_diagonal(dists, np.inf)
+        nearest = np.min(dists, axis=1)
+        return np.mean(nearest)
+
+    def estimate_average_a(self):
+        """Estimate the average nearest-neighbor distance over all frames.
+        Returns:
+            float: The average nearest-neighbor distance across all frames.
+        """
+        all_a = [self.estimate_nearest_neighbor_distance(f.positions)
+                 for f in self.frames]
+        return np.mean(all_a)
+
+    def calc_lindemann(self, a=None):
+        """Compute the global Lindemann parameter.
+        Args:
+            a (float): Average nearest-neighbor distance.
+        Returns:
+            float: Lindemann parameter δ_L.
+        """
+        if a is None:
+            a = self.estimate_average_a()
+        msd = self.calc_msd()
+        return np.sqrt(msd) / a
 
     def visualize_msd(self):
         """Visualize the mean squared displacement (MSD) as a function of time lag."""

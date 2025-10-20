@@ -80,8 +80,6 @@ instance/
 # Sphinx documentation
 docs/source/generated/
 docs/_build/
-docs/source/mdse*.rst
-docs/source/modules.rst
 
 # PyBuilder
 .pybuilder/
