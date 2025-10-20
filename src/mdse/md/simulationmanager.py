@@ -5,7 +5,7 @@ from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
 from ase import units
-from ase.md.nose_hoover_chain import IsotropicMTKNPT
+from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
@@ -318,6 +318,58 @@ class SimulationManager:
                 pressure_au=self.pressure_au,
                 tdamp=self.thermo_time,
                 pdamp=self.baro_time
+            )
+            symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+
+            dyn.attach(traj.write, interval=self.traj_interval)
+            if print:
+                dyn.attach(self.print_energy, interval=self.traj_interval)
+
+            dyn.run(self.length)
+        except IOError as e:
+            raise IOError("Failed to write trajectory file.") from e
+        except Exception as e:
+            raise RuntimeError("NPT simulation failed.") from e
+
+
+    def simulate_nvt(
+        self,
+        calculator=None,
+        distribution=MaxwellBoltzmannDistribution,
+        print=True
+    ):
+        """
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
+        integration.
+
+        Parameters
+        ----------
+        calculator : ase.calculators.calculator.Calculator, optional
+            The ASE calculator to use for force and energy evaluation
+            (default: EMT()).
+        distribution : callable, optional
+            Function used to initialize velocities (default:
+            MaxwellBoltzmannDistribution).
+
+        Notes
+        -----
+        Trajectory snapshots are written to a `.traj` file with the chemical
+        symbols of the system as the filename.
+        """
+
+        try:
+            if calculator is None:
+                calculator = EMT()
+
+            self._add_distribution(distribution)
+            self.crystal.calc = calculator
+
+            dyn = NoseHooverChainNVT(
+                self.crystal,
+                timestep=self.timestep,
+                temperature_K=self.temperature,
+                tdamp=self.thermo_time
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)

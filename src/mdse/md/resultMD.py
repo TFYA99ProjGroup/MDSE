@@ -1,5 +1,6 @@
 import numpy as np
 from asap3 import Trajectory
+from scipy import constants
 
 import logging
 logger = logging.getLogger(__name__)
@@ -207,34 +208,37 @@ class ResultMD:
         return D_total
 
     def calc_isobaric_enthalpy(self):
-        #Const
-        eV_to_J = 1.602176634e-19
-        A3_to_m3 = 1e-30
-        au_to_Pa = 1.602176634e11
+        """Calculates isobaric enthalpy after a NPT ensemble.
 
+        Returns:
+            enthalpy_J (float): Enthalpy with unit Joule.
+        """
         E_eV, V_A3 = [], []
 
         p_au = self.frames[0].info['p_au']
 
-        p_Pa = p_au * au_to_Pa
+        p_Pa = p_au * (constants.eV / (constants.angstrom ** 3))
+        print("au_to_Pa: ",constants.eV / (constants.angstrom ** 3))
 
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
             V_A3.append(frame.get_volume())
 
-        E_J = np.array(E_eV) * eV_to_J
-        V_m3 = np.array(V_A3) * A3_to_m3
+        E_J = np.array(E_eV) * constants.eV
+        V_m3 = np.array(V_A3) * (constants.angstrom ** 3)
+        print("ev_to_J: ",constants.eV)
+        print("angstrom: ", constants.angstrom)
 
         enthalpy_J = E_J + p_Pa * V_m3
 
         return enthalpy_J
 
-
     def calc_isobaric_specific_heat(self):
-        # Const
-        u_to_kg = 1.66053906660e-27
-        kB = 1.380649e-23
+        """Caluclates isobaric specific heat or c_p after a NPT ensemble.
 
+        Returns:
+            specific heat (float): Specific heat in units J / (kg * K).
+        """
         T_K = []
         for frame in self.frames:
             T_K.append(frame.get_temperature())
@@ -248,10 +252,40 @@ class ResultMD:
         H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
 
         varH = np.var(H_J)
-        Cp = varH / (kB * T_K**2) # Isobaric heat capacity
+        # Isobaric heat capacity
+        Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
+        print("boltzmann: ", constants.value("Boltzmann constant"))
 
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
-        tot_mass_kg = tot_mass_u * u_to_kg
+        tot_mass_kg = tot_mass_u * constants.atomic_mass
+        print("atomic_mass: ",constants.atomic_mass)
 
         return Cp / tot_mass_kg
+
+    def calc_isochoric_heat_capacity_per_atom(self):
+        """Calculates the heat capacity per atom after a NVT ensemble.
+
+        Returns:
+            Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
+        """
+        E_eV, T_K = [], []
+
+        for frame in self.frames:
+            E_eV.append(frame.get_total_energy())
+            T_K.append(frame.get_temperature())
+
+        E_J = np.array(E_eV) * constants.eV
+        T_K = np.mean(T_K)
+
+        frame_skips = 0.5
+        nskip = int(len(E_J) * frame_skips)
+        E_J = E_J[nskip:] # Skip the part of the simulation before equilibration
+
+        varE = np.var(E_J)
+
+        Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
+
+        n_atoms = (len(self.frames) - 1)
+
+        return Cv / n_atoms
