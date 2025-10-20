@@ -15,6 +15,7 @@ Welcome to the documentation for the `mdse` package.
    installation
    examples
    license
+   changelog
 
 .. autosummary::
    :toctree: generated
