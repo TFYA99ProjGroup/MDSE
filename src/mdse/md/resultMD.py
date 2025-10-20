@@ -257,7 +257,8 @@ class ResultMD:
         H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
 
         varH = np.var(H_J)
-        Cp = varH / (constants.value("Boltzmann constant") * T_K**2) # Isobaric heat capacity
+        # Isobaric heat capacity
+        Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
         print("boltzmann: ", constants.value("Boltzmann constant"))
 
         m_u = self.frames[0].get_masses()
