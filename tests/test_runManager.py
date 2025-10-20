@@ -11,6 +11,9 @@ class DummySim:
     def simulate_nvt(self):
         self.called = True
 
+    def simulate_npt(self):
+        self.called = True
+
 
 def test_run_nve_simulations(monkeypatch):
     # monkeypatch should be used to mock behaviour outside of the testet class.
