@@ -228,6 +228,7 @@ class SimulateMD:
 
             self._add_distribution(distribution)
             self.crystal.calc = calculator
+            self.crystal.info["dt"] = self.timestep
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
             symbols = "".join(set(self.crystal.get_chemical_symbols()))

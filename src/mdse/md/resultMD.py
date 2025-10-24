@@ -1,6 +1,9 @@
-from matplotlib.pyplot import axis
+from math import exp
+from matplotlib import pyplot
+from scipy import constants
 import numpy as np
-from asap3 import Trajectory, units
+from asap3 import Trajectory
+from ase import units
 
 
 class ResultMD:
@@ -123,55 +126,67 @@ class ResultMD:
         plt.tight_layout()
         plt.show()
 
-    def calc_debye_temperature(self):
-        frames = self.frames[1:]
-        nframes, natoms = np.shape(frames)
-        timestep = 2 * units.fs
+    def _calc_vacf(self, frame_skip=0.5):
+        max_lag = int(frame_skip*len(self.frames))
+        frames = self.frames[max_lag:]
+        nframes, _ = np.shape(frames)
 
-        velocities = [a.get_velocities() for a in frames]
+        vels = [frame.get_velocities() for frame in frames]
+        vels = np.array(vels)
 
-        velocities = np.array(velocities)
+        com_vel = vels.mean(axis=1, keepdims=True)
 
-        velocities.reshape(nframes, -1)
+        vel_rel = vels - com_vel
 
-        mean_velocities = velocities.mean(axis=0)
+        vflat = vel_rel.reshape(nframes, -1)
+        vflat -= vflat.mean(axis=0, keepdims=True)
 
-        centered_velocities = velocities - mean_velocities
+        fft_v = np.fft.fft(vflat, axis=0)
+        psd = np.real(np.fft.ifft(np.abs(fft_v)**2, axis=0))
+        vacf = psd[:max_lag].mean(axis=1)
 
-        fft_velocities = np.fft.fft(centered_velocities, axis=0)
-        vacf = np.fft.ifft(np.abs(fft_velocities)**2, axis=0).real
-        print(vacf.shape)
-        vacf = vacf.mean(axis=1)
         vacf /= vacf[0]
-        print(vacf.shape)
+        return vacf
 
-        freqs = np.fft.fftfreq(nframes, timestep)
-        vdos = np.abs(np.fft.fft(vacf))
-        mask = freqs > 0
-        freqs = freqs[mask]
-        vdos = vdos[mask]
+    def calc_debye_temperature(self, frame_skip=0.5):
+        max_lag = int(frame_skip*len(self.frames))
+        frames = self.frames[max_lag:]
+        _, natoms = np.shape(frames)
+        dt = frames[0].info["dt"] * 1e-15 / units.fs
 
-        de = freqs[1] - freqs[0]
-        g_norm = vdos / np.trapz(vdos, freqs) * (3 * natoms)
+        kB = constants.Boltzmann
+        hbar = constants.hbar
 
-        cum_int = np.cumsum(g_norm) * de
-        target = 3 * natoms
+        vacf = self._calc_vacf(frame_skip)
+        n = len(vacf)
+
+        spectrum = np.fft.rfft(vacf) * dt
+        freqs = np.fft.rfftfreq(n, d=dt)
+        omega = 2 * np.pi * freqs
+        
+        dos = np.real(spectrum)
+
+        area = np.trapz(dos, x=omega)  # integration w.r.t. omega
+        target = 3.0 * natoms
+
+        dos *= target / area
+        dos = np.maximum(dos, 0)
+
+        pyplot.figure()
+        pyplot.plot(freqs, dos)
+        pyplot.show()
+
+        cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
+
+        if cum_int[-1] < target:
+            print("ERROR: DOS integral not correct")
 
         idx = np.searchsorted(cum_int, target)
-
         if idx == 0:
-            w_D = freqs[0]
+            omega_D = omega[1]
         else:
-            f1, f2 = freqs[idx-1], freqs[idx]
-            c1, c2 = cum_int[idx-1], cum_int[idx]
-            w_D = f1 + (target - c1) * (f2 - f1) / (c2 - c1)
+            omega_D = omega[idx]
 
-        hbar = 6.582119569e-16
-        kB = 8.617333262e-5
-
-        omega_D = 2 * np.pi * w_D * 1e15
         Theta_D = (hbar * omega_D) / kB
-
-        print(f"Debye angular frequency ω_D = {omega_D:.3e} rad/s")
-        print(f"Debye temperature Θ_D ≈ {Theta_D:.1f} K")
-
+        
+        return Theta_D

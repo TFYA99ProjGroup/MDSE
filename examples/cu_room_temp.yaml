@@ -5,6 +5,6 @@ Mini_simulation:
   Cubic: True
   Temp: 300
   Timestep: 2 #fs
-  Length: 6000
+  Length: 10000
   TrajInterval: 10
 
