@@ -3,8 +3,11 @@ Mini_simulation:
   Structure: fcc
   Lattice_a: 3.6
   Cubic: True
-  Temp: 300
+  Temp_list: 
+    - 100
+    - 200
+    - 300
   Timestep: 2 #fs
-  Length: 10000
-  TrajInterval: 10
+  Length: 20000
+  TrajInterval: 5
 

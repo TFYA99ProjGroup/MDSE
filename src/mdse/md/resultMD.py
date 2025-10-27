@@ -1,4 +1,4 @@
-from matplotlib import pyplot
+from matplotlib import pyplot as pl
 from scipy import constants
 import numpy as np
 from asap3 import Trajectory
@@ -27,6 +27,8 @@ class ResultMD:
         logger.debug("Initilizing an instance of ResultMD")
         self.frames = data
         self.frames_in_fs = 50
+
+        self.dos = None
 
     @classmethod
     def from_file(cls, filepath):
@@ -207,35 +209,54 @@ class ResultMD:
         vacf /= vacf[0]
         return vacf
 
-    def calc_debye_temperature(self, frame_skip=0.5):
+    def calc_density_of_states(self, frame_skip=0.5):
         max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
         dt = frames[0].info["dt"] * 1e-15 / units.fs
         logger.debug(
-            f"Calculating debye temperature for system. \
+            f"Calculating density of states for system. \
                 frames: {max_lag}, natoms: {natoms}, dt: {dt} fs"
         )
-
-        kB = constants.Boltzmann
-        hbar = constants.hbar
 
         vacf = self._calc_vacf(frame_skip)
         n = len(vacf)
 
-        spectrum = np.fft.rfft(vacf) * dt
         freqs = np.fft.rfftfreq(n, d=dt)
         omega = 2 * np.pi * freqs
 
-        dos = np.real(spectrum)
+        if self.dos is None:
+            logger.debug("DOS not yet calculated")
+            spectrum = np.fft.rfft(vacf) * dt
 
-        area = np.trapz(dos, x=omega)
-        target = 3.0 * natoms
+            dos = np.real(spectrum)
 
-        dos *= target / area
-        dos = np.maximum(dos, 0)
+            area = np.trapz(dos, x=omega)
+            target = 3.0 * natoms
+
+            dos *= target / area
+            dos = np.maximum(dos, 0)
+
+            self.dos = dos
+        else:
+            logger.debug("DOS already calculated")
+
+        return self.dos, omega
+
+    def plot_density_of_states(self):
+        pl.figure()
+        pl.plot(self.dos)
+        pl.show()
+
+    def calc_debye_temperature(self, frame_skip=0.5):
+        kB = constants.Boltzmann
+        hbar = constants.hbar
+        _, natoms = np.shape(self.frames)
+        dos, omega = self.calc_density_of_states(frame_skip)
 
         cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
+
+        target = 3.0 * natoms
 
         if cum_int[-1] < target:
             logger.error("DOS integral not correct", exc_info=True)
