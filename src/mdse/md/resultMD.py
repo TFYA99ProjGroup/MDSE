@@ -1,9 +1,12 @@
-from math import exp
 from matplotlib import pyplot
 from scipy import constants
 import numpy as np
 from asap3 import Trajectory
 from ase import units
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ResultMD:
@@ -21,7 +24,9 @@ class ResultMD:
         Args:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
+        logger.debug("Initilizing an instance of ResultMD")
         self.frames = data
+        self.frames_in_fs = 50
 
     @classmethod
     def from_file(cls, filepath):
@@ -33,6 +38,7 @@ class ResultMD:
         Returns:
             ResultMD: An instance of the class containing trajectory frames.
         """
+        logger.debug(f"Creating instances of ResultMD from {filepath}")
         traj = Trajectory(filepath)
         return cls([atom for atom in traj])
 
@@ -46,6 +52,7 @@ class ResultMD:
                 - MSD_at_tau_y (list): MSD values in the y-direction.
                 - MSD_at_tau_z (list): MSD values in the z-direction.
         """
+        logger.debug("Beginning calculations for MSD")
         positions = np.array([frame.positions for frame in self.frames])
         # positions[t] gives positions ALL atoms at time t
         # positions[t][i] gives position of atom i, at time t
@@ -57,7 +64,9 @@ class ResultMD:
         MSD_at_tau_y = []
         MSD_at_tau_z = []
 
+        logger.debug("Beggining iteration over tau")
         for tau in taus:
+            logger.debug(f"Tau: {tau}")
             MSD_at_all_t_x = []  # Reset per tau
             MSD_at_all_t_y = []  # Reset per tau
             MSD_at_all_t_z = []  # Reset per tau
@@ -89,12 +98,19 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
+            logger.debug(
+                "MSD_final_x, MSD_final_y, MSD_final_z:",
+                MSD_final_x,
+                MSD_final_y,
+                MSD_final_z,
+            )
+
             MSD_at_tau_x.append(MSD_final_x)
             MSD_at_tau_y.append(MSD_final_y)
             MSD_at_tau_z.append(MSD_final_z)
 
         # Remeber: Tau is in frames now. Convert to fs
-        taus_fs = [tau * 10 for tau in taus]
+        taus_fs = [tau * self.frames_in_fs for tau in taus]
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
@@ -104,12 +120,55 @@ class ResultMD:
         Returns:
             float: The average MSD value across all directions.
         """
+        logger.debug("Begginning calc_msd")
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
         return np.mean(MSD_x + MSD_y + MSD_z)
+
+    def estimate_nearest_neighbor_distance(self, positions):
+        """Estimate average nearest-neighbor distance for one frame.
+
+        Args:
+            positions (ndarray): shape (N, 3) array of atomic positions.
+
+        Returns:
+            float: average nearest-neighbor distance for one frame.
+        """
+        diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+        dists = np.sqrt(np.sum(diffs**2, axis=-1))
+        np.fill_diagonal(dists, np.inf)
+        nearest = np.min(dists, axis=1)
+        return np.mean(nearest)
+
+    def estimate_average_a(self):
+        """Estimate the average nearest-neighbor distance over all frames.
+
+        Returns:
+            float: The average nearest-neighbor distance across all frames.
+        """
+        all_a = [
+            self.estimate_nearest_neighbor_distance(f.positions) for f in self.frames
+        ]
+        return np.mean(all_a)
+
+    def calc_lindemann(self, a=None):
+        """Compute the global Lindemann parameter.
+
+        Args:
+            a (float): Average nearest-neighbor distance.
+
+        Returns:
+            float: Lindemann parameter δ_L.
+        """
+        if a is None:
+            a = self.estimate_average_a()
+        msd = self.calc_msd()
+        return np.sqrt(msd) / a
 
     def visualize_msd(self):
         """Visualize the mean squared displacement (MSD) as a function of time lag."""
         import matplotlib.pyplot as plt
+
+        logger.debug("Beggining visualize_msd")
 
         taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z = self._calc_msd_list()
 
@@ -127,7 +186,7 @@ class ResultMD:
         plt.show()
 
     def _calc_vacf(self, frame_skip=0.5):
-        max_lag = int(frame_skip*len(self.frames))
+        max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         nframes, _ = np.shape(frames)
 
@@ -142,17 +201,21 @@ class ResultMD:
         vflat -= vflat.mean(axis=0, keepdims=True)
 
         fft_v = np.fft.fft(vflat, axis=0)
-        psd = np.real(np.fft.ifft(np.abs(fft_v)**2, axis=0))
+        psd = np.real(np.fft.ifft(np.abs(fft_v) ** 2, axis=0))
         vacf = psd[:max_lag].mean(axis=1)
 
         vacf /= vacf[0]
         return vacf
 
     def calc_debye_temperature(self, frame_skip=0.5):
-        max_lag = int(frame_skip*len(self.frames))
+        max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
         dt = frames[0].info["dt"] * 1e-15 / units.fs
+        logger.debug(
+            f"Calculating debye temperature for system. \
+                frames: {max_lag}, natoms: {natoms}, dt: {dt} fs"
+        )
 
         kB = constants.Boltzmann
         hbar = constants.hbar
@@ -163,23 +226,19 @@ class ResultMD:
         spectrum = np.fft.rfft(vacf) * dt
         freqs = np.fft.rfftfreq(n, d=dt)
         omega = 2 * np.pi * freqs
-        
+
         dos = np.real(spectrum)
 
-        area = np.trapz(dos, x=omega)  # integration w.r.t. omega
+        area = np.trapz(dos, x=omega)
         target = 3.0 * natoms
 
         dos *= target / area
         dos = np.maximum(dos, 0)
 
-        pyplot.figure()
-        pyplot.plot(freqs, dos)
-        pyplot.show()
-
         cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
 
         if cum_int[-1] < target:
-            print("ERROR: DOS integral not correct")
+            logger.error("DOS integral not correct", exc_info=True)
 
         idx = np.searchsorted(cum_int, target)
         if idx == 0:
@@ -188,5 +247,41 @@ class ResultMD:
             omega_D = omega[idx]
 
         Theta_D = (hbar * omega_D) / kB
-        
+
         return Theta_D
+
+    def calc_self_diff(self):
+        """Calculates self diffusion coefficient using MSD.
+        Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
+
+        Returns:
+            D_total (float): Self diffusion coefficent, w.r.t all directions.
+        """
+        taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
+
+        # Filter out noisy start/end, 10%
+        filter_start = int(len(MSD_of_tau_x) * 0.1)
+        filter_end = int(len(MSD_of_tau_x) * 0.9)
+
+        MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
+        MSD_of_tau_y = MSD_of_tau_y[filter_start:filter_end]
+        MSD_of_tau_z = MSD_of_tau_z[filter_start:filter_end]
+
+        taus_fs = taus_fs[filter_start:filter_end]
+
+        # Now need to plot MDS(tau) vs tau, slope is here related to D
+        from scipy.stats import linregress
+
+        D_slope_x = linregress(taus_fs, MSD_of_tau_x)
+        D_slope_y = linregress(taus_fs, MSD_of_tau_y)
+        D_slope_z = linregress(taus_fs, MSD_of_tau_z)
+
+        # Calc D in each dimension
+        Dx = D_slope_x.slope / (2)
+        Dy = D_slope_y.slope / (2)
+        Dz = D_slope_z.slope / (2)
+
+        # Calc total D
+        D_total = (Dx + Dy + Dz) / 3
+
+        return D_total
