@@ -1,3 +1,6 @@
+# These configuration settings are for running 9 simulations,
+# Aluminium, Copper and Gold at 50 K, 300 K and 800 K each.
+
 RunManagerTest:
   Type_list:
     - Al
