@@ -1,0 +1,27 @@
+Installation
+============
+
+**Python venv**
+
+Activate a python virtual enviroment either with python venv
+
+.. code-block:: bash
+
+    python3 -m venv venv
+    source venv/bin/activate
+
+or with conda enviroment
+
+.. code-block:: bash
+
+    conda create -n mdseenv python=3
+    conda activate mdseenv
+
+**Dependencies**
+
+To install the mdse-package, run:
+
+.. code-block:: bash
+
+   python3 -m pip install --upgrade pip
+   pip install -e .

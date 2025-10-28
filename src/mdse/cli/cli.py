@@ -1,3 +1,7 @@
+"""
+Functions for parsing MDSE configuration files.
+"""
+
 import argparse
 import subprocess
 import glob
@@ -7,6 +11,8 @@ import logging
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
 from mdse.logging.logging_config import setup_logging
+from mdse.md.resultMD import ResultMD
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,8 +104,54 @@ def simulate(args):
     logger.info(f"Starting {len(sim_list)} simulations")
 
     rm = RunManager(sim_list)
-    rm.run_simulations()
+    if args.ensamble.lower() == "nvt":
+        rm.run_nvt_simulations()
+    elif args.ensamble.lower() == "nve":
+        rm.run_nve_simulations()
+    elif args.ensamble.lower() == "npt":
+        rm.run_npt_simulations()
+    else:
+        logger.info("Use one of following ensambles: NVT, NVE or NPT")
+        return
     logger.info("Simulation done!")
+
+
+def calc_msd(args):
+    paths = args.filepath
+    for path in paths:
+        logger.debug(f"Running msd calculation from {path}")
+        result = ResultMD.from_file(path)
+        result.visualize_msd()
+
+
+def calc_lindemann(args):
+    paths = args.filepath
+    for path in paths:
+        logger.debug(f"Running lindemann calculation from {path}")
+        result = ResultMD.from_file(path)
+        logger.info(f"Lindemann calc from {path}: {result.calc_lindemann()}")
+
+
+def calc_self_diff(args):
+    paths = args.filepath
+    for path in paths:
+        logger.debug(f"Running self_diff calculation from {path}")
+        result = ResultMD.from_file(path)
+        logger.info(
+            f"Self diffusion coefficient calculation from {path}:" +
+            f"{result.calc_self_diff()}"
+        )
+
+
+def calc_isobaric_specific_heat(args):
+    paths = args.filepath
+    for path in paths:
+        logger.debug(f"Running isobaric_specific_heat calculation from {path}")
+        result = ResultMD.from_file(path)
+        logger.info(
+            f"Isobaric specific heat per atom calculation from {path}:" +
+            f"{result.calc_isochoric_heat_capacity_per_atom()}"
+        )
 
 
 def main():
@@ -122,7 +174,7 @@ def main():
     """
 
     # ----------Setup----------
-    parser = argparse.ArgumentParser(description="MDSE - ")
+    parser = argparse.ArgumentParser(description="MDSE")
 
     parser.add_argument("--debug", action="store_true",
                         help="Enable debug logging")
@@ -137,6 +189,13 @@ def main():
         required=True,
         metavar="FILEPATH",
         help="The filepath to be simulated",
+    )
+    parser_simulate.add_argument(
+        "-e",
+        "--ensamble",
+        required=True,
+        metavar="FILEPATH",
+        help="Which ensamble to be used: NVT, NVE or NPT",
     )
     parser_simulate.set_defaults(func=simulate)
 
@@ -167,6 +226,54 @@ def main():
     )
 
     parser_remove_traj.set_defaults(func=remove_all_traj)
+
+    parser_calc_msd = subparsers.add_parser(
+        "msd", help="Calculate msd from traj-file")
+    parser_calc_msd.add_argument(
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be calculated",
+    )
+    parser_calc_msd.set_defaults(func=calc_msd)
+
+    parser_calc_lindemann = subparsers.add_parser(
+        "lindemann", help="Calculate lindemann from traj-file"
+    )
+    parser_calc_lindemann.add_argument(
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be calculated",
+    )
+    parser_calc_lindemann.set_defaults(func=calc_lindemann)
+
+    parser_calc_self_diff = subparsers.add_parser(
+        "self_diff", help="Calculate self diffusion coefficient from traj-file"
+    )
+    parser_calc_self_diff.add_argument(
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be calculated",
+    )
+    parser_calc_self_diff.set_defaults(func=calc_self_diff)
+
+    parser_calc_isobaric_specific_heat = subparsers.add_parser(
+        "ish", help="Calculate isobaric specific heat per atom from traj-file"
+    )
+    parser_calc_isobaric_specific_heat.add_argument(
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be calculated",
+    )
+    parser_calc_isobaric_specific_heat.set_defaults(
+        func=calc_isobaric_specific_heat)
 
     # ----------Other----------
     args = parser.parse_args()

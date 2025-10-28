@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mdse.md.resultMD import ResultMD
 
+
 class MockAtoms:
     def __init__(self, positions, velocities=None):
         self.positions = positions
@@ -26,6 +27,7 @@ def mock_frames():
     np.random.seed(42)
     frames = [MockAtoms(np.random.rand(5, 3), np.random.rand(5, 3)) for _ in range(20)]
     return frames
+
 
 @pytest.fixture
 def mock_frames_simple():
@@ -53,59 +55,62 @@ def mock_linear_walk():
     """Generate a mock linear walk, with predictable diffusion coefficient"""
 
     pos = np.array([
-        [ #Frame 1
-            [0,0,1],[0,1,0],[1,0,0]
+        [  # Frame 1
+            [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
 
     step = np.array([
-        [ #How large steps at each frame, for each atom
-            [0,0,1],[0,1,0],[1,0,0]
+        [  # How large steps at each frame, for each atom
+            [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
     frames = [MockAtoms(pos)]
 
-    for i in range(1,50):
+    for i in range(1, 50):
         pos += step
         frames.append(MockAtoms(pos.copy()))
 
     return frames
 
+
 @pytest.fixture
 def mock_stationary_walk():
     """Generate a mock stationary walk, with predictable diffusion coefficient"""
     pos = np.array([
-        [ #Frame 1
-            [0,0,1],[0,1,0],[1,0,0]
+        [  # Frame 1
+            [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
 
-    frames = [MockAtoms(pos) for _ in range(0,50)]
+    frames = [MockAtoms(pos) for _ in range(0, 50)]
 
     return frames
+
 
 @pytest.fixture
 def mock_oscillation_walk():
     """Generate a mock oscillating walk, with predictable diffusion coefficient"""
 
     pos1 = np.array([
-        [ #Frame 1
-            [0,0,1],[0,1,0],[1,0,0]
+        [  # Frame 1
+            [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
 
     pos2 = np.array([
-        [ #How large oscillations
-            [0,0,1],[0,1,0],[1,0,0]
+        [  # How large oscillations
+            [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
     frames = [MockAtoms(pos1)]
 
-    for i in range(1,25):
+    for i in range(1, 25):
         frames.append(MockAtoms(pos2.copy()))
         frames.append(MockAtoms(pos1.copy()))
 
     return frames
+
 
 def test_init_stores_frames(mock_frames):
     """Ensure frames are stored correctly in ResultMD."""
@@ -154,6 +159,7 @@ def test_visualize_msd_runs(monkeypatch, mock_frames):
     result.visualize_msd()
     assert len(called_plots) >= 3  # x, y, z curves expected
 
+
 def test_estimate_nearest_neighbor_distance(mock_frames_simple):
     """Ensure the avarage nearest neighbour (distance between atoms) is correct."""
     result = ResultMD(mock_frames_simple)
@@ -169,6 +175,7 @@ def test_estimate_nearest_neighbor_distance(mock_frames_simple):
     assert np.isclose(obje1, expected_average1)
     assert np.isclose(obje2, expected_average2)
 
+
 def test_estimate_average_a(mock_frames_simple):
     """Ensure the mean nearest neighbour over all frames is calculated correctly."""
     system = ResultMD(mock_frames_simple)
@@ -181,6 +188,7 @@ def test_estimate_average_a(mock_frames_simple):
 
     result = system.estimate_average_a()
     assert np.isclose(result, correct_mean)
+
 
 def test_calc_lindemann_with_mock_frames(mock_frames):
     """Ensure the Lindemann melting criterion is calculated correctly."""
@@ -196,11 +204,13 @@ def test_calc_lindemann_with_mock_frames(mock_frames):
     expected2 = np.sqrt(system.calc_msd()) / a
     assert np.isclose(lindemann2, expected2)
 
+
 def test_calc_self_diff_returns(mock_frames):
     """Ensure calculated self diffusion is correcy type"""
     result = ResultMD(mock_frames)
     Diff_coeff = result.calc_self_diff()
     assert isinstance(Diff_coeff, float)
+
 
 def test_calc_self_diff_linear_walk(mock_linear_walk):
     """Checks that for a linear walk, self diffusion is greater than zero"""
@@ -209,7 +219,8 @@ def test_calc_self_diff_linear_walk(mock_linear_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert(Diff_coeff > 0)
+    assert (Diff_coeff > 0)
+
 
 def test_calc_self_diff_stationary_walk(mock_stationary_walk):
     """Checks that for a stationary crystal, self diffusion is zero"""
@@ -218,7 +229,8 @@ def test_calc_self_diff_stationary_walk(mock_stationary_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert(Diff_coeff == 0)
+    assert (Diff_coeff == 0)
+
 
 def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
     """Checks that for a oscillatory crystal, self diffusion is zero"""

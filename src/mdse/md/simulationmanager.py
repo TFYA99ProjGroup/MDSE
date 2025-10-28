@@ -5,6 +5,7 @@ from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
 from ase import units
+from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
@@ -65,6 +66,16 @@ class SimulationManager:
     traj_interval : int, optional
         Interval (in steps) at which to write trajectory snapshots and report
         energy (default: 10).
+    pressure_au : float, optional
+        Pressure constant for NPT measured in atomic units. 1 atm = 3.44e-9 au
+        (default: 3.85e-2).
+    thermo_time : float, optional
+        The characteristic time scale for the thermostat in ASE time units. Typically,
+        it is set to 100 times of timestep (default: 100 * units.fs).
+    baro_time : float, optional
+        The characteristic time scale for the barostat in ASE time units. Typically,
+        it is set to 1000 times of timestep (default: 1000 * units.fs).
+
 
     Attributes
     ----------
@@ -105,6 +116,9 @@ class SimulationManager:
             "Timestep": 2,
             "Length": 400,
             "TrajInterval": 10,
+            "Pressure": 3.85e-2,
+            "ThermoTime": 100 * units.fs,
+            "BaroTime": 1000 * units.fs
         }
 
         for key, value in default.items():
@@ -122,6 +136,9 @@ class SimulationManager:
         self.timestep = config.get("Timestep") * units.fs
         self.length = config.get("Length")
         self.traj_interval = config.get("TrajInterval")
+        self.pressure_au = config.get("Pressure")
+        self.thermo_time = config.get("ThermoTime")
+        self.baro_time = config.get("BaroTime")
 
         self.crystal = self.create_crystal() * (5, 5, 5)
 
@@ -261,3 +278,109 @@ class SimulationManager:
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
             raise RuntimeError("NVE simulation failed.") from e
+
+    def simulate_npt(
+        self,
+        calculator=None,
+        distribution=MaxwellBoltzmannDistribution,
+        print=True
+    ):
+        """
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
+        integration.
+
+        Parameters
+        ----------
+        calculator : ase.calculators.calculator.Calculator, optional
+            The ASE calculator to use for force and energy evaluation
+            (default: EMT()).
+        distribution : callable, optional
+            Function used to initialize velocities (default:
+            MaxwellBoltzmannDistribution).
+
+        Notes
+        -----
+        Trajectory snapshots are written to a `.traj` file with the chemical
+        symbols of the system as the filename.
+        """
+
+        try:
+            if calculator is None:
+                calculator = EMT()
+
+            self._add_distribution(distribution)
+            self.crystal.calc = calculator
+
+            self.crystal.info['p_au'] = self.pressure_au
+            dyn = IsotropicMTKNPT(
+                self.crystal,
+                timestep=self.timestep,
+                temperature_K=self.temperature,
+                pressure_au=self.pressure_au,
+                tdamp=self.thermo_time,
+                pdamp=self.baro_time
+            )
+            symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+
+            dyn.attach(traj.write, interval=self.traj_interval)
+            if print:
+                dyn.attach(self.print_energy, interval=self.traj_interval)
+
+            dyn.run(self.length)
+        except IOError as e:
+            raise IOError("Failed to write trajectory file.") from e
+        except Exception as e:
+            raise RuntimeError("NPT simulation failed.") from e
+
+
+    def simulate_nvt(
+        self,
+        calculator=None,
+        distribution=MaxwellBoltzmannDistribution,
+        print=True
+    ):
+        """
+        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
+        integration.
+
+        Parameters
+        ----------
+        calculator : ase.calculators.calculator.Calculator, optional
+            The ASE calculator to use for force and energy evaluation
+            (default: EMT()).
+        distribution : callable, optional
+            Function used to initialize velocities (default:
+            MaxwellBoltzmannDistribution).
+
+        Notes
+        -----
+        Trajectory snapshots are written to a `.traj` file with the chemical
+        symbols of the system as the filename.
+        """
+
+        try:
+            if calculator is None:
+                calculator = EMT()
+
+            self._add_distribution(distribution)
+            self.crystal.calc = calculator
+
+            dyn = NoseHooverChainNVT(
+                self.crystal,
+                timestep=self.timestep,
+                temperature_K=self.temperature,
+                tdamp=self.thermo_time
+            )
+            symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+
+            dyn.attach(traj.write, interval=self.traj_interval)
+            if print:
+                dyn.attach(self.print_energy, interval=self.traj_interval)
+
+            dyn.run(self.length)
+        except IOError as e:
+            raise IOError("Failed to write trajectory file.") from e
+        except Exception as e:
+            raise RuntimeError("NPT simulation failed.") from e
