@@ -187,10 +187,11 @@ class ResultMD:
         plt.tight_layout()
         plt.show()
 
-    def _calc_vacf(self, frame_skip=0.5):
-        max_lag = int(frame_skip * len(self.frames))
-        frames = self.frames[max_lag:]
+    def _calc_vacf(self, frame_skip=0.5, max_lag=0.5):
+        nskip = int(frame_skip * len(self.frames))
+        frames = self.frames[nskip:]
         nframes, _ = np.shape(frames)
+        max_lag = int(nframes * max_lag)
 
         vels = [frame.get_velocities() for frame in frames]
         vels = np.array(vels)
@@ -204,7 +205,8 @@ class ResultMD:
 
         fft_v = np.fft.fft(vflat, axis=0)
         psd = np.real(np.fft.ifft(np.abs(fft_v) ** 2, axis=0))
-        vacf = psd[:max_lag].mean(axis=1)
+        vacf = psd.mean(axis=1)
+        vacf = vacf[:max_lag]
 
         vacf /= vacf[0]
         return vacf
