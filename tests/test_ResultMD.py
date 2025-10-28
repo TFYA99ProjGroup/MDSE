@@ -243,7 +243,7 @@ def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
 
 def test_calc_debye_temperature(mock_frames):
     result = ResultMD(mock_frames)
-    
+
     theta_D = result.calc_debye_temperature(frame_skip=0.5)
 
     assert(theta_D != 0)
@@ -252,7 +252,7 @@ def test_calc_density_of_states(mock_frames):
     result = ResultMD(mock_frames)
 
     dos, omega = result.calc_density_of_states(frame_skip=0.5)
-    
+
     assert(len(dos) > 0)
     assert(len(omega) > 0)
     for i in range(len(dos)):
