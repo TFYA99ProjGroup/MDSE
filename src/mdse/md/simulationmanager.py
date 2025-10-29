@@ -274,7 +274,10 @@ class SimulationManager:
         elif calculator == "LennardJones":
             calculator = LennardJones(**calc_params)
         else:
-            error_msg = f"Calculator {calculator} not implemented, valid calculators are: EMT, LennardJones"
+            error_msg = (
+                f"Calculator {calculator} not implemented, "
+                "valid calculators are: EMT, LennardJones"
+            )
             raise NotImplementedError(error_msg)
 
         return calculator
@@ -358,7 +361,6 @@ class SimulationManager:
         """
 
         try:
-
             self._add_distribution(distribution)
             self.crystal.calc = self._check_calculator(calculator, calc_params)
 
@@ -413,7 +415,6 @@ class SimulationManager:
         """
 
         try:
-
             self._add_distribution(distribution)
             self.crystal.calc = self._check_calculator(calculator, calc_params)
 
