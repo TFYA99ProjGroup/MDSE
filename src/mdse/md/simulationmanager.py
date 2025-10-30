@@ -110,7 +110,13 @@ class SimulationManager:
             if config.get(key) is None:
                 config[key] = value
 
-        if config.get("Crystal") is None:
+        if config.get("Crystal") is not None:
+            try:
+                self.crystal = ase.io.read(config.get("Crystal"))
+            except Exception as e:
+                logger.error(e)
+                raise
+        else:
             self.crystal = self.create_crystal(
                 chem_notation=config.get("Type"),
                 structure=config.get("Structure"),
@@ -120,8 +126,6 @@ class SimulationManager:
                 cubic=config.get("Cubic"),
                 positions=config.get("Positions"),
             )
-        else:
-            self.crystal = ase.io.read(config.get("Crystal"))
 
         self.temperature = config.get("Temp")
         self.timestep = config.get("Timestep") * units.fs
