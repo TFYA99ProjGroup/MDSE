@@ -1,14 +1,15 @@
-from ase import Atoms
+import ase.io
+from ase import Atoms, units
 from ase.md.verlet import VelocityVerlet
 from asap3 import Trajectory
 from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
-from ase import units
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,29 +20,15 @@ class SimulationManager:
 
     This class allows you to construct atoms, molecules, or crystals from a
     given chemical notation and lattice structure, initialize them with a
-    velocity distribution, and run MD simulations in the NVE ensemble.
-
-    Example:
-    ```sim_list = main_read("examples/test_file.yaml")
-    # sim_list[0] is the first simulation
-    # sim equals the dictionary of the first simulation
-    sim_item = next(iter(sim_list[0].values()))
-    # sim_item.get() picks the values from the simulation
-    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
-        'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
-        temperature=sim_item.get('Temp'),
-        timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
-        traj_interval=sim_item.get('TrajInterval'))
-    sim.simulate_nve()
-    ```
+    velocity distribution, and run MD simulations in the NVE, NVT or NPT ensemble.
 
     Parameters
     ----------
     chem_notation : str, optional
-        Chemical symbol or formula of the system to simulate (default: 'H').
+        Chemical symbol or formula of the system to simulate (default: 'Cu').
     structure : str, optional
         Crystal structure type (e.g., 'sc', 'fcc', 'bcc'), used if no explicit
-        positions are provided (default: 'sc').
+        positions are provided (default: 'fcc').
     positions : list or None, optional
         List of explicit atomic positions. If provided, overrides `structure`
         (default: None).
@@ -82,31 +69,29 @@ class SimulationManager:
     crystal : ase.Atoms
         The ASE Atoms object representing the constructed system.
 
-    Methods
+    Example:
     -------
-    create_crystal() -> Atoms
-        Construct an ASE `Atoms` object from the given lattice parameters or
-        positions.
-    view_super_crystal()
-        Visualize a 4x4x4 supercell of the crystal.
-    print_energy()
-        Print current potential, kinetic, and total energy, as well as
-        instantaneous temperature.
-    _add_distribution(distribution)
-        Apply a velocity distribution (e.g., Maxwell-Boltzmann) to the system at
-        the given temperature.
-    simulate_nve(calculator=EMT(),
-                 distribution=MaxwellBoltzmannDistribution)
-        Run a molecular dynamics simulation in the NVE ensemble using Velocity
-        Verlet dynamics.
+    ```
+    sim_list = main_read("examples/test_file.yaml")
+    # sim_list[0] is the first simulation
+    # sim equals the dictionary of the first simulation
+    sim_item = next(iter(sim_list[0].values()))
+    # sim_item.get() picks the values from the simulation
+    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
+        'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
+        temperature=sim_item.get('Temp'),
+        timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
+        traj_interval=sim_item.get('TrajInterval'))
+    sim.simulate_nve()
+    ```
+
     """
 
     def __init__(self, config: dict = {}):
-        logger.debug(
-            f"Initialize an instance of SimulateMD with config {config}")
+        logger.debug(f"Initialize an instance of SimulateMD with config {config}")
         default = {
-            "Type": "H",
-            "Structure": "sc",
+            "Type": "Cu",
+            "Structure": "fcc",
             "Positions": None,
             "Lattice_a": 3.6,
             "Lattice_b": None,
@@ -118,20 +103,26 @@ class SimulationManager:
             "TrajInterval": 10,
             "Pressure": 3.85e-2,
             "ThermoTime": 100 * units.fs,
-            "BaroTime": 1000 * units.fs
+            "BaroTime": 1000 * units.fs,
         }
 
         for key, value in default.items():
             if config.get(key) is None:
                 config[key] = value
 
-        self.chem_notation = config.get("Type")
-        self.structure = config.get("Structure")
-        self.positions = config.get("Positions")
-        self.a = config.get("Lattice_a")
-        self.b = config.get("Lattice_b")
-        self.c = config.get("Lattice_c")
-        self.cubic = config.get("Cubic")
+        if config.get("Crystal") is None:
+            self.crystal = self.create_crystal(
+                chem_notation=config.get("Type"),
+                structure=config.get("Structure"),
+                a=config.get("Lattice_a"),
+                b=config.get("Lattice_b"),
+                c=config.get("Lattice_c"),
+                cubic=config.get("Cubic"),
+                positions=config.get("Positions"),
+            )
+        else:
+            self.crystal = ase.io.read(config.get("Crystal"))
+
         self.temperature = config.get("Temp")
         self.timestep = config.get("Timestep") * units.fs
         self.length = config.get("Length")
@@ -140,36 +131,46 @@ class SimulationManager:
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
 
-        self.crystal = self.create_crystal() * (5, 5, 5)
-
         logger.debug("Init done")
 
-    def create_crystal(self) -> Atoms:
+    def create_crystal(
+        self, chem_notation, structure, a, b, c, cubic, positions=None
+    ) -> Atoms:
         """Create the atom or molecule or crystal object from the specified params.
 
-        Key args:
-        chemNotation -- the chemical notation of the object (default: 'H')
-        structure -- The Lattice types or Crystal structure
-                     of the object (default: 'sc')
-        positions -- Individual atomic positions (optional argument)
-        a (float) -- lattice constant
-        b (float) -- secondary lattice constant (optional argument)
-        c (float) -- third lattice constant (optional argument)
-        cubic --
+        Parameters
+        ----------
+        chem_notation : str
+            The chemical notation of the object.
+        structure : str
+            The Lattice types or Crystal structure of the object.
+        a : float
+            Lattice constant.
+        b : float
+            Secondary lattice constant (optional argument).
+        c : float
+            Third lattice constant (optional argument).
+        cubic : bool
+            Sets cubic unit cell.
+        positions : list
+            Individual atomic positions (optional argument).
         """
         logger.debug("Creating crystal")
 
         # Define if we're using structure or positions
-        if self.positions is None:
+        if positions is None:
             crystal = bulk(
-                self.chem_notation,
-                self.structure,
-                a=self.a,
-                b=self.b,
-                c=self.c,
-                cubic=self.cubic,
+                chem_notation,
+                structure,
+                a=a,
+                b=b,
+                c=c,
+                cubic=cubic,
             )
             return crystal
+        else:
+            logger.error("Can not initialize from parameters.")
+            raise NotImplementedError()
 
     def view_super_crystal(self):
         """
@@ -180,12 +181,8 @@ class SimulationManager:
         Requires ASE's `view` function to be available.
         """
         logger.debug("Viewing super crystal")
-        if self.positions is None:
-            super_crystal = self.crystal * (4, 4, 4)
-            view(super_crystal)
-        else:
-            raise RuntimeError(
-                "Supercell visualization only works with bulk crystals.")
+        super_crystal = self.crystal * (4, 4, 4)
+        view(super_crystal)
 
     def print_energy(self):
         """
@@ -218,8 +215,7 @@ class SimulationManager:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError(
-                "Temperature must be set to apply a distribution.")
+            raise ValueError("Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
             Stationary(self.crystal)
@@ -255,8 +251,7 @@ class SimulationManager:
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
 
-            logger.debug(
-                f"Beggining simulation of {symbols}_{self.temperature}")
+            logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
             if calculator is None:
                 calculator = EMT()
 
@@ -264,8 +259,7 @@ class SimulationManager:
             self.crystal.calc = calculator
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            traj = Trajectory(
-                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
@@ -279,10 +273,7 @@ class SimulationManager:
             raise RuntimeError("NVE simulation failed.") from e
 
     def simulate_npt(
-        self,
-        calculator=None,
-        distribution=MaxwellBoltzmannDistribution,
-        print=True
+        self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=True
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -310,14 +301,14 @@ class SimulationManager:
             self._add_distribution(distribution)
             self.crystal.calc = calculator
 
-            self.crystal.info['p_au'] = self.pressure_au
+            self.crystal.info["p_au"] = self.pressure_au
             dyn = IsotropicMTKNPT(
                 self.crystal,
                 timestep=self.timestep,
                 temperature_K=self.temperature,
                 pressure_au=self.pressure_au,
                 tdamp=self.thermo_time,
-                pdamp=self.baro_time
+                pdamp=self.baro_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
@@ -332,12 +323,8 @@ class SimulationManager:
         except Exception as e:
             raise RuntimeError("NPT simulation failed.") from e
 
-
     def simulate_nvt(
-        self,
-        calculator=None,
-        distribution=MaxwellBoltzmannDistribution,
-        print=True
+        self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=True
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -369,7 +356,7 @@ class SimulationManager:
                 self.crystal,
                 timestep=self.timestep,
                 temperature_K=self.temperature,
-                tdamp=self.thermo_time
+                tdamp=self.thermo_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)

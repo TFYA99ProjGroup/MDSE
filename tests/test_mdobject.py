@@ -16,9 +16,8 @@ def test_mdobject():
 
     sim3 = SimulationManager(sim)
 
-    assert sim3.chem_notation == "Cu"
-    assert sim3.structure == "fcc"
-    assert sim3.a == 3.6
+    assert sim3.crystal.symbols[0] == "Cu"
+    assert (sim3.crystal.cell.lengths() == 3.6).all()
     assert sim3.temperature == 800
 
     sim3.simulate_nve()
@@ -31,9 +30,8 @@ def test_mdobject():
     sim["Temp"] = 801
     sim4 = SimulationManager(sim)
 
-    assert sim4.chem_notation == "Cu"
-    assert sim4.structure == "fcc"
-    assert sim4.a == 3.6
+    assert sim4.crystal.symbols[0] == "Cu"
+    assert (sim4.crystal.cell.lengths() == 3.6).all()
     assert sim4.temperature == 801
 
     sim4.simulate_npt()
