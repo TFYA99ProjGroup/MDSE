@@ -1,3 +1,6 @@
+"""
+This example loads a crystal from a cif file.
+"""
 from mdse.md.simulationmanager import SimulationManager
 from mdse.parser.parse_yml import main_read
 
