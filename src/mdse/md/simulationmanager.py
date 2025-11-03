@@ -178,15 +178,19 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a 4x4x4 supercell of the constructed crystal.
+        Visualize a 3x3x3 supercell of the constructed crystal.
 
         Notes
         -----
         Requires ASE's `view` function to be available.
         """
         logger.debug("Viewing super crystal")
-        super_crystal = self.crystal * (4, 4, 4)
-        view(super_crystal)
+        if self.positions is None:
+            super_crystal = self.crystal * (3, 3, 3)
+            view(super_crystal)
+        else:
+            raise RuntimeError(
+                "Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
