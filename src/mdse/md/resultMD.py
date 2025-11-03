@@ -128,6 +128,7 @@ class ResultMD:
 
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance for one frame.
+        
         Args:
             positions (ndarray): shape (N, 3) array of atomic positions.
         Returns:
@@ -141,6 +142,7 @@ class ResultMD:
 
     def estimate_average_a(self):
         """Estimate the average nearest-neighbor distance over all frames.
+        
         Returns:
             float: The average nearest-neighbor distance across all frames.
         """
@@ -151,6 +153,7 @@ class ResultMD:
 
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
+        
         Args:
             a (float): Average nearest-neighbor distance.
         Returns:
@@ -183,6 +186,23 @@ class ResultMD:
         plt.show()
 
     def _calc_vacf(self, frame_skip=0.5, max_lag=0.5):
+        """Calculates the velocity autocorrelation function (VACF).
+
+        This method computes the VACF from the atomic velocities stored in
+        `self.frames`. It uses the **Wiener-Khinchin theorem** (via FFT)
+        for a computationally efficient calculation.
+
+        Args:
+            frame_skip (float, optional): Fraction of the *total* initial
+                frames to skip (e.g., for equilibration). Defaults to 0.5.
+            max_lag (float, optional): Fraction of the *remaining* frames
+                (after skipping) to use as the maximum lag time. The
+                returned VACF will have this many points. Defaults to 0.5.
+
+        Returns:
+            numpy.ndarray: A 1D array containing the normalized VACF. Its
+                length will be `int((1 - frame_skip) * len(self.frames) * max_lag)`.
+        """
         nskip = int(frame_skip * len(self.frames))
         frames = self.frames[nskip:]
         nframes, _ = np.shape(frames)
@@ -207,6 +227,30 @@ class ResultMD:
         return vacf
 
     def calc_density_of_states(self, frame_skip=0.5):
+        """Calculates the (vibrational) Density of States (DOS).
+    
+        This method computes the DOS by taking the Fourier transform of the
+        Velocity Autocorrelation Function (VACF), a relationship described
+        by the **Wiener-Khinchin theorem**.
+
+        The resulting DOS is cached in `self.dos`. If this method is called
+        again, it will return the cached values without recalculation.
+
+        Args:
+            frame_skip (float, optional): Fraction of the total initial
+                frames to skip (e.g., for equilibration). This value is
+                passed directly to `self._calc_vacf` and is also used
+                to select the frames for calculating `natoms`.
+                Defaults to 0.5.
+
+        Returns:
+            tuple: A tuple of `(dos, omega)`:
+                - **dos** (numpy.ndarray): The 1D array of the normalized
+                  density of states.
+                - **omega** (numpy.ndarray): The 1D array of the corresponding
+                  angular frequencies. The units depend on the units of
+                  `dt` (e.g., rad/fs if `dt` is in fs).
+        """
         max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
@@ -241,11 +285,47 @@ class ResultMD:
         return self.dos, omega
 
     def plot_density_of_states(self):
+        """Visualize the density of states as a function of angular frequency."""
         pl.figure()
         pl.plot(self.dos)
         pl.show()
 
     def calc_debye_temperature(self, frame_skip=0.5):
+        """Calculates the Debye temperature ($\Theta_D$).
+
+        This method estimates the Debye temperature by first finding the
+        Debye frequency ($\omega_D$) from the (vibrational) Density of States (DOS).
+    
+        The Debye frequency ($\omega_D$) is defined as the frequency cutoff
+        required for the total number of vibrational modes to equal the
+        system's total degrees of freedom ($3N$, where $N$ is the number of
+        atoms). It is found by solving the following equation for $\omega_D$:
+
+        $$
+        \int_0^{\omega_D} DOS(\omega) d\omega = 3N
+        $$
+
+        The calculation performs the following steps:
+        1.  Calls `self.calc_density_of_states(frame_skip)` to get the `dos`
+            and angular frequency `omega` arrays.
+        2.  Calculates the cumulative integral of the DOS with respect to
+            `omega` (i.e., the total number of modes up to a given frequency).
+        3.  Finds the index where this cumulative integral first matches or
+            exceeds the target degrees of freedom ($3N$).
+        4.  The frequency at this index is taken as the Debye frequency ($\omega_D$).
+        5.  Converts $\omega_D$ to the Debye temperature ($\Theta_D$) using the
+            relation: $\Theta_D = \frac{\hbar \omega_D}{k_B}$.
+
+        Args:
+            frame_skip (float, optional): Fraction of the total initial
+                frames to skip (e.g., for equilibration). This value is
+                passed directly to `self.calc_density_of_states`.
+                Defaults to 0.5.
+
+        Returns:
+            float: The calculated Debye temperature ($\Theta_D$). The units
+                (e.g., Kelvin) depend on the `dt` value from the frames.
+        """
         kB = constants.Boltzmann
         hbar = constants.hbar
         _, natoms = np.shape(self.frames)
