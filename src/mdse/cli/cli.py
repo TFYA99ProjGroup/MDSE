@@ -117,6 +117,16 @@ def simulate(args):
 
 
 def calc_msd(args):
+    """
+    Call the mean square displacement (msd) visualization function.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str): Path to a traj file describing simulation result.
+
+    """
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running msd calculation from {path}")
@@ -125,6 +135,16 @@ def calc_msd(args):
 
 
 def calc_lindemann(args):
+    """
+    Call the lindemann calculation function.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str): Path to a traj file describing simulation result.
+
+    """
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running lindemann calculation from {path}")
@@ -133,6 +153,16 @@ def calc_lindemann(args):
 
 
 def calc_self_diff(args):
+    """
+    Call the self diffition calculation function.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str): Path to a traj file describing simulation result.
+
+    """
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running self_diff calculation from {path}")
@@ -144,6 +174,16 @@ def calc_self_diff(args):
 
 
 def calc_isobaric_specific_heat(args):
+    """
+    Call the isobaric specific heat calculation function.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+        - filepath (str): Path to a traj file describing simulation result.
+
+    """
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running isobaric_specific_heat calculation from {path}")
@@ -152,6 +192,44 @@ def calc_isobaric_specific_heat(args):
             f"Isobaric specific heat per atom calculation from {path}:" +
             f"{result.calc_isochoric_heat_capacity_per_atom()}"
         )
+
+
+def build_website_locally(args):
+    """
+    Build the Sphinx documentation locally.
+
+    This function runs the Sphinx build command to generate HTML documentation
+    from the source files located in ``docs/source``. The built site will be
+    placed in ``docs/_build/html``.
+
+    Parameters
+    ----------
+    Args:
+        args: Command-line arguments passed from the caller (not used directly).
+    """
+    logger.info("Building the documentation locally")
+    subprocess.run(
+        "sphinx-build -b html docs/source docs/_build/html",
+        shell=True, check=True)
+    logger.info("Build has been done to docs/_build")
+
+
+def view_website_firefox(args):
+    """
+    Open the locally built documentation in Firefox.
+
+    This function launches Firefox to display the generated HTML documentation
+    at ``docs/_build/html/index.html``.
+
+    Parameters
+    ----------
+    Args:
+        args: Command-line arguments passed from the caller (not used directly).
+    """
+    logger.info("Viewing the docs with firefox")
+    subprocess.run(
+        "firefox docs/_build/html/index.html",
+        shell=True, check=True)
 
 
 def main():
@@ -274,6 +352,20 @@ def main():
     )
     parser_calc_isobaric_specific_heat.set_defaults(
         func=calc_isobaric_specific_heat)
+
+    build_website = subparsers.add_parser(
+        "build_docs", help="Build the website locally and open it in firefox"
+    )
+
+    build_website.set_defaults(
+        func=build_website_locally)
+
+    view_website = subparsers.add_parser(
+        "view_docs", help="View the website with firefox"
+    )
+
+    view_website.set_defaults(
+        func=view_website_firefox)
 
     # ----------Other----------
     args = parser.parse_args()
