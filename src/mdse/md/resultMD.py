@@ -128,7 +128,7 @@ class ResultMD:
 
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance for one frame.
-        
+
         Args:
             positions (ndarray): shape (N, 3) array of atomic positions.
         Returns:
@@ -142,7 +142,7 @@ class ResultMD:
 
     def estimate_average_a(self):
         """Estimate the average nearest-neighbor distance over all frames.
-        
+
         Returns:
             float: The average nearest-neighbor distance across all frames.
         """
@@ -153,7 +153,7 @@ class ResultMD:
 
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
-        
+
         Args:
             a (float): Average nearest-neighbor distance.
         Returns:
@@ -228,7 +228,7 @@ class ResultMD:
 
     def calc_density_of_states(self, frame_skip=0.5):
         """Calculates the (vibrational) Density of States (DOS).
-    
+
         This method computes the DOS by taking the Fourier transform of the
         Velocity Autocorrelation Function (VACF), a relationship described
         by the **Wiener-Khinchin theorem**.
@@ -291,18 +291,18 @@ class ResultMD:
         pl.show()
 
     def calc_debye_temperature(self, frame_skip=0.5):
-        """Calculates the Debye temperature ($\Theta_D$).
+        """Calculates the Debye temperature ($\\Theta_D$).
 
         This method estimates the Debye temperature by first finding the
-        Debye frequency ($\omega_D$) from the (vibrational) Density of States (DOS).
-    
-        The Debye frequency ($\omega_D$) is defined as the frequency cutoff
+        Debye frequency ($\\omega_D$) from the (vibrational) Density of States (DOS).
+
+        The Debye frequency ($\\omega_D$) is defined as the frequency cutoff
         required for the total number of vibrational modes to equal the
         system's total degrees of freedom ($3N$, where $N$ is the number of
-        atoms). It is found by solving the following equation for $\omega_D$:
+        atoms). It is found by solving the following equation for $\\omega_D$:
 
         $$
-        \int_0^{\omega_D} DOS(\omega) d\omega = 3N
+        \\int_0^{\\omega_D} DOS(\\omega) d\\omega = 3N
         $$
 
         The calculation performs the following steps:
@@ -312,9 +312,9 @@ class ResultMD:
             `omega` (i.e., the total number of modes up to a given frequency).
         3.  Finds the index where this cumulative integral first matches or
             exceeds the target degrees of freedom ($3N$).
-        4.  The frequency at this index is taken as the Debye frequency ($\omega_D$).
-        5.  Converts $\omega_D$ to the Debye temperature ($\Theta_D$) using the
-            relation: $\Theta_D = \frac{\hbar \omega_D}{k_B}$.
+        4.  The frequency at this index is taken as the Debye frequency ($\\omega_D$).
+        5.  Converts $\\omega_D$ to the Debye temperature ($\\Theta_D$) using the
+            relation: $\\Theta_D = \frac{\\hbar \\omega_D}{k_B}$.
 
         Args:
             frame_skip (float, optional): Fraction of the total initial
@@ -323,7 +323,7 @@ class ResultMD:
                 Defaults to 0.5.
 
         Returns:
-            float: The calculated Debye temperature ($\Theta_D$). The units
+            float: The calculated Debye temperature ($\\Theta_D$). The units
                 (e.g., Kelvin) depend on the `dt` value from the frames.
         """
         kB = constants.Boltzmann
