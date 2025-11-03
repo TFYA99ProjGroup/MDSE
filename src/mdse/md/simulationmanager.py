@@ -173,7 +173,7 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a 4x4x4 supercell of the constructed crystal.
+        Visualize a 3x3x3 supercell of the constructed crystal.
 
         Notes
         -----
@@ -181,7 +181,7 @@ class SimulationManager:
         """
         logger.debug("Viewing super crystal")
         if self.positions is None:
-            super_crystal = self.crystal * (4, 4, 4)
+            super_crystal = self.crystal * (3, 3, 3)
             view(super_crystal)
         else:
             raise RuntimeError(
