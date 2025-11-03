@@ -27,6 +27,7 @@ class ResultMD:
         logger.debug("Initilizing an instance of ResultMD")
         self.frames = data
         self.frames_in_fs = 50
+        self.name = ""
 
         self.dos = None
 
