@@ -1,12 +1,12 @@
-#MD simulations are written in the format:
+# MD simulations are written in the format:
 #
-#---
-#Name_Of_simulation:
-#  Parameter1: Value1
-#  Parameter2: value2
-#...
+# ---
+# Name_Of_simulation:
+#   Parameter1: Value1
+#   Parameter2: value2
+# ...
 #
-#Parameters may be nested, via "Parameter_list" or "Parameter_range"
+# Parameters may be nested, via "Parameter_list" or "Parameter_range"
 
 Mini_simulation:
   Type: Cu
