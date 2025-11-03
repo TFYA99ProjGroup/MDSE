@@ -1,0 +1,7 @@
+
+Simulation1:
+  Crystal: optimade_structure_mp-1076737.cif
+  Temp: 800
+  Timestep: 2 #fs
+  Length: 2000
+  TrajInterval: 10

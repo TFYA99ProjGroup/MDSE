@@ -4,6 +4,7 @@ from pytest import raises
 from mdse.md.simulationmanager import SimulationManager
 
 
+
 def test_mdobject():
     sim = {
         "Type": "Cu",
@@ -18,9 +19,8 @@ def test_mdobject():
 
     sim3 = SimulationManager(sim)
 
-    assert sim3.chem_notation == "Cu"
-    assert sim3.structure == "fcc"
-    assert sim3.a == 3.6
+    assert sim3.crystal.symbols[0] == "Cu"
+    assert (sim3.crystal.cell.lengths() == 3.6).all()
     assert sim3.temperature == 800
 
     sim3.simulate_nve()
@@ -33,9 +33,8 @@ def test_mdobject():
     sim["Temp"] = 801
     sim4 = SimulationManager(sim)
 
-    assert sim4.chem_notation == "Cu"
-    assert sim4.structure == "fcc"
-    assert sim4.a == 3.6
+    assert sim4.crystal.symbols[0] == "Cu"
+    assert (sim4.crystal.cell.lengths() == 3.6).all()
     assert sim4.temperature == 801
 
     sim4.simulate_npt()
@@ -44,7 +43,34 @@ def test_mdobject():
     assert Path.exists(traj_file)
     traj_file.unlink()
 
-def test_simulate_functions():
+def test_init_from_file():
+    config = {
+        "Crystal" : "crystal.cif",
+        "Temp": 800,
+        "Timestep": 2,
+        "Length": 800,
+        "TrajInterval": 10,
+    }
+
+    with raises(FileNotFoundError):
+        SimulationManager(config)
+
+    config2 = {
+        "Crystal" : "crystal.cif",
+        "Temp": 800,
+        "Timestep": 2,
+        "Length": 800,
+        "TrajInterval": 10,
+        "Type": "Cu",
+        "Structure": "fcc",
+        "Lattice_a": 3.6,
+        "Cubic": True,
+    }
+
+    with raises(FileNotFoundError):
+        SimulationManager(config2)
+
+def test_calculators():
     calculator = "EMT"
 
     sim = {
@@ -57,7 +83,6 @@ def test_simulate_functions():
         "Length": 800,
         "TrajInterval": 10,
     }
-
     sim1 = SimulationManager(sim)
 
     sim1.simulate_nve(calculator=calculator)
@@ -78,7 +103,8 @@ def test_simulate_functions():
     sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
 
     with raises(NotImplementedError,
-                match="Calculator hej123 not implemented, valid calculators are: EMT"):
+                match=("Calculator hej123 not implemented,"
+                        " valid calculators are: EMT, LennardJones")):
         sim1.simulate_nve(calculator="hej123")
 
     traj_file = Path("Ni_400.traj")
