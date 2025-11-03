@@ -5,18 +5,27 @@ from mdse.md.resultMD import ResultMD
 
 
 class MockAtoms:
-    def __init__(self, positions):
+    def __init__(self, positions, velocities=None):
         self.positions = positions
+        self.velocities = velocities
+        self.info = {
+            "dt": 5
+        }
 
     def __len__(self):
         return len(self.positions)
 
+    def __array__(self):
+        return self.positions[:,0]
+
+    def get_velocities(self):
+        return self.velocities
 
 @pytest.fixture
 def mock_frames():
-    """Generate mock ASE-like frames with positions."""
+    """Generate mock ASE-like frames with positions and velocities."""
     np.random.seed(42)
-    frames = [MockAtoms(np.random.rand(5, 3)) for _ in range(20)]
+    frames = [MockAtoms(np.random.rand(5, 3), np.random.rand(5, 3)) for _ in range(20)]
     return frames
 
 
@@ -230,4 +239,22 @@ def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert (Diff_coeff == 0)
+    assert(Diff_coeff == 0)
+
+def test_calc_debye_temperature(mock_frames):
+    result = ResultMD(mock_frames)
+
+    theta_D = result.calc_debye_temperature(frame_skip=0.5)
+
+    assert(theta_D != 0)
+
+def test_calc_density_of_states(mock_frames):
+    result = ResultMD(mock_frames)
+
+    dos, omega = result.calc_density_of_states(frame_skip=0.5)
+
+    assert(len(dos) > 0)
+    assert(len(omega) > 0)
+    for i in range(len(dos)):
+        assert(dos[i] >= 0)
+

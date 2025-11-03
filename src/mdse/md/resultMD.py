@@ -1,8 +1,11 @@
+from matplotlib import pyplot as pl
+from scipy import constants
 import numpy as np
 from asap3 import Trajectory
-from scipy import constants
+from ase import units
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +27,8 @@ class ResultMD:
         logger.debug("Initilizing an instance of ResultMD")
         self.frames = data
         self.frames_in_fs = 50
+
+        self.dos = None
 
     @classmethod
     def from_file(cls, filepath):
@@ -95,8 +100,12 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug("MSD_final_x, MSD_final_y, MSD_final_z:",
-                         MSD_final_x, MSD_final_y, MSD_final_z)
+            logger.debug(
+                "MSD_final_x, MSD_final_y, MSD_final_z:",
+                MSD_final_x,
+                MSD_final_y,
+                MSD_final_z,
+            )
 
             MSD_at_tau_x.append(MSD_final_x)
             MSD_at_tau_y.append(MSD_final_y)
@@ -119,6 +128,7 @@ class ResultMD:
 
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance for one frame.
+
         Args:
             positions (ndarray): shape (N, 3) array of atomic positions.
         Returns:
@@ -132,15 +142,18 @@ class ResultMD:
 
     def estimate_average_a(self):
         """Estimate the average nearest-neighbor distance over all frames.
+
         Returns:
             float: The average nearest-neighbor distance across all frames.
         """
-        all_a = [self.estimate_nearest_neighbor_distance(f.positions)
-                 for f in self.frames]
+        all_a = [
+            self.estimate_nearest_neighbor_distance(f.positions) for f in self.frames
+        ]
         return np.mean(all_a)
 
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
+
         Args:
             a (float): Average nearest-neighbor distance.
         Returns:
@@ -172,6 +185,169 @@ class ResultMD:
         plt.tight_layout()
         plt.show()
 
+    def _calc_vacf(self, frame_skip=0.5, max_lag=0.5):
+        """Calculates the velocity autocorrelation function (VACF).
+
+        This method computes the VACF from the atomic velocities stored in
+        `self.frames`. It uses the **Wiener-Khinchin theorem** (via FFT)
+        for a computationally efficient calculation.
+
+        Args:
+            frame_skip (float, optional): Fraction of the *total* initial
+                frames to skip (e.g., for equilibration). Defaults to 0.5.
+            max_lag (float, optional): Fraction of the *remaining* frames
+                (after skipping) to use as the maximum lag time. The
+                returned VACF will have this many points. Defaults to 0.5.
+
+        Returns:
+            numpy.ndarray: A 1D array containing the normalized VACF. Its
+                length will be `int((1 - frame_skip) * len(self.frames) * max_lag)`.
+        """
+        nskip = int(frame_skip * len(self.frames))
+        frames = self.frames[nskip:]
+        nframes, _ = np.shape(frames)
+        max_lag = int(nframes * max_lag)
+
+        vels = [frame.get_velocities() for frame in frames]
+        vels = np.array(vels)
+
+        com_vel = vels.mean(axis=1, keepdims=True)
+
+        vel_rel = vels - com_vel
+
+        vflat = vel_rel.reshape(nframes, -1)
+        vflat -= vflat.mean(axis=0, keepdims=True)
+
+        fft_v = np.fft.fft(vflat, axis=0)
+        psd = np.real(np.fft.ifft(np.abs(fft_v) ** 2, axis=0))
+        vacf = psd.mean(axis=1)
+        vacf = vacf[:max_lag]
+
+        vacf /= vacf[0]
+        return vacf
+
+    def calc_density_of_states(self, frame_skip=0.5):
+        """Calculates the (vibrational) Density of States (DOS).
+
+        This method computes the DOS by taking the Fourier transform of the
+        Velocity Autocorrelation Function (VACF), a relationship described
+        by the **Wiener-Khinchin theorem**.
+
+        The resulting DOS is cached in `self.dos`. If this method is called
+        again, it will return the cached values without recalculation.
+
+        Args:
+            frame_skip (float, optional): Fraction of the total initial
+                frames to skip (e.g., for equilibration). This value is
+                passed directly to `self._calc_vacf` and is also used
+                to select the frames for calculating `natoms`.
+                Defaults to 0.5.
+
+        Returns:
+            tuple: A tuple of `(dos, omega)`:
+                - **dos** (numpy.ndarray): The 1D array of the normalized
+                  density of states.
+                - **omega** (numpy.ndarray): The 1D array of the corresponding
+                  angular frequencies. The units depend on the units of
+                  `dt` (e.g., rad/fs if `dt` is in fs).
+        """
+        max_lag = int(frame_skip * len(self.frames))
+        frames = self.frames[max_lag:]
+        _, natoms = np.shape(frames)
+        dt = frames[0].info["dt"] * 1e-15 / units.fs
+        logger.debug(
+            f"Calculating density of states for system. \
+                frames: {max_lag}, natoms: {natoms}, dt: {dt} fs"
+        )
+
+        vacf = self._calc_vacf(frame_skip)
+        n = len(vacf)
+
+        freqs = np.fft.rfftfreq(n, d=dt)
+        omega = 2 * np.pi * freqs
+
+        if self.dos is None:
+            logger.debug("DOS not yet calculated")
+            spectrum = np.fft.rfft(vacf) * dt
+
+            dos = np.real(spectrum)
+
+            area = np.trapz(dos, x=omega)
+            target = 3.0 * natoms
+
+            dos *= target / area
+            dos = np.maximum(dos, 0)
+
+            self.dos = dos
+        else:
+            logger.debug("DOS already calculated")
+
+        return self.dos, omega
+
+    def plot_density_of_states(self):
+        """Visualize the density of states as a function of angular frequency."""
+        pl.figure()
+        pl.plot(self.dos)
+        pl.show()
+
+    def calc_debye_temperature(self, frame_skip=0.5):
+        """Calculates the Debye temperature ($\\Theta_D$).
+
+        This method estimates the Debye temperature by first finding the
+        Debye frequency ($\\omega_D$) from the (vibrational) Density of States (DOS).
+
+        The Debye frequency ($\\omega_D$) is defined as the frequency cutoff
+        required for the total number of vibrational modes to equal the
+        system's total degrees of freedom ($3N$, where $N$ is the number of
+        atoms). It is found by solving the following equation for $\\omega_D$:
+
+        $$
+        \\int_0^{\\omega_D} DOS(\\omega) d\\omega = 3N
+        $$
+
+        The calculation performs the following steps:
+        1.  Calls `self.calc_density_of_states(frame_skip)` to get the `dos`
+            and angular frequency `omega` arrays.
+        2.  Calculates the cumulative integral of the DOS with respect to
+            `omega` (i.e., the total number of modes up to a given frequency).
+        3.  Finds the index where this cumulative integral first matches or
+            exceeds the target degrees of freedom ($3N$).
+        4.  The frequency at this index is taken as the Debye frequency ($\\omega_D$).
+        5.  Converts $\\omega_D$ to the Debye temperature ($\\Theta_D$) using the
+            relation: $\\Theta_D = \frac{\\hbar \\omega_D}{k_B}$.
+
+        Args:
+            frame_skip (float, optional): Fraction of the total initial
+                frames to skip (e.g., for equilibration). This value is
+                passed directly to `self.calc_density_of_states`.
+                Defaults to 0.5.
+
+        Returns:
+            float: The calculated Debye temperature ($\\Theta_D$). The units
+                (e.g., Kelvin) depend on the `dt` value from the frames.
+        """
+        kB = constants.Boltzmann
+        hbar = constants.hbar
+        _, natoms = np.shape(self.frames)
+        dos, omega = self.calc_density_of_states(frame_skip)
+
+        cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
+
+        target = 3.0 * natoms
+
+        if cum_int[-1] < target:
+            logger.error("DOS integral not correct", exc_info=True)
+
+        idx = np.searchsorted(cum_int, target)
+        if idx == 0:
+            omega_D = omega[1]
+        else:
+            omega_D = omega[idx]
+
+        Theta_D = (hbar * omega_D) / kB
+
+        return Theta_D
+
     def calc_self_diff(self):
         """Calculates self diffusion coefficient using MSD.
         Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
@@ -182,8 +358,8 @@ class ResultMD:
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
 
         # Filter out noisy start/end, 10%
-        filter_start = int(len(MSD_of_tau_x)*0.1)
-        filter_end = int(len(MSD_of_tau_x)*0.9)
+        filter_start = int(len(MSD_of_tau_x) * 0.1)
+        filter_end = int(len(MSD_of_tau_x) * 0.9)
 
         MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
         MSD_of_tau_y = MSD_of_tau_y[filter_start:filter_end]
@@ -193,17 +369,18 @@ class ResultMD:
 
         # Now need to plot MDS(tau) vs tau, slope is here related to D
         from scipy.stats import linregress
+
         D_slope_x = linregress(taus_fs, MSD_of_tau_x)
         D_slope_y = linregress(taus_fs, MSD_of_tau_y)
         D_slope_z = linregress(taus_fs, MSD_of_tau_z)
 
         # Calc D in each dimension
-        Dx = D_slope_x.slope/(2)
-        Dy = D_slope_y.slope/(2)
-        Dz = D_slope_z.slope/(2)
+        Dx = D_slope_x.slope / (2)
+        Dy = D_slope_y.slope / (2)
+        Dz = D_slope_z.slope / (2)
 
         # Calc total D
-        D_total = (Dx+Dy+Dz)/3
+        D_total = (Dx + Dy + Dz) / 3
 
         return D_total
 
