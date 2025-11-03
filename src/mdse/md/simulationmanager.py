@@ -1,7 +1,7 @@
 import ase.io
 from ase import Atoms, units
 from ase.md.verlet import VelocityVerlet
-from asap3 import Trajectory
+from asap3 import LennardJones, Trajectory
 from ase.build import bulk
 from ase.visualize import view
 from asap3 import EMT
@@ -189,8 +189,7 @@ class SimulationManager:
             super_crystal = self.crystal * (3, 3, 3)
             view(super_crystal)
         else:
-            raise RuntimeError(
-                "Supercell visualization only works with bulk crystals.")
+            raise RuntimeError("Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -230,9 +229,62 @@ class SimulationManager:
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
+    def _check_calculator(self, calculator, calc_params):
+        """
+        Validate and initialize an ASE calculator.
+
+        This method checks whether a valid calculator has been specified and returns
+        an initialized instance accordingly. If no calculator is provided, the EMT
+        (Effective Medium Theory) calculator is used by default.
+
+        Parameters
+        ----------
+        calculator : str or None
+            The calculator to use for energy and force evaluations. Can be:
+              - None: defaults to EMT.
+              - "EMT": uses the ASE EMT calculator.
+              - "LennardJones": uses the ASE Lennard-Jones calculator.
+            Any other value raises a NotImplementedError.
+
+        calc_params : dict
+            Keyword arguments passed to the chosen calculator's constructor.
+
+        Returns
+        -------
+        ase.calculators.Calculator
+            An initialized ASE calculator instance corresponding to the specified type.
+
+        Raises
+        ------
+        NotImplementedError
+            If the specified calculator type is not supported.
+
+        Notes
+        -----
+        Supported calculators:
+          - EMT
+          - LennardJones
+        """
+        if calculator is None:
+            logger.debug("No calculator specified, EMT used as default")
+            calculator = EMT(**calc_params)
+        elif calculator == "EMT":
+            calculator = EMT(**calc_params)
+        elif calculator == "LennardJones":
+            calculator = LennardJones(**calc_params)
+        else:
+            error_msg = (
+                f"Calculator {calculator} not implemented, "
+                "valid calculators are: EMT, LennardJones"
+            )
+            raise NotImplementedError(error_msg)
+
+        return calculator
+
     def simulate_nve(
         self,
         calculator=None,
+        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -242,9 +294,11 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : ase.calculators.calculator.Calculator, optional
+        calculator : string, optional
             The ASE calculator to use for force and energy evaluation
             (default: EMT()).
+        calc_params: dictionary, optional
+            Parameters to pass on to calculator as a dictionary.
         distribution : callable, optional
             Function used to initialize velocities (default:
             MaxwellBoltzmannDistribution).
@@ -254,17 +308,14 @@ class SimulationManager:
         Trajectory snapshots are written to a `.traj` file with the chemical
         symbols of the system as the filename.
         """
-        # TODO: Check w. Petter and Oskar
-        # self.crystal = self.crystal*(4, 4, 4)
+
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
 
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
-            if calculator is None:
-                calculator = EMT()
 
             self._add_distribution(distribution)
-            self.crystal.calc = calculator
+            self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
@@ -276,12 +327,18 @@ class SimulationManager:
             dyn.run(self.length)
             logger.debug("Simulation done")
         except IOError as e:
+            logger.error(e)
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
-            raise RuntimeError("NVE simulation failed.") from e
+            logger.error(e)
+            raise
 
     def simulate_npt(
-        self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=True
+        self,
+        calculator=None,
+        calc_params={},
+        distribution=MaxwellBoltzmannDistribution,
+        print=True,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -303,11 +360,8 @@ class SimulationManager:
         """
 
         try:
-            if calculator is None:
-                calculator = EMT()
-
             self._add_distribution(distribution)
-            self.crystal.calc = calculator
+            self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             self.crystal.info["p_au"] = self.pressure_au
             dyn = IsotropicMTKNPT(
@@ -327,12 +381,18 @@ class SimulationManager:
 
             dyn.run(self.length)
         except IOError as e:
+            logger.error(e)
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
-            raise RuntimeError("NPT simulation failed.") from e
+            logger.error(e)
+            raise
 
     def simulate_nvt(
-        self, calculator=None, distribution=MaxwellBoltzmannDistribution, print=True
+        self,
+        calculator=None,
+        calc_params={},
+        distribution=MaxwellBoltzmannDistribution,
+        print=True,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -354,11 +414,8 @@ class SimulationManager:
         """
 
         try:
-            if calculator is None:
-                calculator = EMT()
-
             self._add_distribution(distribution)
-            self.crystal.calc = calculator
+            self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             dyn = NoseHooverChainNVT(
                 self.crystal,
@@ -375,6 +432,8 @@ class SimulationManager:
 
             dyn.run(self.length)
         except IOError as e:
+            logger.error(e)
             raise IOError("Failed to write trajectory file.") from e
         except Exception as e:
-            raise RuntimeError("NPT simulation failed.") from e
+            logger.error(e)
+            raise

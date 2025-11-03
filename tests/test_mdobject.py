@@ -1,4 +1,6 @@
 from pathlib import Path
+import numpy as np
+from pytest import raises
 from mdse.md.simulationmanager import SimulationManager
 
 from pytest import raises
@@ -42,8 +44,6 @@ def test_mdobject():
     assert Path.exists(traj_file)
     traj_file.unlink()
 
-# TODO:
-# Unsure how to test this properly
 def test_init_from_file():
     config = {
         "Crystal" : "crystal.cif",
@@ -56,7 +56,6 @@ def test_init_from_file():
     with raises(FileNotFoundError):
         SimulationManager(config)
 
-    # Should the program continue with other settings or crash?
     config2 = {
         "Crystal" : "crystal.cif",
         "Temp": 800,
@@ -72,3 +71,42 @@ def test_init_from_file():
     with raises(FileNotFoundError):
         SimulationManager(config2)
 
+def test_calculators():
+    calculator = "EMT"
+
+    sim = {
+        "Type": "Ni",
+        "Structure": "fcc",
+        "Lattice_a": 3.6,
+        "Cubic": True,
+        "Temp": 400,
+        "Timestep": 2,
+        "Length": 800,
+        "TrajInterval": 10,
+    }
+    sim1 = SimulationManager(sim)
+
+    sim1.simulate_nve(calculator=calculator)
+
+    numbers = list(set(sim1.crystal.numbers))
+    np.random.seed(42)
+    n = len(numbers)
+    sigma = np.random.rand(n)
+    epsilon = np.random.rand(n)
+
+    calc_params = {"elements": numbers,
+                   "sigma": sigma,
+                   "epsilon": epsilon
+                   }
+
+    calculator = "LennardJones"
+
+    sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
+
+    with raises(NotImplementedError,
+                match="Calculator hej123 not implemented, valid calculators are: EMT, LennardJones"):
+        sim1.simulate_nve(calculator="hej123")
+
+    traj_file = Path("Ni_400.traj")
+    assert Path.exists(traj_file)
+    traj_file.unlink()
