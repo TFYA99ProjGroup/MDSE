@@ -3,7 +3,6 @@ import numpy as np
 from pytest import raises
 from mdse.md.simulationmanager import SimulationManager
 
-from pytest import raises
 
 
 def test_mdobject():
@@ -104,7 +103,8 @@ def test_calculators():
     sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
 
     with raises(NotImplementedError,
-                match="Calculator hej123 not implemented, valid calculators are: EMT, LennardJones"):
+                match=("Calculator hej123 not implemented,"
+                        " valid calculators are: EMT, LennardJones")):
         sim1.simulate_nve(calculator="hej123")
 
     traj_file = Path("Ni_400.traj")
