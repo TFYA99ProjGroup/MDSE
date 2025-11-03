@@ -62,7 +62,8 @@ class SimulationManager:
     baro_time : float, optional
         The characteristic time scale for the barostat in ASE time units. Typically,
         it is set to 1000 times of timestep (default: 1000 * units.fs).
-
+    Supercell: list, optional
+        Enables to create a supercrystal. Defaults to 3x3x3, which is [3,3,3].
 
     Attributes
     ----------
@@ -88,7 +89,8 @@ class SimulationManager:
     """
 
     def __init__(self, config: dict = {}):
-        logger.debug(f"Initialize an instance of SimulateMD with config {config}")
+        logger.debug(
+            f"Initialize an instance of SimulateMD with config {config}")
         default = {
             "Type": "Cu",
             "Structure": "fcc",
@@ -104,6 +106,7 @@ class SimulationManager:
             "Pressure": 3.85e-2,
             "ThermoTime": 100 * units.fs,
             "BaroTime": 1000 * units.fs,
+            "Supercell": [3, 3, 3]
         }
 
         for key, value in default.items():
@@ -134,6 +137,8 @@ class SimulationManager:
         self.pressure_au = config.get("Pressure")
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
+        self.positions = config.get("Positions")
+        self.supercrystal = tuple(config.get("Supercrystal"))
 
         logger.debug("Init done")
 
@@ -178,7 +183,7 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a 3x3x3 supercell of the constructed crystal.
+        Visualize a supercell of the constructed crystal (3x3x3 as default).
 
         Notes
         -----
@@ -186,10 +191,11 @@ class SimulationManager:
         """
         logger.debug("Viewing super crystal")
         if self.positions is None:
-            super_crystal = self.crystal * (3, 3, 3)
+            super_crystal = self.crystal * self.supercrystal
             view(super_crystal)
         else:
-            raise RuntimeError("Supercell visualization only works with bulk crystals.")
+            raise RuntimeError(
+                "Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -222,7 +228,8 @@ class SimulationManager:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError("Temperature must be set to apply a distribution.")
+            raise ValueError(
+                "Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
             Stationary(self.crystal)
@@ -312,7 +319,8 @@ class SimulationManager:
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
 
-            logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
+            logger.debug(
+                f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
 
@@ -320,7 +328,8 @@ class SimulationManager:
             self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(
+                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
@@ -375,7 +384,8 @@ class SimulationManager:
                 pdamp=self.baro_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(
+                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
@@ -426,7 +436,8 @@ class SimulationManager:
                 tdamp=self.thermo_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(
+                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
             dyn.attach(traj.write, interval=self.traj_interval)
             if print:
