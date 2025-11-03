@@ -259,12 +259,6 @@ class SimulationManager:
         Supported calculators:
           - EMT
           - LennardJones
-
-        Examples
-        --------
-        >>> calc = self._check_calculator("EMT", {"a": 4.05})
-        >>> calc.name
-        'emt'
         """
         if calculator is None:
             logger.debug("No calculator specified, EMT used as default")
