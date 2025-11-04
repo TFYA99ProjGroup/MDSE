@@ -7,6 +7,7 @@ import subprocess
 import glob
 import os
 import logging
+import webbrowser
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
@@ -214,22 +215,20 @@ def build_website_locally(args):
     logger.info("Build has been done to docs/_build")
 
 
-def view_website_firefox(args):
+def view_website_browser(args):
     """
-    Open the locally built documentation in Firefox.
+    Open the locally built documentation in default web-browser.
 
-    This function launches Firefox to display the generated HTML documentation
-    at ``docs/_build/html/index.html``.
+    This function launches default web-browser to display the generated HTML
+    documentation at ``docs/_build/html/index.html``.
 
     Parameters
     ----------
     Args:
         args: Command-line arguments passed from the caller (not used directly).
     """
-    logger.info("Viewing the docs with firefox")
-    subprocess.run(
-        "firefox docs/_build/html/index.html",
-        shell=True, check=True)
+    logger.info("Viewing the docs with default web-browser")
+    webbrowser.open("docs/_build/html/index.html")
 
 
 def main():
@@ -354,18 +353,19 @@ def main():
         func=calc_isobaric_specific_heat)
 
     build_website = subparsers.add_parser(
-        "build_docs", help="Build the website locally and open it in firefox"
+        "build_docs",
+        help="Build the website locally and open it in default web-browser"
     )
 
     build_website.set_defaults(
         func=build_website_locally)
 
     view_website = subparsers.add_parser(
-        "view_docs", help="View the website with firefox"
+        "view_docs", help="View the website with default web-browser"
     )
 
     view_website.set_defaults(
-        func=view_website_firefox)
+        func=view_website_browser)
 
     # ----------Other----------
     args = parser.parse_args()
