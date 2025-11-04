@@ -3,6 +3,8 @@
 *.traj
 
 
+# MongoDB
+mongo_data/
 
 ###
 ### Python auto generated
