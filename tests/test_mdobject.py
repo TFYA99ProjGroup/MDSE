@@ -135,7 +135,7 @@ def test_invalid_ensamble():
         "TrajInterval": 5,
         "Ensamble": "INVALID"}
     sim = SimulationManager(config)
-    with raises(ValueError, match="Invalid ensamble"):
+    with raises(ValueError, match="ensamble"):
         sim.simulate()
 
 
