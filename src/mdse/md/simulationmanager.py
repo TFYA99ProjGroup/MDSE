@@ -107,6 +107,7 @@ class SimulationManager:
             "ThermoTime": 100 * units.fs,
             "BaroTime": 1000 * units.fs,
             "Supercrystal": [1, 1, 1]
+            "Ensamble": "NVE"
         }
         for key, value in default.items():
             if config.get(key) is None:
@@ -137,6 +138,7 @@ class SimulationManager:
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
         self.positions = config.get("Positions")
+        self.ensamble = config.get("Ensamble")
 
         logger.debug("Init done")
 
@@ -286,6 +288,23 @@ class SimulationManager:
 
         return calculator
 
+    def simulate(self,
+                 calculator=None,
+                 calc_params={},
+                 distribution=MaxwellBoltzmannDistribution,
+                 print=False,):
+        if self.ensamble.lower() == "nve":
+            self.simulate_nve(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "nvt":
+            self.simulate_nvt(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "npt":
+            self.simulate_npt(calculator, calc_params, distribution, print)
+        else:
+            msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
+            "Please use one of following: NVE, NVT, NPT"
+            logger.error(msg)
+            raise ValueError(msg)
+
     def simulate_nve(
         self,
         calculator=None,
@@ -318,7 +337,7 @@ class SimulationManager:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
 
             logger.debug(
-                f"Beggining simulation of {symbols}_{self.temperature}")
+                f"Beggining nve simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
 
@@ -347,7 +366,7 @@ class SimulationManager:
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -382,6 +401,8 @@ class SimulationManager:
                 pdamp=self.baro_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            logger.debug(
+                f"Beggining npt simulation of {symbols}_{self.temperature}")
             traj = Trajectory(
                 f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
@@ -402,7 +423,7 @@ class SimulationManager:
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
@@ -434,6 +455,8 @@ class SimulationManager:
                 tdamp=self.thermo_time,
             )
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
+            logger.debug(
+                f"Beggining nvt simulation of {symbols}_{self.temperature}")
             traj = Trajectory(
                 f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
