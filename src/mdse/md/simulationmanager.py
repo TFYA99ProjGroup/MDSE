@@ -63,7 +63,7 @@ class SimulationManager:
         The characteristic time scale for the barostat in ASE time units. Typically,
         it is set to 1000 times of timestep (default: 1000 * units.fs).
     Supercell: list, optional
-        Enables to create a supercrystal. Defaults to 3x3x3, which is [3,3,3].
+        Enables to create a supercrystal. Defaults to 1x1x1, which is [1,1,1].
 
     Attributes
     ----------
@@ -106,9 +106,8 @@ class SimulationManager:
             "Pressure": 3.85e-2,
             "ThermoTime": 100 * units.fs,
             "BaroTime": 1000 * units.fs,
-            "Supercell": [3, 3, 3]
+            "Supercrystal": [1, 1, 1]
         }
-
         for key, value in default.items():
             if config.get(key) is None:
                 config[key] = value
@@ -128,7 +127,7 @@ class SimulationManager:
                 c=config.get("Lattice_c"),
                 cubic=config.get("Cubic"),
                 positions=config.get("Positions"),
-            )
+            ) * tuple(config.get("Supercrystal"))
 
         self.temperature = config.get("Temp")
         self.timestep = config.get("Timestep") * units.fs
@@ -138,7 +137,6 @@ class SimulationManager:
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
         self.positions = config.get("Positions")
-        self.supercrystal = tuple(config.get("Supercrystal"))
 
         logger.debug("Init done")
 
@@ -191,7 +189,7 @@ class SimulationManager:
         """
         logger.debug("Viewing super crystal")
         if self.positions is None:
-            super_crystal = self.crystal * self.supercrystal
+            super_crystal = self.crystal
             view(super_crystal)
         else:
             raise RuntimeError(
