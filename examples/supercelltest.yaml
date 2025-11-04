@@ -1,0 +1,15 @@
+#Shows how to add supercrystal to .yaml file
+Copper:
+  Type: Cu
+  Structure: fcc
+  Lattice_a: 3.6149
+  Cubic: True
+  Temp_list: 
+    - 100
+  Timestep: 2 #fs
+  Length: 20000
+  TrajInterval: 5
+  Supercrystal:
+    - 5
+    - 3
+    - 3
