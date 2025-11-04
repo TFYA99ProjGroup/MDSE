@@ -104,15 +104,9 @@ def simulate(args):
     logger.info(f"Starting {len(sim_list)} simulations")
 
     rm = RunManager(sim_list)
-    if args.ensamble.lower() == "nvt":
-        rm.run_nvt_simulations()
-    elif args.ensamble.lower() == "nve":
-        rm.run_nve_simulations()
-    elif args.ensamble.lower() == "npt":
-        rm.run_npt_simulations()
-    else:
-        logger.info("Use one of following ensambles: NVT, NVE or NPT")
-        return
+    if args.ensamble is not None:
+        logger.debug(f"Overwriting config ensamble with {args.ensamble}")
+    rm.run_simulations(overwrite_ensamble=args.ensamble)
     logger.info("Simulation done!")
 
 
@@ -271,8 +265,8 @@ def main():
     parser_simulate.add_argument(
         "-e",
         "--ensamble",
-        required=True,
-        metavar="FILEPATH",
+        required=False,
+        metavar="ENSAMBLE",
         help="Which ensamble to be used: NVT, NVE or NPT",
     )
     parser_simulate.set_defaults(func=simulate)
