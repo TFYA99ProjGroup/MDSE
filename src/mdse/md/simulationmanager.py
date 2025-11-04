@@ -87,30 +87,46 @@ class SimulationManager:
 
     """
 
-    def __init__(self, config: dict = {}):
+    def __init__(self, crystal_params, simulation_params, ensemble_params):
+
+        """
+        timestep,
+        length,
+        trajInterval,
+        """
+
+        """
+        BULK
+        type
+        structure
+        lattice_a
+        lattice_b
+        lattice_c
+        cubic
+        supercell
+
+        POS
+        types
+        positions
+        pbc
+        cell
+        supercell
+
+        FILE
+        crystal
+        supercell
+        """
+
+        """
+        temp
+        pressure
+        thermoTime
+        baroTime
+        """
+
         logger.debug(f"Initialize an instance of SimulateMD with config {config}")
-        default = {
-            "Type": "Cu",
-            "Structure": "fcc",
-            "Positions": None,
-            "Lattice_a": 3.6,
-            "Lattice_b": None,
-            "Lattice_c": None,
-            "Cubic": True,
-            "Temp": 800,
-            "Timestep": 2,
-            "Length": 400,
-            "TrajInterval": 10,
-            "Pressure": 3.85e-2,
-            "ThermoTime": 100 * units.fs,
-            "BaroTime": 1000 * units.fs,
-        }
 
-        for key, value in default.items():
-            if config.get(key) is None:
-                config[key] = value
-
-        if config.get("Crystal") is not None:
+        if crystal_params is not None:
             try:
                 self.crystal = ase.io.read(config.get("Crystal"))
             except Exception as e:
