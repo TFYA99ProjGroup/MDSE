@@ -106,7 +106,7 @@ class SimulationManager:
             "Pressure": 3.85e-2,
             "ThermoTime": 100 * units.fs,
             "BaroTime": 1000 * units.fs,
-            "Supercrystal": [1, 1, 1]
+            "Supercrystal": [1, 1, 1],
             "Ensamble": "NVE"
         }
         for key, value in default.items():
