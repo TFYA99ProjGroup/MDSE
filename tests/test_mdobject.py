@@ -23,7 +23,7 @@ def test_mdobject():
     assert (sim3.crystal.cell.lengths() == 3.6).all()
     assert sim3.temperature == 800
 
-    sim3.simulate_nve()
+    sim3.simulate_nve(calculator="EMT")
 
     traj_file = Path("Cu_800.traj")
     assert Path.exists(traj_file)
@@ -36,7 +36,7 @@ def test_mdobject():
     assert (sim4.crystal.cell.lengths() == 3.6).all()
     assert sim4.temperature == 801
 
-    sim4.simulate_npt()
+    sim4.simulate_npt(calculator="EMT")
 
     traj_file = Path("Cu_801.traj")
     assert Path.exists(traj_file)
@@ -55,21 +55,21 @@ def test_default_ensamble():
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "nve")
     with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_nve.assert_called_once()
 
     config["Ensamble"] = "NVE"
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "nve")
     with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_nve.assert_called_once()
 
     config["Ensamble"] = "NVT"
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "nvt")
     with patch.object(sim, 'simulate_nvt') as mock_nvt:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_nvt.assert_called_once()
 
 
@@ -86,7 +86,7 @@ def test_nve_ensamble():
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "nve")
     with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_nve.assert_called_once()
 
 
@@ -103,7 +103,7 @@ def test_nvt_ensamble():
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "nvt")
     with patch.object(sim, 'simulate_nvt') as mock_nvt:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_nvt.assert_called_once()
 
 
@@ -120,7 +120,7 @@ def test_npt_ensamble():
     sim = SimulationManager(config)
     assert (sim.ensamble.lower() == "npt")
     with patch.object(sim, 'simulate_npt') as mock_npt:
-        sim.simulate()
+        sim.simulate(calculator="EMT")
         mock_npt.assert_called_once()
 
 
@@ -136,7 +136,7 @@ def test_invalid_ensamble():
         "Ensamble": "INVALID"}
     sim = SimulationManager(config)
     with raises(ValueError, match="ensamble"):
-        sim.simulate()
+        sim.simulate(calculator="EMT")
 
 
 def test_init_from_file():
