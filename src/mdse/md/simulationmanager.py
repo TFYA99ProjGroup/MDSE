@@ -71,22 +71,24 @@ class SimulationManager:
     crystal : ase.Atoms
         The ASE Atoms object representing the constructed system.
 
-    Example:
-    -------
-    ```
-    sim_list = main_read("examples/test_file.yaml")
-    # sim_list[0] is the first simulation
-    # sim equals the dictionary of the first simulation
-    sim_item = next(iter(sim_list[0].values()))
-    # sim_item.get() picks the values from the simulation
-    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
-        'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
-        temperature=sim_item.get('Temp'),
-        timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
-        traj_interval=sim_item.get('TrajInterval'))
-    sim.simulate_nve()
-    ```
+    Examples
+    --------
 
+    >>> sim_list = main_read("examples/test_file.yaml")
+
+    sim_list[0] is the first simulation
+    sim equals the dictionary of the first simulation
+
+    >>> sim_item = next(iter(sim_list[0].values()))
+
+    sim_item.get() picks the values from the simulation
+
+    >>> sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
+    ...    'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
+    ...    temperature=sim_item.get('Temp'),
+    ...    timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
+    ...   traj_interval=sim_item.get('TrajInterval'))
+    >>> sim.simulate_nve()
     """
 
     def __init__(self, config: dict = {}, create_trajectory=False):
@@ -269,8 +271,8 @@ class SimulationManager:
         Notes
         -----
         Supported calculators:
-          - EMT
-          - LennardJones
+          - ``EMT``
+          - ``LennardJones``
         """
         if calculator is None:
             logger.debug("No calculator specified, EMT used as default")
@@ -289,6 +291,7 @@ class SimulationManager:
         return calculator
 
     def _attach_outputs(self, dyn, print):
+        """Attach outputs to simulation."""
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
         if self.create_trajectory is True:
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
@@ -308,23 +311,29 @@ class SimulationManager:
     ):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
-        Velocity Verlet integration.
+        ``VelocityVerlet`` integration.
 
         Parameters
         ----------
-        calculator : string, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         calc_params: dictionary, optional
             Parameters to pass on to calculator as a dictionary.
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
@@ -358,22 +367,28 @@ class SimulationManager:
         print=True,
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
-        integration.
+        Run a molecular dynamics simulation in the NPT ensemble using
+        ``IsotropicMTKNPT`` integration.
 
         Parameters
         ----------
-        calculator : ase.calculators.calculator.Calculator, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
@@ -408,22 +423,28 @@ class SimulationManager:
         print=True,
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
-        integration.
+        Run a molecular dynamics simulation in the NVT ensemble using
+        ``NoseHooverChainNVT`` integration.
 
         Parameters
         ----------
-        calculator : ase.calculators.calculator.Calculator, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
