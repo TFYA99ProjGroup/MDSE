@@ -26,8 +26,9 @@ def view_crystal(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
-        - filepath (list[str] or None): Paths to files to view.
-          If None, opens all `.traj` files in the current directory.
+
+        - filepath (list[str] | None): Paths to files to view. If None, opens \
+        all `.traj` files in the current directory.
 
     Notes
     -----
@@ -50,12 +51,14 @@ def remove_all_traj(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
-        - filepath (str or None): Directory path where `.traj` files
+
+        - filepath (str | None): Directory path where `.traj` files \
           will be removed. If None, defaults to the current directory.
         - recursive (bool): If True, also search subdirectories.
 
-    Side Effects
-    ------------
+    Notes
+    -----
+    Side Effects: \
     Deletes files from disk and prints status messages for each file.
     """
 
@@ -81,7 +84,7 @@ def remove_all_traj(args):
             os.remove(file)
             logger.debug(f"Removed: {file}")
         except OSError as e:
-            logger.warning(f"Could not remove {file}: {e}")
+            logger.error(f"Could not remove {file}: {e}")
     logger.info(f"Removed {len(files)} files")
 
 
@@ -93,11 +96,12 @@ def simulate(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
+
         - filepath (str): Path to a YAML file describing simulation parameters.
 
     Notes
     -----
-    Parses the input YAML using `main_read`, creates a `RunManager`,
+    Parses the input YAML using ``main_read()``, creates a ``RunManager``,
     and executes all simulations sequentially.
     """
 
@@ -119,6 +123,7 @@ def calc_msd(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
+
         - filepath (str): Path to a traj file describing simulation result.
 
     """
@@ -137,6 +142,7 @@ def calc_lindemann(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
+
         - filepath (str): Path to a traj file describing simulation result.
 
     """
@@ -155,6 +161,7 @@ def calc_self_diff(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
+
         - filepath (str): Path to a traj file describing simulation result.
 
     """
@@ -176,6 +183,7 @@ def calc_isobaric_specific_heat(args):
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
+
         - filepath (str): Path to a traj file describing simulation result.
 
     """
@@ -199,8 +207,8 @@ def build_website_locally(args):
 
     Parameters
     ----------
-    Args:
-        args: Command-line arguments passed from the caller (not used directly).
+    args: args
+        Command-line arguments passed from the caller (not used directly).
     """
     logger.info("Building the documentation locally")
     subprocess.run(
@@ -218,8 +226,8 @@ def view_website_browser(args):
 
     Parameters
     ----------
-    Args:
-        args: Command-line arguments passed from the caller (not used directly).
+    args: args
+        Command-line arguments passed from the caller (not used directly).
     """
     logger.info("Viewing the docs with default web-browser")
     webbrowser.open("docs/_build/html/index.html")
@@ -232,16 +240,16 @@ def main():
     Provides the following subcommands:
 
     - `simulate`: Run simulations defined in a YAML file.
-        Usage: `mdse simulate -f config.yml`
+        >>> mdse simulate -f config.yml
     - `view`: Open structure files with the ASE GUI.
-        Usage: `mdse view -f file1.traj file2.traj`
+        >>> mdse view -f file1.traj file2.traj
     - `clean`: Remove all `.traj` files in a directory.
-        Usage: `mdse clean -f ./results`
+        >>> mdse clean -f ./results
 
     Notes
     -----
     The selected subcommand is dispatched to the corresponding function
-    via `argparse`'s `set_defaults(func=...)`.
+    via `argparse`'s ``set_defaults(func=...)``.
     """
 
     # ----------Setup----------
