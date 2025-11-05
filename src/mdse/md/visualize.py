@@ -17,6 +17,8 @@ class VisualizeResult:
         """
         self.results = data
         logger.debug(f"Initialized a VisualizeResult object with {len(self.results)} simulations")
+        self.available = {"self_diff" : "calc_self_diff", "lindemann" : "calc_lindemann", "debye" : "calc_debye_temperature",
+                          "avg_a" : "estimate_average_a", "DOS" : "calc_density_of_states"}
 
     def plot_MSD(self):
         """Collects all MSD vs tau for the list of resultMD. Then plots them togheter
@@ -48,22 +50,21 @@ class VisualizeResult:
             size (int): Size of data points
         """
         logger.debug(f"Starting to plot scatter for {len(self.results)} simulations")
-        available = {"self_diff" : "calc_self_diff", "lindemann" : "calc_lindemann", "debye" : "calc_debye_temperature",
-                     "avg_a" : "estimate_average_a"}
+  
         properties = [prop1,prop2,prop3]
 
-        missing = [p for p in properties if p not in available]
+        missing = [p for p in properties if p not in self.available]
 
         if missing:
             logger.debug(f"Was not able to scatter plot, invalid properties given, {missing}")
             raise RuntimeError(f"Invalid properties {missing}")
         logger.debug("Scatter plot got valid properties")
 
-        x_values = [getattr(result,available[prop1])() for result in self.results]
+        x_values = [getattr(result,self.available[prop1])() for result in self.results]
         plt.xlabel(prop1)
-        y_values = [getattr(result,available[prop2])() for result in self.results]
+        y_values = [getattr(result,self.available[prop2])() for result in self.results]
         plt.ylabel(prop2)
-        z_values = [getattr(result,available[prop3])() for result in self.results]
+        z_values = [getattr(result,self.available[prop3])() for result in self.results]
         logger.debug("Scatter plot got data for properties sucesfully")
 
         plt.scatter(x_values, y_values, s= size, c = z_values)
@@ -72,21 +73,62 @@ class VisualizeResult:
         plt.show()
 
     def plot_histogram(self,prop1, bins = 100):
-        """Plots a histogram    
-        """
-        available = {"self_diff" : "calc_self_diff", "lindemann" : "calc_lindemann", "debye" : "calc_debye_temperature",
-                     "avg_a" : "estimate_average_a"}
+        """Plots a histogram.
 
-        if prop1 not in available:
+        args:
+            prop1(str): The propertie to plot.
+            bins(int): How many bins the property should be placed in.    
+        """
+        if prop1 not in self.available:
             logger.debug(f"Was not able to histogram plot, invalid property given, {prop1}")
             raise RuntimeError(f"Invalid property {prop1}")
         
         logger.debug("Histogram plot got valid properties")
 
-        x_values = [getattr(result,available[prop1])() for result in self.results]
+        x_values = [getattr(result,self.available[prop1])() for result in self.results]
         plt.xlabel(prop1)
         plt.ylabel("Count")
         plt.hist(x_values)
         plt.title(f"Histogram over {prop1}, from {len(self.results)} simulations")
 
+        plt.show()
+
+    def plot_DOS(self):
+        """Plots DOS vs angular frequency, for all results saved.
+        """
+        DOS, omega = zip(*[getattr(result,self.available["DOS"])() for result in self.results])
+        names = [res.name for res in self.results]
+        for DOS_i, omega_i,name in zip(DOS,omega,names):
+            plt.plot(DOS_i,omega_i)
+            plt.text(DOS_i[-1],omega_i[-1],f"{name}")
+        
+        logger.debug("DOS plot values were sucesfully fetched")
+        plt.xlabel("Angular frequency")
+        plt.ylabel("DOS")
+        plt.title(f"DOS vs angular frequency, for {len(self.results)} simulations")
+        plt.show()
+
+    def plot_energy(self, energy_type = "kin"):
+        """
+        """
+
+        available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies"}
+        labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)"}
+
+        if energy_type not in available_energies:
+            logger.debug(f"Was not able to histogram energy, invalid energy given, {energy_type}")
+            raise RuntimeError(f"Invalid energy {energy_type}")
+        
+
+        energies = [getattr(res, available_energies[energy_type])() for res in self.results]
+        times = [res.get_time_axis() for res in self.results]
+        names = [res.name for res in self.results]
+
+        for time, energy, name in zip(times,energies, names):
+            plt.plot(time,energy)
+            plt.text(time[-1],energy[-1], f"{name}")
+        logger.debug("Energy and time where succsesfully fetched")
+        plt.xlabel("Time (fs)")
+        plt.ylabel(labels[energy_type])
+        plt.title(f"{labels[energy_type]} for {len(self.results)} simulations")
         plt.show()
