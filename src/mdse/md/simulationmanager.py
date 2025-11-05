@@ -276,9 +276,9 @@ class SimulationManager:
           - ``EMT``
           - ``LennardJones``
         """
-        if calculator.lower() == "EMT":
+        if calculator == "EMT":
             calculator = EMT(**calc_params)
-        elif calculator.lower() == "LennardJones":
+        elif calculator == "LennardJones":
             calculator = LennardJones(**calc_params)
         else:
             error_msg = (
