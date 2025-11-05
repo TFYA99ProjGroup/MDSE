@@ -87,110 +87,84 @@ class SimulationManager:
 
     """
 
-    def __init__(self, crystal_params, simulation_params, ensemble_params):
+    def __init__(self, config):
 
         """
-        timestep,
-        length,
-        trajInterval,
+        comments
         """
 
-        """
-        BULK
-        type
-        structure
-        lattice_a
-        lattice_b
-        lattice_c
-        cubic
-        supercell
+        logger.debug("Initialize an instance of SimulateMD")
+        crystal_params = config.get("CRYSTAL")
+        try:
+            crystal_type = crystal_params.get("TYPE")
+            logger.debug(f"Initialize the crystal from {crystal_type}")
 
-        POS
-        types
-        positions
-        pbc
-        cell
-        supercell
+            # We either create our crystal as a bulk crystal, ...
+            if crystal_type == "BULK":
+                self.crystal = bulk(
+                    crystal_params.get("Type"),
+                    crystal_params.get("Structure"),
+                    a     = crystal_params.get("Lattice_a"),
+                    b     = crystal_params.get("Lattice_b",None),
+                    c     = crystal_params.get("Lattice_c",None),
+                    cubic = crystal_params.get("Cubic"),
+                )
 
-        FILE
-        crystal
-        supercell
-        """
+            # ... or from some standard file format, ...
+            elif crystal_type == "FILE":
+                self.crystal = ase.io.read(crystal_params.get("Filepath"))
 
-        """
-        temp
-        pressure
-        thermoTime
-        baroTime
-        """
+            # ... or by specifying each atom individually
+            elif crystal_type == "LIST":
+                self.crystal = Atoms(
+                    symbols   = crystal_params.get("Symbols"),
+                    positions = crystal_params.get("Positions"),
+                    cell      = crystal_params.get("Cell"),
+                    pbc       = crystal_params.get("Pcb")
+                )
 
-        logger.debug(f"Initialize an instance of SimulateMD with config {config}")
+        except Exception as e:
+            logger.error("Error while creating inital crystal:")
+            logger.error(e)
+            raise RuntimeError(e)
 
-        if crystal_params is not None:
-            try:
-                self.crystal = ase.io.read(config.get("Crystal"))
-            except Exception as e:
-                logger.error(e)
-                raise
-        else:
-            self.crystal = self.create_crystal(
-                chem_notation=config.get("Type"),
-                structure=config.get("Structure"),
-                a=config.get("Lattice_a"),
-                b=config.get("Lattice_b"),
-                c=config.get("Lattice_c"),
-                cubic=config.get("Cubic"),
-                positions=config.get("Positions"),
-            )
+        # Parameters related to the simulation
+        simulation_params = config.get("SIMULATION")
+        try:
+            self.timestep      = simulation_params.get("Timestep") * units.fs
+            self.length        = simulation_params.get("Length")
+            self.traj_interval = simulation_params.get("TrajInterval")
 
-        self.temperature = config.get("Temp")
-        self.timestep = config.get("Timestep") * units.fs
-        self.length = config.get("Length")
-        self.traj_interval = config.get("TrajInterval")
-        self.pressure_au = config.get("Pressure")
-        self.thermo_time = config.get("ThermoTime")
-        self.baro_time = config.get("BaroTime")
+        except Exception as e:
+            logger.error("Error parameter values")
+            logger.error(e)
+            raise RuntimeError(e)
+
+        # Ensamble parameters
+        ensamble_params = config.get("ENSAMBLE")
+        try:
+            ensamble_type = ensamble_params.get("Ensamble")
+
+            if ensamble_type == "NVE":
+                self.temperature = ensamble_params.get("Temp")
+
+            elif ensamble_type == "NVT":
+                self.temperature = ensamble_params.get("Temp")
+                self.thermo_time = ensamble_params.get("ThermoTime")
+
+            elif ensamble_type == "NPT":
+                self.temperature = ensamble_params.get("Temp")
+                self.pressure_au = ensamble_params.get("Pressure")
+                self.thermo_time = ensamble_params.get("ThermoTime")
+                self.baro_time   = ensamble_params.get("BaroTime")
+
+        except Exception as e:
+            logger.error("Error ensamble values")
+            logger.error(e)
+            raise RuntimeError(e)
 
         logger.debug("Init done")
 
-    def create_crystal(
-        self, chem_notation, structure, a, b, c, cubic, positions=None
-    ) -> Atoms:
-        """Create the atom or molecule or crystal object from the specified params.
-
-        Parameters
-        ----------
-        chem_notation : str
-            The chemical notation of the object.
-        structure : str
-            The Lattice types or Crystal structure of the object.
-        a : float
-            Lattice constant.
-        b : float
-            Secondary lattice constant (optional argument).
-        c : float
-            Third lattice constant (optional argument).
-        cubic : bool
-            Sets cubic unit cell.
-        positions : list
-            Individual atomic positions (optional argument).
-        """
-        logger.debug("Creating crystal")
-
-        # Define if we're using structure or positions
-        if positions is None:
-            crystal = bulk(
-                chem_notation,
-                structure,
-                a=a,
-                b=b,
-                c=c,
-                cubic=cubic,
-            )
-            return crystal
-        else:
-            logger.error("Can not initialize from parameters.")
-            raise NotImplementedError()
 
     def view_super_crystal(self):
         """
