@@ -21,7 +21,7 @@ class ResultMD:
     def __init__(self, data):
         """Initialize the ResultMD object.
 
-        Args:
+        Parameters:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
         logger.debug("Initilizing an instance of ResultMD")
@@ -34,14 +34,18 @@ class ResultMD:
     def from_file(cls, filepath):
         """Create a ResultMD object from a trajectory file.
 
-        Args:
+        Parameters:
             filepath (str): Path to the trajectory file.
 
         Returns:
             ResultMD: An instance of the class containing trajectory frames.
         """
         logger.debug(f"Creating instances of ResultMD from {filepath}")
-        traj = Trajectory(filepath)
+        try:
+            traj = Trajectory(filepath)
+        except Exception as e:
+            logger.error(e)
+            raise
         return cls([atom for atom in traj])
 
     def _calc_msd_list(self):
@@ -68,7 +72,6 @@ class ResultMD:
 
         logger.debug("Beggining iteration over tau")
         for tau in taus:
-            logger.debug(f"Tau: {tau}")
             MSD_at_all_t_x = []  # Reset per tau
             MSD_at_all_t_y = []  # Reset per tau
             MSD_at_all_t_z = []  # Reset per tau
@@ -100,13 +103,6 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug(
-                "MSD_final_x, MSD_final_y, MSD_final_z:",
-                MSD_final_x,
-                MSD_final_y,
-                MSD_final_z,
-            )
-
             MSD_at_tau_x.append(MSD_final_x)
             MSD_at_tau_y.append(MSD_final_y)
             MSD_at_tau_z.append(MSD_final_z)
@@ -134,6 +130,7 @@ class ResultMD:
         Returns:
             float: average nearest-neighbor distance for one frame.
         """
+        logger.debug("Estimate nearest-neighbor distance")
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
         np.fill_diagonal(dists, np.inf)
@@ -157,8 +154,9 @@ class ResultMD:
         Args:
             a (float): Average nearest-neighbor distance.
         Returns:
-            float: Lindemann parameter δ_L.
+            float: Lindemann parameter `delta_L`.
         """
+        logging.debug("Calculate lindemann")
         if a is None:
             a = self.estimate_average_a()
         msd = self.calc_msd()
@@ -233,14 +231,14 @@ class ResultMD:
         Velocity Autocorrelation Function (VACF), a relationship described
         by the **Wiener-Khinchin theorem**.
 
-        The resulting DOS is cached in `self.dos`. If this method is called
+        The resulting DOS is cached in ``self.dos``. If this method is called
         again, it will return the cached values without recalculation.
 
         Args:
             frame_skip (float, optional): Fraction of the total initial
                 frames to skip (e.g., for equilibration). This value is
-                passed directly to `self._calc_vacf` and is also used
-                to select the frames for calculating `natoms`.
+                passed directly to ``self._calc_vacf`` and is also used
+                to select the frames for calculating ``natoms``.
                 Defaults to 0.5.
 
         Returns:
@@ -291,39 +289,41 @@ class ResultMD:
         pl.show()
 
     def calc_debye_temperature(self, frame_skip=0.5):
-        """Calculates the Debye temperature ($\\Theta_D$).
+        """Calculates the Debye temperature.
 
         This method estimates the Debye temperature by first finding the
-        Debye frequency ($\\omega_D$) from the (vibrational) Density of States (DOS).
+        Debye frequency from the (vibrational) Density of States (DOS).
 
-        The Debye frequency ($\\omega_D$) is defined as the frequency cutoff
+        The Debye frequency is defined as the frequency cutoff
         required for the total number of vibrational modes to equal the
-        system's total degrees of freedom ($3N$, where $N$ is the number of
-        atoms). It is found by solving the following equation for $\\omega_D$:
+        system's total degrees of freedom. It is found by solving the following
+        equation:
 
-        $$
-        \\int_0^{\\omega_D} DOS(\\omega) d\\omega = 3N
-        $$
+        .. math::
+            \\int_{0}^{\\omega_D} DOS(\\omega) d\\omega = 3N
 
         The calculation performs the following steps:
-        1.  Calls `self.calc_density_of_states(frame_skip)` to get the `dos`
+
+        1. Calls ``self.calc_density_of_states(frame_skip)`` to get the `dos` \
             and angular frequency `omega` arrays.
-        2.  Calculates the cumulative integral of the DOS with respect to
+        2. Calculates the cumulative integral of the DOS with respect to \
             `omega` (i.e., the total number of modes up to a given frequency).
-        3.  Finds the index where this cumulative integral first matches or
-            exceeds the target degrees of freedom ($3N$).
-        4.  The frequency at this index is taken as the Debye frequency ($\\omega_D$).
-        5.  Converts $\\omega_D$ to the Debye temperature ($\\Theta_D$) using the
-            relation: $\\Theta_D = \frac{\\hbar \\omega_D}{k_B}$.
+        3. Finds the index where this cumulative integral first matches or \
+            exceeds the target degrees of freedom (3N).
+        4. The frequency at this index is taken as the Debye frequency.
+        5. Converts the Debye frequency to the Debye temperature using the \
+            relation
+            .. math::
+                \\Theta_D = \\frac{\\hbar \\omega_D}{k_B}.
 
         Args:
-            frame_skip (float, optional): Fraction of the total initial
-                frames to skip (e.g., for equilibration). This value is
-                passed directly to `self.calc_density_of_states`.
+            frame_skip (float, optional): Fraction of the total initial \
+                frames to skip (e.g., for equilibration). This value is \
+                passed directly to `self.calc_density_of_states`. \
                 Defaults to 0.5.
 
         Returns:
-            float: The calculated Debye temperature ($\\Theta_D$). The units
+            float: The calculated Debye temperature ``Theta_D``. The units \
                 (e.g., Kelvin) depend on the `dt` value from the frames.
         """
         kB = constants.Boltzmann
@@ -392,18 +392,18 @@ class ResultMD:
         """
         E_eV, V_A3 = [], []
 
-        p_au = self.frames[0].info['p_au']
+        p_au = self.frames[0].info["p_au"]
 
-        p_Pa = p_au * (constants.eV / (constants.angstrom ** 3))
-        print("au_to_Pa: ",constants.eV / (constants.angstrom ** 3))
+        p_Pa = p_au * (constants.eV / (constants.angstrom**3))
+        print("au_to_Pa: ", constants.eV / (constants.angstrom**3))
 
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
             V_A3.append(frame.get_volume())
 
         E_J = np.array(E_eV) * constants.eV
-        V_m3 = np.array(V_A3) * (constants.angstrom ** 3)
-        print("ev_to_J: ",constants.eV)
+        V_m3 = np.array(V_A3) * (constants.angstrom**3)
+        print("ev_to_J: ", constants.eV)
         print("angstrom: ", constants.angstrom)
 
         enthalpy_J = E_J + p_Pa * V_m3
@@ -426,7 +426,7 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(H_J) * frame_skips)
-        H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
+        H_J = H_J[nskip:]  # Skip the part of the simulation before equilibration
 
         varH = np.var(H_J)
         # Isobaric heat capacity
@@ -436,7 +436,7 @@ class ResultMD:
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
         tot_mass_kg = tot_mass_u * constants.atomic_mass
-        print("atomic_mass: ",constants.atomic_mass)
+        print("atomic_mass: ", constants.atomic_mass)
 
         return Cp / tot_mass_kg
 
@@ -457,12 +457,12 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(E_J) * frame_skips)
-        E_J = E_J[nskip:] # Skip the part of the simulation before equilibration
+        E_J = E_J[nskip:]  # Skip the part of the simulation before equilibration
 
         varE = np.var(E_J)
 
         Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
 
-        n_atoms = (len(self.frames) - 1)
+        n_atoms = len(self.frames) - 1
 
         return Cv / n_atoms

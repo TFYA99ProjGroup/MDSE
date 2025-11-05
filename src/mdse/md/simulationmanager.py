@@ -10,6 +10,8 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
 
+from mdse.md.resultMD import ResultMD
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,29 +64,32 @@ class SimulationManager:
     baro_time : float, optional
         The characteristic time scale for the barostat in ASE time units. Typically,
         it is set to 1000 times of timestep (default: 1000 * units.fs).
-
+    Supercell: list, optional
+        Enables to create a supercrystal. Defaults to 1x1x1, which is [1,1,1].
 
     Attributes
     ----------
     crystal : ase.Atoms
         The ASE Atoms object representing the constructed system.
 
-    Example:
-    -------
-    ```
-    sim_list = main_read("examples/test_file.yaml")
-    # sim_list[0] is the first simulation
-    # sim equals the dictionary of the first simulation
-    sim_item = next(iter(sim_list[0].values()))
-    # sim_item.get() picks the values from the simulation
-    sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
-        'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
-        temperature=sim_item.get('Temp'),
-        timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
-        traj_interval=sim_item.get('TrajInterval'))
-    sim.simulate_nve()
-    ```
+    Examples
+    --------
 
+    >>> sim_list = main_read("examples/test_file.yaml")
+
+    sim_list[0] is the first simulation
+    sim equals the dictionary of the first simulation
+
+    >>> sim_item = next(iter(sim_list[0].values()))
+
+    sim_item.get() picks the values from the simulation
+
+    >>> sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
+    ...    'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
+    ...    temperature=sim_item.get('Temp'),
+    ...    timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
+    ...   traj_interval=sim_item.get('TrajInterval'))
+    >>> sim.simulate_nve()
     """
 
     def __init__(self, config):
@@ -169,7 +174,7 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a 3x3x3 supercell of the constructed crystal.
+        Visualize a supercell of the constructed crystal (3x3x3 as default).
 
         Notes
         -----
@@ -177,10 +182,11 @@ class SimulationManager:
         """
         logger.debug("Viewing super crystal")
         if self.positions is None:
-            super_crystal = self.crystal * (3, 3, 3)
+            super_crystal = self.crystal
             view(super_crystal)
         else:
-            raise RuntimeError("Supercell visualization only works with bulk crystals.")
+            raise RuntimeError(
+                "Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -213,7 +219,8 @@ class SimulationManager:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError("Temperature must be set to apply a distribution.")
+            raise ValueError(
+                "Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
             Stationary(self.crystal)
@@ -230,9 +237,8 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str or None
+        calculator : str
             The calculator to use for energy and force evaluations. Can be:
-              - None: defaults to EMT.
               - "EMT": uses the ASE EMT calculator.
               - "LennardJones": uses the ASE Lennard-Jones calculator.
             Any other value raises a NotImplementedError.
@@ -253,13 +259,10 @@ class SimulationManager:
         Notes
         -----
         Supported calculators:
-          - EMT
-          - LennardJones
+          - ``EMT``
+          - ``LennardJones``
         """
-        if calculator is None:
-            logger.debug("No calculator specified, EMT used as default")
-            calculator = EMT(**calc_params)
-        elif calculator == "EMT":
+        if calculator == "EMT":
             calculator = EMT(**calc_params)
         elif calculator == "LennardJones":
             calculator = LennardJones(**calc_params)
@@ -272,6 +275,35 @@ class SimulationManager:
 
         return calculator
 
+    def _attach_outputs(self, dyn, print):
+        """Attach outputs to simulation."""
+        symbols = "".join(set(self.crystal.get_chemical_symbols()))
+        if self.create_trajectory:
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            dyn.attach(traj.write, interval=self.traj_interval)
+
+        if print:
+            dyn.attach(self.print_energy, interval=self.traj_interval)
+
+        dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
+
+    def simulate(self,
+                 calculator=None,
+                 calc_params={},
+                 distribution=MaxwellBoltzmannDistribution,
+                 print=False,):
+        if self.ensamble.lower() == "nve":
+            self.simulate_nve(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "nvt":
+            self.simulate_nvt(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "npt":
+            self.simulate_npt(calculator, calc_params, distribution, print)
+        else:
+            msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
+            "Please use one of following: NVE, NVT, NPT"
+            logger.error(msg)
+            raise ValueError(msg)
+
     def simulate_nve(
         self,
         calculator=None,
@@ -281,28 +313,33 @@ class SimulationManager:
     ):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
-        Velocity Verlet integration.
+        ``VelocityVerlet`` integration.
 
         Parameters
         ----------
-        calculator : string, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         calc_params: dictionary, optional
             Parameters to pass on to calculator as a dictionary.
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
@@ -311,11 +348,8 @@ class SimulationManager:
             self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
             logger.debug("Simulation done")
@@ -325,31 +359,38 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
 
     def simulate_npt(
         self,
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
-        integration.
+        Run a molecular dynamics simulation in the NPT ensemble using
+        ``IsotropicMTKNPT`` integration.
 
         Parameters
         ----------
-        calculator : ase.calculators.calculator.Calculator, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
@@ -365,12 +406,7 @@ class SimulationManager:
                 tdamp=self.thermo_time,
                 pdamp=self.baro_time,
             )
-            symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
         except IOError as e:
@@ -379,31 +415,38 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
 
     def simulate_nvt(
         self,
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
-        Run a molecular dynamics simulation in the NPT ensemble using IsotropicMTKNPT
-        integration.
+        Run a molecular dynamics simulation in the NVT ensemble using
+        ``NoseHooverChainNVT`` integration.
 
         Parameters
         ----------
-        calculator : ase.calculators.calculator.Calculator, optional
+        calculator : str, optional
             The ASE calculator to use for force and energy evaluation
-            (default: EMT()).
+            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
-            MaxwellBoltzmannDistribution).
+            ``MaxwellBoltzmannDistribution``).
+
+        Returns
+        -------
+        ResultMD
+            An object containing the simulation data.
 
         Notes
         -----
-        Trajectory snapshots are written to a `.traj` file with the chemical
-        symbols of the system as the filename.
+        If ``create_trajectory`` is ``True`` Trajectory snapshots are written to
+        a `.traj` file with the chemical symbols of the system as the filename.
+        Otherwise the snapshots will be written to a :class:`~ResultMD`
         """
 
         try:
@@ -416,12 +459,7 @@ class SimulationManager:
                 temperature_K=self.temperature,
                 tdamp=self.thermo_time,
             )
-            symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
         except IOError as e:
@@ -430,3 +468,4 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
