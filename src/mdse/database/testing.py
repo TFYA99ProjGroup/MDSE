@@ -3,7 +3,7 @@ from pymongo import MongoClient
 # Will be moved to examples later
 
 # Connect to MongoDB
-client = MongoClient("mongodb://admin:secret123@localhost:27017/")
+client = MongoClient("mongodb://admin:secret@localhost:27017/")
 
 # Select your database
 db = client["materials_db"]
