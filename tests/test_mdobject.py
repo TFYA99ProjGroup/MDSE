@@ -17,7 +17,7 @@ def test_mdobject():
         "TrajInterval": 10,
     }
 
-    sim3 = SimulationManager(sim)
+    sim3 = SimulationManager(sim, create_trajectory=True)
 
     assert sim3.crystal.symbols[0] == "Cu"
     assert (sim3.crystal.cell.lengths() == 3.6).all()
@@ -30,7 +30,7 @@ def test_mdobject():
     traj_file.unlink()
 
     sim["Temp"] = 801
-    sim4 = SimulationManager(sim)
+    sim4 = SimulationManager(sim, create_trajectory=True)
 
     assert sim4.crystal.symbols[0] == "Cu"
     assert (sim4.crystal.cell.lengths() == 3.6).all()
@@ -197,13 +197,11 @@ def test_calculators():
 
     calculator = "LennardJones"
 
-    sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
+    result = sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
+
+    assert len(result.frames) > 0
 
     with raises(NotImplementedError,
                 match=("Calculator hej123 not implemented,"
                        " valid calculators are: EMT, LennardJones")):
         sim1.simulate_nve(calculator="hej123")
-
-    traj_file = Path("Ni_400.traj")
-    assert Path.exists(traj_file)
-    traj_file.unlink()
