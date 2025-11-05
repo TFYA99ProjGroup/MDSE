@@ -251,9 +251,8 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str or None
+        calculator : str
             The calculator to use for energy and force evaluations. Can be:
-              - None: defaults to EMT.
               - "EMT": uses the ASE EMT calculator.
               - "LennardJones": uses the ASE Lennard-Jones calculator.
             Any other value raises a NotImplementedError.
@@ -277,12 +276,9 @@ class SimulationManager:
           - ``EMT``
           - ``LennardJones``
         """
-        if calculator is None:
-            logger.debug("No calculator specified, EMT used as default")
+        if calculator.lower() == "EMT":
             calculator = EMT(**calc_params)
-        elif calculator == "EMT":
-            calculator = EMT(**calc_params)
-        elif calculator == "LennardJones":
+        elif calculator.lower() == "LennardJones":
             calculator = LennardJones(**calc_params)
         else:
             error_msg = (
