@@ -139,10 +139,7 @@ class SimulationManager:
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
         self.create_trajectory = create_trajectory
-        if self.create_trajectory is False:
-            self.result = [self.crystal]
-        else:
-            self.result = None
+        self.result = [self.crystal]
 
         logger.debug("Init done")
 
@@ -293,14 +290,14 @@ class SimulationManager:
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
-        if self.create_trajectory is True:
+        if self.create_trajectory:
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
             dyn.attach(traj.write, interval=self.traj_interval)
-        else:
-            dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
 
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
+
+        dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
 
     def simulate_nve(
         self,
