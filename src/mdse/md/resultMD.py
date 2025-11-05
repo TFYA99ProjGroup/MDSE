@@ -154,7 +154,7 @@ class ResultMD:
         Args:
             a (float): Average nearest-neighbor distance.
         Returns:
-            float: Lindemann parameter `δ_L`.
+            float: Lindemann parameter `delta_L`.
         """
         logging.debug("Calculate lindemann")
         if a is None:
