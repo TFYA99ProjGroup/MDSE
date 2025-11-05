@@ -68,7 +68,6 @@ class ResultMD:
 
         logger.debug("Beggining iteration over tau")
         for tau in taus:
-            logger.debug(f"Tau: {tau}")
             MSD_at_all_t_x = []  # Reset per tau
             MSD_at_all_t_y = []  # Reset per tau
             MSD_at_all_t_z = []  # Reset per tau
@@ -100,12 +99,12 @@ class ResultMD:
             MSD_final_y = np.mean(MSD_at_all_t_y)
             MSD_final_z = np.mean(MSD_at_all_t_z)
 
-            logger.debug(
+            """logger.debug(
                 "MSD_final_x, MSD_final_y, MSD_final_z:",
                 MSD_final_x,
                 MSD_final_y,
                 MSD_final_z,
-            )
+            )"""
 
             MSD_at_tau_x.append(MSD_final_x)
             MSD_at_tau_y.append(MSD_final_y)
@@ -331,7 +330,8 @@ class ResultMD:
         _, natoms = np.shape(self.frames)
         dos, omega = self.calc_density_of_states(frame_skip)
 
-        cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
+        cum_int = np.cumsum(
+            0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
 
         target = 3.0 * natoms
 
@@ -395,7 +395,7 @@ class ResultMD:
         p_au = self.frames[0].info['p_au']
 
         p_Pa = p_au * (constants.eV / (constants.angstrom ** 3))
-        print("au_to_Pa: ",constants.eV / (constants.angstrom ** 3))
+        print("au_to_Pa: ", constants.eV / (constants.angstrom ** 3))
 
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
@@ -403,7 +403,7 @@ class ResultMD:
 
         E_J = np.array(E_eV) * constants.eV
         V_m3 = np.array(V_A3) * (constants.angstrom ** 3)
-        print("ev_to_J: ",constants.eV)
+        print("ev_to_J: ", constants.eV)
         print("angstrom: ", constants.angstrom)
 
         enthalpy_J = E_J + p_Pa * V_m3
@@ -426,7 +426,8 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(H_J) * frame_skips)
-        H_J = H_J[nskip:] # Skip the part of the simulation before equilibration
+        # Skip the part of the simulation before equilibration
+        H_J = H_J[nskip:]
 
         varH = np.var(H_J)
         # Isobaric heat capacity
@@ -436,7 +437,7 @@ class ResultMD:
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
         tot_mass_kg = tot_mass_u * constants.atomic_mass
-        print("atomic_mass: ",constants.atomic_mass)
+        print("atomic_mass: ", constants.atomic_mass)
 
         return Cp / tot_mass_kg
 
@@ -457,7 +458,8 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(E_J) * frame_skips)
-        E_J = E_J[nskip:] # Skip the part of the simulation before equilibration
+        # Skip the part of the simulation before equilibration
+        E_J = E_J[nskip:]
 
         varE = np.var(E_J)
 

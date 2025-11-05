@@ -93,7 +93,8 @@ class SimulationManager:
     """
 
     def __init__(self, config: dict = {}, create_trajectory=False):
-        logger.debug(f"Initialize an instance of SimulateMD with config {config}")
+        logger.debug(
+            f"Initialize an instance of SimulateMD with config {config}")
         default = {
             "Type": "Cu",
             "Structure": "fcc",
@@ -297,7 +298,8 @@ class SimulationManager:
         """Attach outputs to simulation."""
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
         if self.create_trajectory:
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(
+                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
             dyn.attach(traj.write, interval=self.traj_interval)
 
         if print:
@@ -311,16 +313,20 @@ class SimulationManager:
                  distribution=MaxwellBoltzmannDistribution,
                  print=False,):
         if self.ensamble.lower() == "nve":
-            self.simulate_nve(calculator, calc_params, distribution, print)
+            result = self.simulate_nve(
+                calculator, calc_params, distribution, print)
         elif self.ensamble.lower() == "nvt":
-            self.simulate_nvt(calculator, calc_params, distribution, print)
+            result = self.simulate_nvt(
+                calculator, calc_params, distribution, print)
         elif self.ensamble.lower() == "npt":
-            self.simulate_npt(calculator, calc_params, distribution, print)
+            result = self.simulate_npt(
+                calculator, calc_params, distribution, print)
         else:
             msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
             "Please use one of following: NVE, NVT, NPT"
             logger.error(msg)
             raise ValueError(msg)
+        return result
 
     def simulate_nve(
         self,
@@ -358,7 +364,8 @@ class SimulationManager:
 
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
+            logger.debug(
+                f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
 

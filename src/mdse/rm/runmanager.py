@@ -1,5 +1,7 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
+import json
+from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
@@ -34,14 +36,17 @@ class RunManager:
             f"Initializes an instance of RunManager with config {simulation_config}")
 
         self.md_simulations = []
+        self.result_objects = []
         self.outputs = []
+        self.simulation_config = simulation_config
+        self.docs = []
 
         if simulation_config is not None:
             for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
-
+                self.docs.append({})
         logger.debug("RunManager init done")
 
     def attach_output(self, **kwargs):
@@ -65,11 +70,38 @@ class RunManager:
         """
         pass
 
+    def run_results(self):
+        logger.debug(self.result_objects)
+        for index, config in enumerate(self.simulation_config):
+            properties = config[next(iter(config))]["Properties"]
+            result = self.result_objects[index]
+            logger.debug(properties)
+            logger.debug(result)
+            self.docs[index]["Properties"] = {}
+            if ("Lindemann" in properties) or \
+                    ("all" in properties):
+                lindemann = result.calc_lindemann()
+                logger.info(f"Lindemann: {lindemann}")
+                self.docs[index]["Properties"]["Lindemann"] = lindemann
+
+            if ("Self-diffusion" in properties) or \
+                    ("all" in properties):
+                self_diff = result.calc_self_diff()
+                logger.info(f"Self-diffusion: {self_diff}")
+                self.docs[index]["Properties"]["Self-diffusion"] = self_diff
+        logger.debug(self.docs)
+        logger.debug(len(self.docs))
+        for index, doc in enumerate(self.docs):
+            path = Path(f"results/test_{index}.json")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(doc, f)
+
     def run_simulations(self, overwrite_ensamble=None):
-        for sim in self.md_simulations:
+        for index, sim in enumerate(self.md_simulations):
             if overwrite_ensamble is not None:
                 sim.ensamble = overwrite_ensamble
-            sim.simulate()
+            self.result_objects.append(sim.simulate())
 
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""

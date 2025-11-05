@@ -8,8 +8,10 @@ Copper:
     - 200
     - 300
   Timestep: 2 #fs
-  Length: 20000
+  Length: 2000
   TrajInterval: 5
+  Properties:
+    - Lindemann
 
 Nickel:
   Type: Ni
@@ -21,5 +23,7 @@ Nickel:
     - 200
     - 300
   Timestep: 2
-  Length: 20000
+  Length: 2000
   TrajInterval: 5
+  Properties: 
+    - all

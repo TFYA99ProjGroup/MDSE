@@ -1,0 +1,14 @@
+Copper:
+  Type: Cu
+  Structure: fcc
+  Lattice_a: 3.6149
+  Cubic: True
+  Temp_list: 
+    - 100
+    - 200
+    - 300
+  Timestep: 2 #fs
+  Length: 20000
+  TrajInterval: 5
+  Properties:
+    - Lindemann
