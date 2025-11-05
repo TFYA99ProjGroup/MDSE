@@ -134,6 +134,7 @@ class SimulationManager:
             self.timestep      = simulation_params.get("Timestep") * units.fs
             self.length        = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
+            self.calcuöator
 
         except Exception as e:
             logger.error("Error parameter values")
