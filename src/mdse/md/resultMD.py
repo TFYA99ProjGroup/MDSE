@@ -467,3 +467,29 @@ class ResultMD:
         n_atoms = (len(self.frames) - 1)
 
         return Cv / n_atoms
+    
+    def get_pot_energies(self):
+        """Gets the potential energis at each frame.
+
+        returns:
+            list: Potential energy at each frame
+        """
+        return [frame.get_potential_energy() for frame in self.frames]
+    
+    def get_kin_energies(self):
+        """Gets the kinnetic energis at each frame.
+
+        returns:
+            list: Kinnetic energy at each frame
+        """
+        return [frame.get_kinetic_energy() for frame in self.frames]
+
+    def get_time_axis(self):
+        """Gets the time steps where frames are from.
+
+        returns:
+            times (list): Contains at what times each frame is from.
+        """
+        dt = self.frames[0].info["dt"]
+        times = np.arange(len(self.frames))*dt
+        return times
