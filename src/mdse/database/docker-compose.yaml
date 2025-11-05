@@ -1,5 +1,16 @@
+# Install docker: https://docs.docker.com/engine/install/
+# I recommend the install script for ease of use:
+#   curl -fsSL https://get.docker.com -o get-docker.sh
+#   sudo sh get-docker.sh
+# That should include compose aswell.
+#
+# Then follow instructions here to allow non-root usage (if you want to do that):
+#   https://docs.docker.com/engine/install/linux-postinstall/
+#
 # Run with "docker compose up -d" when standing in the "src/mdse/database" directory
 # Stop with "docker compose down"
+# If you have not given non-root access to docker, prefix those commands with "sudo".
+
 services:
   mongodb: # MongoDB service, our main database
     image: mongo:7.0
