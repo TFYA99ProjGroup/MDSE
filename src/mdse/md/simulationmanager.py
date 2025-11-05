@@ -10,6 +10,8 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
 
+from mdse.md.resultMD import ResultMD
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,7 +89,7 @@ class SimulationManager:
 
     """
 
-    def __init__(self, config: dict = {}):
+    def __init__(self, config: dict = {}, create_trajectory=False):
         logger.debug(f"Initialize an instance of SimulateMD with config {config}")
         default = {
             "Type": "Cu",
@@ -134,6 +136,11 @@ class SimulationManager:
         self.pressure_au = config.get("Pressure")
         self.thermo_time = config.get("ThermoTime")
         self.baro_time = config.get("BaroTime")
+        self.create_trajectory = create_trajectory
+        if self.create_trajectory is False:
+            self.result = [self.crystal]
+        else:
+            self.result = None
 
         logger.debug("Init done")
 
@@ -281,6 +288,17 @@ class SimulationManager:
 
         return calculator
 
+    def _attach_outputs(self, dyn, print):
+        symbols = "".join(set(self.crystal.get_chemical_symbols()))
+        if self.create_trajectory is True:
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            dyn.attach(traj.write, interval=self.traj_interval)
+        else:
+            dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
+
+        if print:
+            dyn.attach(self.print_energy, interval=self.traj_interval)
+
     def simulate_nve(
         self,
         calculator=None,
@@ -311,7 +329,6 @@ class SimulationManager:
 
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
@@ -320,11 +337,8 @@ class SimulationManager:
             self.crystal.calc = self._check_calculator(calculator, calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
 
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
             logger.debug("Simulation done")
@@ -334,6 +348,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
 
     def simulate_npt(
         self,
@@ -374,12 +389,7 @@ class SimulationManager:
                 tdamp=self.thermo_time,
                 pdamp=self.baro_time,
             )
-            symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
         except IOError as e:
@@ -388,6 +398,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
 
     def simulate_nvt(
         self,
@@ -425,12 +436,7 @@ class SimulationManager:
                 temperature_K=self.temperature,
                 tdamp=self.thermo_time,
             )
-            symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
-
-            dyn.attach(traj.write, interval=self.traj_interval)
-            if print:
-                dyn.attach(self.print_energy, interval=self.traj_interval)
+            self._attach_outputs(dyn, print)
 
             dyn.run(self.length)
         except IOError as e:
@@ -439,3 +445,4 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        return ResultMD(self.result)
