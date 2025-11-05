@@ -1,5 +1,5 @@
 import glob
-import json
+import bson
 import logging
 from pymongo import MongoClient
 
@@ -15,17 +15,13 @@ class DBWriter:
         db = self.client["materials_db"]
         examples = db["resultexamples"]
         logger.debug(self.path)
-        json_files = glob.glob(f"{self.path}/*.json")
-        logger.debug(json_files)
+        bson_files = glob.glob(f"{self.path}/*.bson")
+        logger.debug(bson_files)
         all_docs = []
-        for path in json_files:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                # Om filen innehåller en lista av objekt
-                if isinstance(data, list):
-                    all_docs.extend(data)
-                else:
-                    all_docs.append(data)
+        for path in bson_files:
+            with open(path, "rb") as f:
+                data = bson.decode_all(f.read())
+                all_docs.extend(data)
         if all_docs:
             result = examples.insert_many(all_docs)
             logger.info(f"{len(result.inserted_ids)} document inserted.")

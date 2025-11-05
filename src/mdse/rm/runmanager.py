@@ -1,6 +1,6 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
-import json
+import bson
 from pathlib import Path
 logger = logging.getLogger(__name__)
 
@@ -92,10 +92,10 @@ class RunManager:
         logger.debug(self.docs)
         logger.debug(len(self.docs))
         for index, doc in enumerate(self.docs):
-            path = Path(f"results/test_{index}.json")
+            path = Path(f"results/test_{index}.bson")
             path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                json.dump(doc, f)
+            with open(path, "wb") as f:
+                f.write(bson.encode(doc))
 
     def run_simulations(self, overwrite_ensamble=None):
         for index, sim in enumerate(self.md_simulations):
