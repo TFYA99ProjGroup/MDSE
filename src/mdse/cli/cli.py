@@ -11,6 +11,7 @@ import webbrowser
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
+from mdse.rm.dbwriter import DBWriter
 from mdse.logging.logging_config import setup_logging
 from mdse.md.resultMD import ResultMD
 
@@ -226,6 +227,25 @@ def view_website_browser(args):
     webbrowser.open("docs/_build/html/index.html")
 
 
+def start_database(args):
+    subprocess.run(["sudo", "docker", "compose", "up", "-d"],
+                   cwd="src/mdse/database")
+
+
+def stop_database(args):
+    subprocess.run(["sudo", "docker", "compose", "down"],
+                   cwd="src/mdse/database")
+
+
+def view_database(args):
+    webbrowser.open("http://localhost:8081/")
+
+
+def write_to_database(args):
+    writer = DBWriter(args.filepath[0])
+    writer.write_jsonfiles_to_db()
+
+
 def main():
     """
     Entry point for the MDSE CLI.
@@ -361,6 +381,36 @@ def main():
 
     view_website.set_defaults(
         func=view_website_browser)
+
+    start_db = subparsers.add_parser(
+        "start_db", help="Start the database"
+    )
+
+    start_db.set_defaults(func=start_database)
+
+    stop_db = subparsers.add_parser(
+        "stop_db", help="Shut down the database"
+    )
+
+    stop_db.set_defaults(func=stop_database)
+
+    view_db = subparsers.add_parser(
+        "view_db", help="View the database in the default browser"
+    )
+
+    view_db.set_defaults(func=view_database)
+
+    write_to_db = subparsers.add_parser(
+        "write_db", help="Write all json-files in a directory to database")
+    write_to_db.add_argument(
+        "-f",
+        "--filepath",
+        nargs="+",
+        metavar="FILEPATH",
+        help="The filepath to be writing from",
+        required=True
+    )
+    write_to_db.set_defaults(func=write_to_database)
 
     # ----------Other----------
     args = parser.parse_args()
