@@ -64,7 +64,8 @@ class SimulationManager:
     baro_time : float, optional
         The characteristic time scale for the barostat in ASE time units. Typically,
         it is set to 1000 times of timestep (default: 1000 * units.fs).
-
+    Supercell: list, optional
+        Enables to create a supercrystal. Defaults to 1x1x1, which is [1,1,1].
 
     Attributes
     ----------
@@ -108,8 +109,9 @@ class SimulationManager:
             "Pressure": 3.85e-2,
             "ThermoTime": 100 * units.fs,
             "BaroTime": 1000 * units.fs,
+            "Supercrystal": [1, 1, 1],
+            "Ensamble": "NVE"
         }
-
         for key, value in default.items():
             if config.get(key) is None:
                 config[key] = value
@@ -129,7 +131,7 @@ class SimulationManager:
                 c=config.get("Lattice_c"),
                 cubic=config.get("Cubic"),
                 positions=config.get("Positions"),
-            )
+            ) * tuple(config.get("Supercrystal"))
 
         self.temperature = config.get("Temp")
         self.timestep = config.get("Timestep") * units.fs
@@ -140,6 +142,8 @@ class SimulationManager:
         self.baro_time = config.get("BaroTime")
         self.create_trajectory = create_trajectory
         self.result = [self.crystal]
+        self.positions = config.get("Positions")
+        self.ensamble = config.get("Ensamble")
 
         logger.debug("Init done")
 
@@ -184,7 +188,7 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a 3x3x3 supercell of the constructed crystal.
+        Visualize a supercell of the constructed crystal (3x3x3 as default).
 
         Notes
         -----
@@ -192,10 +196,11 @@ class SimulationManager:
         """
         logger.debug("Viewing super crystal")
         if self.positions is None:
-            super_crystal = self.crystal * (3, 3, 3)
+            super_crystal = self.crystal
             view(super_crystal)
         else:
-            raise RuntimeError("Supercell visualization only works with bulk crystals.")
+            raise RuntimeError(
+                "Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -228,7 +233,8 @@ class SimulationManager:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError("Temperature must be set to apply a distribution.")
+            raise ValueError(
+                "Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
             Stationary(self.crystal)
@@ -299,6 +305,23 @@ class SimulationManager:
 
         dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
 
+    def simulate(self,
+                 calculator=None,
+                 calc_params={},
+                 distribution=MaxwellBoltzmannDistribution,
+                 print=False,):
+        if self.ensamble.lower() == "nve":
+            self.simulate_nve(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "nvt":
+            self.simulate_nvt(calculator, calc_params, distribution, print)
+        elif self.ensamble.lower() == "npt":
+            self.simulate_npt(calculator, calc_params, distribution, print)
+        else:
+            msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
+            "Please use one of following: NVE, NVT, NPT"
+            logger.error(msg)
+            raise ValueError(msg)
+
     def simulate_nve(
         self,
         calculator=None,
@@ -361,7 +384,7 @@ class SimulationManager:
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using
@@ -417,7 +440,7 @@ class SimulationManager:
         calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
-        print=True,
+        print=False,
     ):
         """
         Run a molecular dynamics simulation in the NVT ensemble using
