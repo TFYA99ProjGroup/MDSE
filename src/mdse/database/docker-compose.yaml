@@ -23,7 +23,12 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./mongo_data:/data/db # Persist data on host machine, can be deleted with "sudo rm -rf ./mongo_data"
+      - ./mongo_data:/data/db 
+      # Persist data on host machine, can be deleted with "sudo rm -rf ./mongo_data"
+      #
+      # Might be a good idea to put the mounted directory outside of the project 
+      # folder to avoid accidental deletion. E.g. ~/mongo_data:/data/db
+      # Then the mounted directory is in your home folder. (Ubuntu)
 
   mongo-express: # MongoDB web-based admin interface (http://localhost:8081)
     image: mongo-express:latest
