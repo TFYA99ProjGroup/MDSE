@@ -509,33 +509,58 @@ class ResultMD:
 
 
          #----Based on total energy-----
+
+        energy_frame = self.check_equilibrium_energy(Tot_energy)
+        
+        if energy_frame != len(Tot_energy)-1: #We found equilibrium
+            pass
+        
+
+        #----If oscillating system----
+
+        oscill_frame = self.check_equilibrium_oscill(Tot_energy)
+
+
+    def check_equilibrium_energy(self, Tot_energy):
+        """Checks when total energy starts to stabalize around a constant value.
+        
+        args:
+            Tot_energy (list): List containing total energy for all frames
+        returns:
+            pos (int): Position of frame where equilibrium starts
+        """
         difference = [abs(Tot_energy[i+1]-Tot_energy[i])/Tot_energy[i] for i in range(len(Tot_energy)-1)]    
 
         tolerance = 0.001
 
-        pos = 0
         for diff,pos in enumerate(difference):
             if (diff <= tolerance):
                 break
             else:
                 pass
 
-        if pos != len(Tot_energy)-1: #We found equilibrium
-            pass
-            #return True, pos
+        return pos
+    
+    def check_equilibrium_oscill(self, Tot_energy):
+        """Checks if energy follows an oscillating pattern. I.e if mean value is constant over an intervall
+
         
-        #----If oscillating system----
+        """
         nr_of_intervall = 10
         intervall_lenght = len(Tot_energy)//nr_of_intervall
 
         sub_intervalls = [Tot_energy[i*intervall_lenght : (i+1)*intervall_lenght] for i in range(0,nr_of_intervall)]
 
-        print([sum(sub)/len(sub) for sub in sub_intervalls])
+        sub_intervalls_means = [sum(sub)/len(sub) for sub in sub_intervalls]
+        tot_mean = sum(Tot_energy)/len(Tot_energy)
+
+        deviations = np.abs((sub_intervalls_means - tot_mean) / tot_mean)
+
+        worst = np.argmax(deviations)
+        print(deviations)
     
+
 
 if __name__ == "__main__":
     res = ResultMD.from_file("cu_dt.traj")
     res.check_equilibrium()
-
-    vis = visualize.VisualizeResult([res])
-    vis.plot_energy()
