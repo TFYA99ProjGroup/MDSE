@@ -156,4 +156,22 @@ def main_read(filename):
     """
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
+    check_valid_format(all_simulations)
+    logger.debug("Format OK")
     return unnest_simulation_parameters(all_simulations)
+
+def check_valid_format(simulations):
+    """
+    Takes a dictionary (from ``read_yaml_simulations(...)`` most likely) and
+    checks if it is on a format accepted by ```SimulationManager``.
+
+    Args:
+        dict (dictionary): The parsed dictionary
+
+    """
+    # loop over individual simulations
+    for key, sim in simulations.items():
+        # first check the uppermost level is correct
+        if any(key not in sim for key in ["CRYSTAL","SIMULATION","ENSAMBLE"]):
+            raise RuntimeError("YAML-file not correctely formated")
+    # TODO: This should also check the content of each sub-dictionary more in detail
