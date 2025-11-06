@@ -19,9 +19,10 @@ class VisualizeResult:
         logger.debug(
             f"Initialized a VisualizeResult object with {len(self.results)} simulations"
             )
-        self.available = {"self_diff" : "calc_self_diff", "lindemann" : "calc_lindemann", 
+        self.available = {"self_diff" : "calc_self_diff",
+                          "lindemann" : "calc_lindemann",
                           "debye" : "calc_debye_temperature",
-                          "avg_a" : "estimate_average_a", 
+                          "avg_a" : "estimate_average_a",
                           "DOS" : "calc_density_of_states"}
 
     def plot_MSD(self):
@@ -136,7 +137,7 @@ class VisualizeResult:
             raise RuntimeError(f"Invalid energy {energy_type}")
 
 
-        energies = [getattr(res, available_energies[energy_type])() 
+        energies = [getattr(res, available_energies[energy_type])()
                     for res in self.results]
         times = [res.get_time_axis() for res in self.results]
         names = [res.name for res in self.results]
