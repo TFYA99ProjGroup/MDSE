@@ -1,6 +1,5 @@
-import pytest
 import numpy as np
-from mdse.md.resultMD import ResultMD #Needed for pytest
+from mdse.md.resultMD import ResultMD
 from mdse.md.visualize import VisualizeResult
 
 class MockAtoms:
@@ -28,7 +27,6 @@ class MockAtoms:
     def get_kinetic_energy(self):
         return self.kinetic_energy
 
-@pytest.fixture
 def mock_results():
     res = []
     for i in range(0,10):
@@ -43,30 +41,14 @@ def mock_results():
 
     return res
 
-def test_invalid_prop_plot_scatter(mock_results):
-    """Try plotting a scatter with invalid properties
-    """
-    vis = VisualizeResult(mock_results)
 
-    with pytest.raises(RuntimeError):
-        vis.plot_scatter("self_diff","self_diff","avg_dummy")
-    with pytest.raises(TypeError):
-        vis.plot_scatter()
-    with pytest.raises(RuntimeError):
-        vis.plot_scatter("self_diff","avg_dummy","avg_something")
+def main():
+    vis = VisualizeResult(mock_results())
 
-def test_invalid_prop_plot_histogram(mock_results):
-    """Try plotting a histogram with invalid properties
-    """
-    vis = VisualizeResult(mock_results)
+    vis.plot_energy("kin")
 
-    with pytest.raises(RuntimeError):
-        vis.plot_histogram("avg_dummy")
+    vis.plot_scatter("self_diff","lindemann","avg_a")
 
-def test_invalid_energy_plot(mock_results):
-    """Checks so invalid energy to plot raises error
-    """
-    vis = VisualizeResult(mock_results)
 
-    with pytest.raises(RuntimeError):
-        vis.plot_energy("Dummy_energy")
+if __name__ == "__main__":
+    main()

@@ -468,7 +468,7 @@ class ResultMD:
         n_atoms = len(self.frames) - 1
 
         return Cv / n_atoms
-    
+
     def get_pot_energies(self):
         """Gets the potential energis at each frame.
 
@@ -476,7 +476,7 @@ class ResultMD:
             list: Potential energy at each frame
         """
         return [frame.get_potential_energy() for frame in self.frames]
-    
+
     def get_kin_energies(self):
         """Gets the kinnetic energis at each frame.
 
@@ -494,6 +494,7 @@ class ResultMD:
         dt = self.frames[0].info["dt"]
         times = np.arange(len(self.frames))*dt
         return times
+<<<<<<< HEAD
     
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.
@@ -564,3 +565,5 @@ class ResultMD:
 if __name__ == "__main__":
     res = ResultMD.from_file("cu_dt.traj")
     res.check_equilibrium()
+=======
+>>>>>>> 83-plot-results-to-visualize-data---8

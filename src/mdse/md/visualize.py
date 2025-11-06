@@ -11,27 +11,34 @@ class VisualizeResult:
 
     def __init__(self,data):
         """Initialize VisualizeResult object.
-        
+
         Args:
             data (list): List containing ResultMD objects that are to be visualized.
         """
         self.results = data
-        logger.debug(f"Initialized a VisualizeResult object with {len(self.results)} simulations")
-        self.available = {"self_diff" : "calc_self_diff", "lindemann" : "calc_lindemann", "debye" : "calc_debye_temperature",
-                          "avg_a" : "estimate_average_a", "DOS" : "calc_density_of_states"}
+        logger.debug(
+            f"Initialized a VisualizeResult object with {len(self.results)} simulations"
+            )
+        self.available = {"self_diff" : "calc_self_diff",
+                          "lindemann" : "calc_lindemann",
+                          "debye" : "calc_debye_temperature",
+                          "avg_a" : "estimate_average_a",
+                          "DOS" : "calc_density_of_states"}
 
     def plot_MSD(self):
-        """Collects all MSD vs tau for the list of resultMD. Then plots them togheter
-        
+        """Collects all MSD vs tau for the list of resultMD. Then plots them togheter.
         """
         logger.debug(f"Starting to plot MSD for {len(self.results)} simulations")
         colors = cm.viridis(np.linspace(0,1,len(self.results)))
 
         for i, result in enumerate(self.results):
             MSD_vs_tau = result._calc_msd_list()
-            plt.plot(MSD_vs_tau[0],MSD_vs_tau[1],label = f"MSD_x ({result.name})", marker = "o", color = colors[i] )
-            plt.plot(MSD_vs_tau[0],MSD_vs_tau[2],label = f"MSD_y ({result.name})", marker = "x", color = colors[i] )
-            plt.plot(MSD_vs_tau[0],MSD_vs_tau[3],label = f"MSD_z ({result.name})", marker = "^", color = colors[i] )
+            plt.plot(MSD_vs_tau[0],MSD_vs_tau[1],label = f"MSD_x ({result.name})",
+                     marker = "o", color = colors[i] )
+            plt.plot(MSD_vs_tau[0],MSD_vs_tau[2],label = f"MSD_y ({result.name})",
+                     marker = "x", color = colors[i] )
+            plt.plot(MSD_vs_tau[0],MSD_vs_tau[3],label = f"MSD_z ({result.name})",
+                     marker = "^", color = colors[i] )
         logger.debug("Sucessfully got MSD data to plot")
 
         plt.xlabel("Time lag (fs)")
@@ -50,13 +57,15 @@ class VisualizeResult:
             size (int): Size of data points
         """
         logger.debug(f"Starting to plot scatter for {len(self.results)} simulations")
-  
+
         properties = [prop1,prop2,prop3]
 
         missing = [p for p in properties if p not in self.available]
 
         if missing:
-            logger.debug(f"Was not able to scatter plot, invalid properties given, {missing}")
+            logger.error(
+                f"Was not able to scatter plot, invalid properties given, {missing}"
+                )
             raise RuntimeError(f"Invalid properties {missing}")
         logger.debug("Scatter plot got valid properties")
 
@@ -73,16 +82,18 @@ class VisualizeResult:
         plt.show()
 
     def plot_histogram(self,prop1, bins = 100):
-        """Plots a histogram.
+        """Plots a histogram, based on 1 property.
 
         args:
             prop1(str): The propertie to plot.
-            bins(int): How many bins the property should be placed in.    
+            bins(int): How many bins the property should be placed in.
         """
         if prop1 not in self.available:
-            logger.debug(f"Was not able to histogram plot, invalid property given, {prop1}")
+            logger.error(
+                f"Was not able to histogram plot, invalid property given, {prop1}"
+                )
             raise RuntimeError(f"Invalid property {prop1}")
-        
+
         logger.debug("Histogram plot got valid properties")
 
         x_values = [getattr(result,self.available[prop1])() for result in self.results]
@@ -96,12 +107,16 @@ class VisualizeResult:
     def plot_DOS(self):
         """Plots DOS vs angular frequency, for all results saved.
         """
-        DOS, omega = zip(*[getattr(result,self.available["DOS"])() for result in self.results])
+        DOS, omega = zip(
+            *[
+                getattr(result,self.available["DOS"])() for result in self.results
+                ]
+                )
         names = [res.name for res in self.results]
         for DOS_i, omega_i,name in zip(DOS,omega,names):
             plt.plot(DOS_i,omega_i)
             plt.text(DOS_i[-1],omega_i[-1],f"{name}")
-        
+
         logger.debug("DOS plot values were sucesfully fetched")
         plt.xlabel("Angular frequency")
         plt.ylabel("DOS")
@@ -109,18 +124,21 @@ class VisualizeResult:
         plt.show()
 
     def plot_energy(self, energy_type = "kin"):
-        """
+        """Plots specified energy for all the simulations stored
         """
 
         available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies"}
         labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)"}
 
         if energy_type not in available_energies:
-            logger.debug(f"Was not able to histogram energy, invalid energy given, {energy_type}")
+            logger.error(
+                f"Was not able to histogram energy, invalid energy given, {energy_type}"
+                )
             raise RuntimeError(f"Invalid energy {energy_type}")
-        
 
-        energies = [getattr(res, available_energies[energy_type])() for res in self.results]
+
+        energies = [getattr(res, available_energies[energy_type])()
+                    for res in self.results]
         times = [res.get_time_axis() for res in self.results]
         names = [res.name for res in self.results]
 

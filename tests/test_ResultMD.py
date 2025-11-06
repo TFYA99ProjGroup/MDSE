@@ -11,7 +11,7 @@ class MockAtoms:
         self.info = {
             "dt": 5
         }
-        self.kinetic_energy = kin 
+        self.kinetic_energy = kin
         self.potential_energy = pot
 
     def __len__(self):
@@ -22,19 +22,20 @@ class MockAtoms:
 
     def get_velocities(self):
         return self.velocities
-    
+
     def get_potential_energy(self):
         return self.potential_energy
-    
+
     def get_kinetic_energy(self):
         return self.kinetic_energy
-    
+
 
 @pytest.fixture
 def mock_frames():
     """Generate mock ASE-like frames with positions and velocities."""
     np.random.seed(42)
-    frames = [MockAtoms(np.random.rand(5, 3), np.random.rand(5, 3), 1, 2) for _ in range(20)]
+    frames = [MockAtoms(np.random.rand(5, 3),
+                        np.random.rand(5, 3), 1, 2) for _ in range(20)]
     return frames
 
 @pytest.fixture
@@ -275,7 +276,7 @@ def test_energies(mock_frames):
 
     assert(len(mock_frames) == len(pot_energ))
     assert(len(mock_frames) == len(kin_energ))
-    
+
     right_pot = [1]*len(mock_frames)
     right_kin = [2]*len(mock_frames)
 
