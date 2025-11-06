@@ -547,8 +547,8 @@ class ResultMD:
          #----Based on total energy-----
 
         energy_frame = self._check_equilibrium_const(Tot_energy,0.0001)
-        
-        if energy_frame != len(Tot_energy)-1: #We found equilibrium
+
+        if energy_frame != len(Tot_energy)-2: #We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, energy reaches const value")
             return energy_frame
@@ -557,7 +557,7 @@ class ResultMD:
 
         temp_frame = self._check_equilibrium_const(temperatures,0.001)
         
-        if temp_frame != len(temperatures)-1: #We found equilibrium
+        if temp_frame != len(temperatures)-2: #We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, temperature reaches const value")
             return temp_frame
@@ -565,7 +565,7 @@ class ResultMD:
         #----If oscillating system----
 
         oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.00005)
-        if oscill_frame != len(Tot_energy)-1: #We found equilibrium
+        if oscill_frame != len(Tot_energy)-2: #We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, energy oscillates")
             return oscill_frame
@@ -585,8 +585,8 @@ class ResultMD:
         returns:
             pos (int): Position of frame where equilibrium starts
         """
-        difference = [abs(property[i+1]-property[i])/property[i] for i in range(len(property)-1)]    
-
+        difference = [abs(property[i+1]-property[i])/property[i] for i in range(len(property)-1)]
+ 
         for pos,diff in enumerate(difference):
             if (diff <= tol):
                 break
@@ -611,7 +611,7 @@ class ResultMD:
         window_lenght = 20
         windows = [Tot_energy[i: (i+window_lenght)] for i in range(0,len(Tot_energy)-window_lenght)]
         #Mean of each window
-        windows_means = [sum(win)/len(win) for win in windows]
+        windows_means = np.array([sum(win)/len(win) for win in windows])
 
         #Global mean
         tot_mean = sum(Tot_energy)/len(Tot_energy)
@@ -619,12 +619,16 @@ class ResultMD:
         deviations = np.abs((windows_means - tot_mean) / tot_mean)
 
         #Find where we start oscillating
+        if len(deviations) == 0:
+            pos = len(Tot_energy)-2
+        
         for pos, devs in enumerate(deviations):
             if( devs < tol):
                 break
+            else:
+                pass
         
         return pos
-
 
 if __name__ == "__main__":
     res = ResultMD.from_file("cu_dt.traj")

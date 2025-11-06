@@ -5,7 +5,7 @@ from mdse.md.resultMD import ResultMD
 
 
 class MockAtoms:
-    def __init__(self, positions, velocities=None, pot = 0, kin = 0):
+    def __init__(self, positions, velocities=None, pot = 0, kin = 0, temp = 0):
         self.positions = positions
         self.velocities = velocities
         self.info = {
@@ -13,6 +13,7 @@ class MockAtoms:
         }
         self.kinetic_energy = kin
         self.potential_energy = pot
+        self.temperature = temp
 
     def __len__(self):
         return len(self.positions)
@@ -28,6 +29,9 @@ class MockAtoms:
 
     def get_kinetic_energy(self):
         return self.kinetic_energy
+    
+    def get_temperature(self):
+        return self.temperature
 
 
 @pytest.fixture
@@ -36,6 +40,17 @@ def mock_frames():
     np.random.seed(42)
     frames = [MockAtoms(np.random.rand(5, 3),
                         np.random.rand(5, 3), 1, 2) for _ in range(20)]
+    return frames
+
+@pytest.fixture
+def mock_frames_non_equil():
+    """Generate mock ASE-like frames with positions and velocities. Non equilibrium"""
+    np.random.seed(42)
+    frames = [MockAtoms(np.random.rand(5, 3),
+                        np.random.rand(5, 3),
+                        np.random.uniform(1,200),
+                        0,
+                        np.random.uniform(1,60)) for _ in range(20)]
     return frames
 
 @pytest.fixture
@@ -289,3 +304,11 @@ def test_time_axis(mock_frames):
     times = result.get_time_axis()
 
     assert(len(times) == len(mock_frames))
+
+def test_equilibrium_check(mock_frames_non_equil):
+    """Use an random energy and temperature frames. Should give non-equilibrium
+    """
+    result = ResultMD(mock_frames_non_equil)
+    position = result.check_equilibrium()
+    assert(position == 0)
+    assert(not result.reached_equilibrium)

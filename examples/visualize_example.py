@@ -3,7 +3,7 @@ from mdse.md.resultMD import ResultMD
 from mdse.md.visualize import VisualizeResult
 
 class MockAtoms:
-    def __init__(self, positions, velocities=None, pot = 0, kin = 0):
+    def __init__(self, positions, velocities=None, pot = 0, kin = 0, temp = 0):
         self.positions = positions
         self.velocities = velocities
         self.info = {
@@ -11,6 +11,7 @@ class MockAtoms:
         }
         self.kinetic_energy = kin
         self.potential_energy = pot
+        self.temperature = temp
 
     def __len__(self):
         return len(self.positions)
@@ -26,6 +27,9 @@ class MockAtoms:
 
     def get_kinetic_energy(self):
         return self.kinetic_energy
+    
+    def get_temperature(self):
+        return self.temperature
 
 def mock_results():
     res = []
