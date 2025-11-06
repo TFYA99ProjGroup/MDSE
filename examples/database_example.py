@@ -1,6 +1,6 @@
 """
-This example utilises the resultMD class to calculate the mean square
-displacement of a simulation.
+This example utilises the resultMD class to calculate some properties
+and then store them in a MongoDB database.
 """
 from mdse.md.resultMD import ResultMD
 from pymongo import MongoClient
@@ -11,7 +11,7 @@ lindemann = result.calc_lindemann()
 self_diffusion = result.calc_self_diff()
 iso_heat_cap_per_atom = result.calc_isochoric_heat_capacity_per_atom()
 
-# Connect to MongoDB
+# Connect to MongoDB. MongoDB must be running.
 client = MongoClient("mongodb://admin:secret@localhost:27017/")
 
 # Select your database
@@ -30,12 +30,6 @@ doc = {
   "composition": {
     "elements": ["Cu"],
     "chemical_formula_reduced": "Cu"
-  },
-  "simulation": {
-    "ensemble": "NVT",
-    "temperature_K": 300,
-    "timestep_fs": 2.0,
-    "total_time_fs": 20000
   },
   "properties": {
     "msd": msd,
