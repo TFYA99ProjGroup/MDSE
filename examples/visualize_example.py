@@ -43,11 +43,14 @@ def mock_results():
 
 
 def main():
-    vis = VisualizeResult(mock_results())
-
+    #vis = VisualizeResult(mock_results())
+    res = ResultMD.from_file("cu_dt.traj")
+    res2 = ResultMD.from_file("cu_dt_2.traj")
+    vis = VisualizeResult([res,res2])
     vis.plot_energy("kin")
+    vis.plot_MSD()
 
-    vis.plot_scatter("self_diff","lindemann","avg_a")
+    #vis.plot_scatter("self_diff","lindemann","avg_a")
 
 
 if __name__ == "__main__":

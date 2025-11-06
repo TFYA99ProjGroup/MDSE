@@ -3,7 +3,6 @@ from scipy import constants
 import numpy as np
 from asap3 import Trajectory
 from ase import units
-import visualize
 
 import logging
 
@@ -29,6 +28,7 @@ class ResultMD:
         self.frames = data
         self.frames_in_fs = 50
         self.name = ""
+        self.reached_equilibrium = False
 
         self.dos = None
 
@@ -66,7 +66,13 @@ class ResultMD:
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
+        if self.reached_equilibrium:
+            positions = positions[self.check_equilibrium() : ]
+
         taus = range(7, len(self.frames) - 7)
+        #Comment: This removes very short taus. So short timesteps
+        #But we still get the early frames
+        
 
         MSD_at_tau_x = []
         MSD_at_tau_y = []
@@ -203,7 +209,10 @@ class ResultMD:
             numpy.ndarray: A 1D array containing the normalized VACF. Its
                 length will be `int((1 - frame_skip) * len(self.frames) * max_lag)`.
         """
-        nskip = int(frame_skip * len(self.frames))
+        if self.reached_equilibrium:
+            nskip = self.check_equilibrium()
+        else:
+            nskip = int(frame_skip * len(self.frames))
         frames = self.frames[nskip:]
         nframes, _ = np.shape(frames)
         max_lag = int(nframes * max_lag)
@@ -251,7 +260,11 @@ class ResultMD:
                   angular frequencies. The units depend on the units of
                   `dt` (e.g., rad/fs if `dt` is in fs).
         """
-        max_lag = int(frame_skip * len(self.frames))
+        if self.reached_equilibrium:
+            max_lag = self.check_equilibrium()
+            frame_skip = max_lag/len(self.frames)
+        else:
+            max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
         dt = frames[0].info["dt"] * 1e-15 / units.fs
@@ -331,6 +344,10 @@ class ResultMD:
         kB = constants.Boltzmann
         hbar = constants.hbar
         _, natoms = np.shape(self.frames)
+
+        if self.reached_equilibrium:
+            frame_skip = self.check_equilibrium() / len(self.frames)
+
         dos, omega = self.calc_density_of_states(frame_skip)
 
         cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
@@ -360,7 +377,12 @@ class ResultMD:
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
 
         # Filter out noisy start/end, 10%
-        filter_start = int(len(MSD_of_tau_x) * 0.1)
+        """
+        if self.reached_equilibrium:
+            filter_start = self.check_equilibrium()
+        else:
+            filter_start = int(len(MSD_of_tau_x) * 0.1)"""
+        filter_start = 0 #should already have filtered out first bad frames in calc_msd
         filter_end = int(len(MSD_of_tau_x) * 0.9)
 
         MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
@@ -426,7 +448,10 @@ class ResultMD:
 
         H_J = self.calc_isobaric_enthalpy()
 
-        frame_skips = 0.5
+        if self.reached_equilibrium:
+            frame_skips = self.check_equilibrium() / len(self.frames)
+        else:
+            frame_skips = 0.5
         nskip = int(len(H_J) * frame_skips)
         H_J = H_J[nskip:]  # Skip the part of the simulation before equilibration
 
@@ -457,7 +482,10 @@ class ResultMD:
         E_J = np.array(E_eV) * constants.eV
         T_K = np.mean(T_K)
 
-        frame_skips = 0.5
+        if self.reached_equilibrium:
+            frame_skips = self.check_equilibrium() / len(self.frames)
+        else:
+            frame_skips = 0.5
         nskip = int(len(E_J) * frame_skips)
         E_J = E_J[nskip:]  # Skip the part of the simulation before equilibration
 
@@ -494,76 +522,110 @@ class ResultMD:
         dt = self.frames[0].info["dt"]
         times = np.arange(len(self.frames))*dt
         return times
-<<<<<<< HEAD
+    
+    def get_temperatures(self):
+        """Gets temperature for all frames
+
+        returns:
+            list: List of all temperatures at each frame
+        """
+        return [frame.get_temperature() for frame in self.frames]
     
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.
         Also sets at what frame this happens
         
         returns:
-            bool: True if system did reach. False othwerise
-            pos (int): Index of where equilibrium was found
+            pos (int): Index of where equilibrium was found. 0 if no equilibrium found.
         """
+        logger.debug("Started check if equilibrium was reached")
         kin_energy = self.get_kin_energies()
         pot_energy = self.get_pot_energies()
         Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
-
+        temperatures = self.get_temperatures()
 
          #----Based on total energy-----
 
-        energy_frame = self.check_equilibrium_energy(Tot_energy)
+        energy_frame = self._check_equilibrium_const(Tot_energy,0.0001)
         
         if energy_frame != len(Tot_energy)-1: #We found equilibrium
-            pass
-        
+            self.reached_equilibrium = True
+            logger.debug("Found equilibrium, energy reaches const value")
+            return energy_frame
 
+         #----Based on temperature-----
+
+        temp_frame = self._check_equilibrium_const(temperatures,0.001)
+        
+        if temp_frame != len(temperatures)-1: #We found equilibrium
+            self.reached_equilibrium = True
+            logger.debug("Found equilibrium, temperature reaches const value")
+            return temp_frame
+        
         #----If oscillating system----
 
-        oscill_frame = self.check_equilibrium_oscill(Tot_energy)
+        oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.00005)
+        if oscill_frame != len(Tot_energy)-1: #We found equilibrium
+            self.reached_equilibrium = True
+            logger.debug("Found equilibrium, energy oscillates")
+            return oscill_frame
+        
+        #----No equilibrium---
+        self.reached_equilibrium = False
+        logger.debug("No equilibrium was found")
+        return 0
+        
 
-
-    def check_equilibrium_energy(self, Tot_energy):
-        """Checks when total energy starts to stabalize around a constant value.
+    def _check_equilibrium_const(self, property,tol):
+        """Checks when a propery starts to stabalize around a constant value.
         
         args:
-            Tot_energy (list): List containing total energy for all frames
+            Property (list): List containing property for all frames
+            tol (float): Tolerance of when energy has reached constant value
         returns:
             pos (int): Position of frame where equilibrium starts
         """
-        difference = [abs(Tot_energy[i+1]-Tot_energy[i])/Tot_energy[i] for i in range(len(Tot_energy)-1)]    
+        difference = [abs(property[i+1]-property[i])/property[i] for i in range(len(property)-1)]    
 
-        tolerance = 0.001
-
-        for diff,pos in enumerate(difference):
-            if (diff <= tolerance):
+        for pos,diff in enumerate(difference):
+            if (diff <= tol):
                 break
             else:
                 pass
 
         return pos
-    
-    def check_equilibrium_oscill(self, Tot_energy):
-        """Checks if energy follows an oscillating pattern. I.e if mean value is constant over an intervall
 
+    def _check_equilibrium_oscill(self, Tot_energy, tol):
+        """Checks if energy follows an oscillating pattern, by sweeping window along the frames
+        and checking mean value of window compared to total mean value.
+        Determine if equilibrium is reached if sweep gives a mean value within tolerance of the total.
+
+        args:
+            Tot_energy (list): List of total energy for all frames
+            tol (float): The tolerance in % from total mean value
+        returns:
+            pos (int): At what frame we start getting within tolerance
         
         """
-        nr_of_intervall = 10
-        intervall_lenght = len(Tot_energy)//nr_of_intervall
+        #do a sweep
+        window_lenght = 20
+        windows = [Tot_energy[i: (i+window_lenght)] for i in range(0,len(Tot_energy)-window_lenght)]
+        #Mean of each window
+        windows_means = [sum(win)/len(win) for win in windows]
 
-        sub_intervalls = [Tot_energy[i*intervall_lenght : (i+1)*intervall_lenght] for i in range(0,nr_of_intervall)]
-
-        sub_intervalls_means = [sum(sub)/len(sub) for sub in sub_intervalls]
+        #Global mean
         tot_mean = sum(Tot_energy)/len(Tot_energy)
+        #deviations from this
+        deviations = np.abs((windows_means - tot_mean) / tot_mean)
 
-        deviations = np.abs((sub_intervalls_means - tot_mean) / tot_mean)
-
-        worst = np.argmax(deviations)
-        print(deviations)
-    
+        #Find where we start oscillating
+        for pos, devs in enumerate(deviations):
+            if( devs < tol):
+                break
+        
+        return pos
 
 
 if __name__ == "__main__":
     res = ResultMD.from_file("cu_dt.traj")
     res.check_equilibrium()
-=======
->>>>>>> 83-plot-results-to-visualize-data---8
