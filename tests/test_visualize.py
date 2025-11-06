@@ -64,7 +64,7 @@ def test_invalid_prop_plot_scatter(mock_results):
         vis.plot_histogram("avg_dummy")
 
 def test_invalid_energy_plot(mock_results):
-    """
+    """Checks so invalid energy to plot raises error
     """
     vis = VisualizeResult(mock_results)
 

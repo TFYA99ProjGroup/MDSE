@@ -21,8 +21,7 @@ class VisualizeResult:
                           "avg_a" : "estimate_average_a", "DOS" : "calc_density_of_states"}
 
     def plot_MSD(self):
-        """Collects all MSD vs tau for the list of resultMD. Then plots them togheter
-        
+        """Collects all MSD vs tau for the list of resultMD. Then plots them togheter.
         """
         logger.debug(f"Starting to plot MSD for {len(self.results)} simulations")
         colors = cm.viridis(np.linspace(0,1,len(self.results)))
@@ -56,7 +55,7 @@ class VisualizeResult:
         missing = [p for p in properties if p not in self.available]
 
         if missing:
-            logger.debug(f"Was not able to scatter plot, invalid properties given, {missing}")
+            logger.error(f"Was not able to scatter plot, invalid properties given, {missing}")
             raise RuntimeError(f"Invalid properties {missing}")
         logger.debug("Scatter plot got valid properties")
 
@@ -73,14 +72,14 @@ class VisualizeResult:
         plt.show()
 
     def plot_histogram(self,prop1, bins = 100):
-        """Plots a histogram.
+        """Plots a histogram, based on 1 property.
 
         args:
             prop1(str): The propertie to plot.
             bins(int): How many bins the property should be placed in.    
         """
         if prop1 not in self.available:
-            logger.debug(f"Was not able to histogram plot, invalid property given, {prop1}")
+            logger.error(f"Was not able to histogram plot, invalid property given, {prop1}")
             raise RuntimeError(f"Invalid property {prop1}")
         
         logger.debug("Histogram plot got valid properties")
@@ -109,14 +108,14 @@ class VisualizeResult:
         plt.show()
 
     def plot_energy(self, energy_type = "kin"):
-        """
+        """Plots specified energy for all the simulations stored
         """
 
         available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies"}
         labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)"}
 
         if energy_type not in available_energies:
-            logger.debug(f"Was not able to histogram energy, invalid energy given, {energy_type}")
+            logger.error(f"Was not able to histogram energy, invalid energy given, {energy_type}")
             raise RuntimeError(f"Invalid energy {energy_type}")
         
 
