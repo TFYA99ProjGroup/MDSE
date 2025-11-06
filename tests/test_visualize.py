@@ -10,7 +10,7 @@ class MockAtoms:
         self.info = {
             "dt": 5
         }
-        self.kinetic_energy = kin 
+        self.kinetic_energy = kin
         self.potential_energy = pot
 
     def __len__(self):
@@ -21,21 +21,21 @@ class MockAtoms:
 
     def get_velocities(self):
         return self.velocities
-    
+
     def get_potential_energy(self):
         return self.potential_energy
-    
+
     def get_kinetic_energy(self):
         return self.kinetic_energy
-    
+
 @pytest.fixture
 def mock_results():
     res = []
     for i in range(0,10):
         #np.random.seed(42)
-        frames = [MockAtoms(np.random.rand(5, 3), 
+        frames = [MockAtoms(np.random.rand(5, 3),
                             np.random.rand(5, 3),
-                            np.random.uniform(40,60), 
+                            np.random.uniform(40,60),
                             np.random.uniform(10,20)) for _ in range(20)]
         new_frames = ResultMD(frames)
         new_frames.name = f"Sim {i}"
@@ -55,7 +55,7 @@ def test_invalid_prop_plot_scatter(mock_results):
     with pytest.raises(RuntimeError):
         vis.plot_scatter("self_diff","avg_dummy","avg_something")
 
-def test_invalid_prop_plot_scatter(mock_results):
+def test_invalid_prop_plot_histogram(mock_results):
     """Try plotting a histogram with invalid properties
     """
     vis = VisualizeResult(mock_results)

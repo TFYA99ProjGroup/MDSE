@@ -467,7 +467,7 @@ class ResultMD:
         n_atoms = (len(self.frames) - 1)
 
         return Cv / n_atoms
-    
+
     def get_pot_energies(self):
         """Gets the potential energis at each frame.
 
@@ -475,7 +475,7 @@ class ResultMD:
             list: Potential energy at each frame
         """
         return [frame.get_potential_energy() for frame in self.frames]
-    
+
     def get_kin_energies(self):
         """Gets the kinnetic energis at each frame.
 
