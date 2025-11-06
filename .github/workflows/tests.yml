@@ -39,6 +39,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install pytest
       - run: pip install -e .
+      - run: pip install pymongo
       - name: Create mongoDB Docker container      
         run: sudo docker run -d -p 27017:27017 mongo:latest
       - name: Run pytest
