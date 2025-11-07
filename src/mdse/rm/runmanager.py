@@ -85,24 +85,43 @@ class RunManager:
             logger.debug(properties)
             logger.debug(result)
 
-            self.docs[index]["Properties"] = {}
+            propertie_values = {}
 
             if ("Lindemann" in properties) or ("all" in properties):
                 lindemann = result.calc_lindemann()
                 logger.info(f"Lindemann: {lindemann}")
-                self.docs[index]["Properties"]["Lindemann"] = lindemann
+                propertie_values["Lindemann"] = lindemann
 
             if ("Self-diffusion" in properties) or ("all" in properties):
                 self_diff = result.calc_self_diff()
                 logger.info(f"Self-diffusion: {self_diff}")
-                self.docs[index]["Properties"]["Self-diffusion"] = self_diff
+                propertie_values["Self-diffusion"] = self_diff
             # Doesn't work right now
             """if ("Isobaric specific heat" in properties) or \
                     ("all" in properties):
                 ish = result.calc_isobaric_specific_heat()
                 logger.info(f"Isobaric specific heat: {ish}")
-                self.docs[index]["Properties"]["Isobaric specific heat"] = ish"""
+                propertie_values["Isobaric specific heat"] = ish"""
 
+            crystal = config[next(iter(config))]["CRYSTAL"]
+            ensamble = config[next(iter(config))]["ENSAMBLE"]
+            self.docs[index]["Structure_id"] = str(crystal["Name"]) + \
+                "_" + str(ensamble["Temp"]) + "K"
+
+            atoms = {}
+            atoms["elements"] = result.frames[0].get_chemical_symbols()
+            atoms["positions"] = result.frames[0].get_positions().tolist()
+            atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
+            self.docs[index]["atoms"] = atoms
+
+            composition = {}
+            composition["elements"] = list(
+                set(result.frames[0].get_chemical_symbols()))
+            formula, _ = result.frames[0].symbols.formula.reduce()
+            composition["chemical_formula_reduced"] = str(formula)
+            self.docs[index]["composition"] = composition
+
+            self.docs[index]["Properties"] = propertie_values
         logger.debug(self.docs)
         logger.debug(len(self.docs))
         for index, doc in enumerate(self.docs):

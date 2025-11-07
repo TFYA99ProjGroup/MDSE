@@ -428,11 +428,6 @@ class SimulationManager:
             self.crystal.calc = self._check_calculator(calc_params)
 
             self.crystal.info["p_au"] = self.pressure_au
-            logger.debug(self.crystal)
-            logger.debug(self.timestep)
-            logger.debug(self.pressure_au)
-            logger.debug(self.thermo_time)
-            logger.debug(self.baro_time)
             dyn = IsotropicMTKNPT(
                 self.crystal,
                 timestep=self.timestep,

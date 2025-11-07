@@ -24,7 +24,9 @@ class ResultMD:
         Parameters:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
-        logger.debug("Initilizing an instance of ResultMD")
+
+        self.chemical_notation = data[0].symbols
+
         self.frames = data
         self.frames_in_fs = 50
 

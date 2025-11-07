@@ -14,7 +14,7 @@ class DBWriter:
 
     def write_jsonfiles_to_db(self):
         db = self.client["materials_db"]
-        examples = db["resultexamples"]
+        examples = db["resultexamples3"]
         logger.debug(self.path)
         json_files = glob.glob(f"{self.path}/*.json")
         logger.debug(json_files)
@@ -34,7 +34,7 @@ class DBWriter:
         """Bson variant, not in use right now.
         """
         db = self.client["materials_db"]
-        examples = db["resultexamples"]
+        examples = db["resultexamples2"]
         logger.debug(self.path)
         bson_files = glob.glob(f"{self.path}/*.bson")
         logger.debug(bson_files)
