@@ -120,7 +120,7 @@ class SimulationManager:
             elif crystal_type == "FILE":
                 self.crystal = ase.io.read(
                     crystal_params.get("Filepath")
-                ) * crystal_params.get("Supercell")
+                ) * crystal_params.get("Supercell",(1,1,1))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
@@ -129,7 +129,7 @@ class SimulationManager:
                     positions=crystal_params.get("Positions"),
                     cell=crystal_params.get("Cell"),
                     pbc=crystal_params.get("Pcb"),
-                ) * crystal_params.get("Supercell")
+                ) * crystal_params.get("Supercell",(1,1,1))
             else:
                 raise NotImplementedError()
 
@@ -189,10 +189,10 @@ class SimulationManager:
         Requires ASE's `view` function to be available.
         """
         logger.debug("Viewing super crystal")
-        if self.positions is None:
+        try:
             super_crystal = self.crystal
             view(super_crystal)
-        else:
+        except Exception:
             raise RuntimeError("Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
