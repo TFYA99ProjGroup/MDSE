@@ -463,6 +463,6 @@ class ResultMD:
 
         Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
 
-        n_atoms = (len(self.frames) - 1)
+        n_atoms = len(self.frames[0])
 
         return Cv / n_atoms
