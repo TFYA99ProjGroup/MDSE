@@ -16,4 +16,4 @@ if not Path("Cu_300.traj").exists():
     rm.run_nve_simulations()
 
 result = ResultMD.from_file("Cu_300.traj")
-print(result.calc_lindemann())
+print(result.calc_density_of_states())

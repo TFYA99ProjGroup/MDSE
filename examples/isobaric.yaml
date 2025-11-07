@@ -4,9 +4,8 @@ Copper:
   Lattice_a: 3.6149
   Cubic: True
   Temp_list: 
-    - 200
     - 300
-    - 345
-  Timestep: 2 #fs
-  Length: 20000
+  Timestep: 1 #fs
+  Length: 50000
   TrajInterval: 5
+  Pressure: 3.85e-2

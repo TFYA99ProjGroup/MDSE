@@ -8,7 +8,7 @@ Copper:
     - 200
     - 300
   Timestep: 2 #fs
-  Length: 20000
+  Length: 200000
   TrajInterval: 5
 
 Nickel:
@@ -21,5 +21,5 @@ Nickel:
     - 200
     - 300
   Timestep: 2
-  Length: 20000
+  Length: 200000
   TrajInterval: 5
