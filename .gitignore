@@ -2,6 +2,8 @@
 # ASE files
 *.traj
 
+
+# MongoDB
 mongo_data/
 
 ###
@@ -34,6 +36,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+results/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
