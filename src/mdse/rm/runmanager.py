@@ -65,6 +65,12 @@ class RunManager:
         """
         pass
 
+    def run_simulations(self, overwrite_ensamble=None):
+        for sim in self.md_simulations:
+            if overwrite_ensamble is not None:
+                sim.ensamble = overwrite_ensamble
+            sim.simulate()
+
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""
         for sim in self.md_simulations:
