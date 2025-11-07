@@ -2,7 +2,7 @@
 # ASE files
 *.traj
 
-
+mongo_data/
 
 ###
 ### Python auto generated

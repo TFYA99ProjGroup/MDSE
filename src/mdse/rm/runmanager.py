@@ -1,5 +1,6 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
+from mpi4py import MPI
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +43,7 @@ class RunManager:
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
 
-        logger.debug("RunManager init done")
+        logger.debug("RunManager done innit bruv!")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
@@ -66,10 +67,61 @@ class RunManager:
         pass
 
     def run_simulations(self, overwrite_ensamble=None):
-        for sim in self.md_simulations:
-            if overwrite_ensamble is not None:
-                sim.ensamble = overwrite_ensamble
-            sim.simulate()
+        """
+        Distribute simulations across MPI ranks using a work queue.
+        Each rank (including master) runs simulations.
+        """
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+        if size < 2:
+            logger.warning("MPI size < 2. Now the poor Master has to do all the work \
+                            alone! But right now he's shy and won't do it. Exiting...")
+            return
+        TAG_WORK = 1
+        TAG_DONE = 2
+        TAG_STOP = 3
+
+        # Only master prepares the list of jobs
+        if rank == 0:
+            finished_workers = 0
+            num_workers = size - 1
+            jobs = list(range(len(self.md_simulations)))
+
+            while finished_workers < num_workers:
+                status = MPI.Status()
+                _ = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+                src = status.Get_source()
+                tag = status.Get_tag()
+
+                if tag == TAG_DONE:
+                    if jobs:
+                        job = jobs.pop(0)
+                        comm.send(job, dest=src, tag=TAG_WORK)
+                        logger.debug(f"[Master] Sent new job {job} to worker {src}")
+                    else:
+                        comm.send(None, dest=src, tag=TAG_STOP)
+                        finished_workers += 1
+                        logger.debug(f"[Master] Sent stop signal to worker {src}")
+
+            logger.debug("[Master] All jobs completed.")
+        else:
+            comm.send("", dest=0, tag=TAG_DONE)
+            while True:
+                status = MPI.Status()
+                job = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                tag = status.Get_tag()
+                if tag == TAG_STOP:
+                    logger.debug(f"[Worker {rank}] Received stop signal from master.")
+                    break
+                if tag == TAG_WORK:
+                    logger.debug(f"[Worker {rank}] Received job {job}")
+                    # Run the simulation here! ##################
+                    #
+                    #############################################
+                    logger.debug(f"[Worker {rank}] Completed job {job}")
+                    comm.send("", dest=0, tag=TAG_DONE)
+
 
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""
