@@ -111,7 +111,7 @@ def expand_parameter(simulation_to_expand, parameter):
     values_as_list = ensamble_params.get(param_list)
     if values_as_list:
         logger.debug(f"Parameter {parameter} was a list, extracting...")
-        for i, value in enumerate(values_as_list):
+        for value in values_as_list:
             # Shallow copy, might need more for nested structures
             new_params = deepcopy(sim_params)
             logger.debug(sim_params)
@@ -125,13 +125,11 @@ def expand_parameter(simulation_to_expand, parameter):
     values_as_range = sim_params.get(param_range)
     if values_as_range:
         logger.debug(f"Parameter {parameter} was a range, iterating...")
-        for i, value in enumerate(
-            range(
+        for value in range(
                 values_as_range["Start"],
                 values_as_range["Stop"],
                 values_as_range["Step"],
-            )
-        ):
+            ):
             new_params = deepcopy(sim_params)
             new_params.get("ENSAMBLE").pop(param_range)
             new_params.get("ENSAMBLE")[parameter] = value

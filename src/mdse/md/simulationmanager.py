@@ -94,7 +94,28 @@ class SimulationManager:
 
     def __init__(self, config):
         """
-        comments
+        Initialize a molecular dynamics simulation instance.
+
+        This constructor sets up a crystal structure and initializes
+        molecular dynamics parameters (simulation, ensemble, and crystal setup)
+        from the given configuration dictionary.
+
+        The crystal can be created in one of three ways:
+        - **BULK**: Generates a bulk crystal using ASE's `bulk()` function.
+        - **FILE**: Loads a crystal structure from a file using ASE I/O.
+        - **LIST**: Manually defines atoms from provided symbols, positions, 
+          and cell parameters.
+
+        Simulation parameters such as timestep, total length, trajectory saving
+        intervals, and calculator type are also initialized. Ensemble parameters
+        (e.g., NVE, NVT, NPT) are parsed to configure temperature, pressure,
+        and thermostat/barostat relaxation times.
+
+        Parameters
+        ----------
+        config : dict
+            Configuration dictionary containing simulation setup parameters.
+            This must be structured according to the standard.
         """
 
         logger.debug("Initialize an instance of SimulateMD")
@@ -290,7 +311,6 @@ class SimulationManager:
 
     def simulate(
         self,
-        calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,

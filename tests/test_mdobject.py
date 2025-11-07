@@ -95,7 +95,7 @@ def test_nve_ensamble():
     sim = SimulationManager(config)
     assert sim.ensamble.lower() == "nve"
     with patch.object(sim, "simulate_nve") as mock_nve:
-        sim.simulate(calculator="EMT")
+        sim.simulate()
         mock_nve.assert_called_once()
 
 
@@ -125,7 +125,7 @@ def test_nvt_ensamble():
     sim = SimulationManager(config)
     assert sim.ensamble.lower() == "nvt"
     with patch.object(sim, "simulate_nvt") as mock_nvt:
-        sim.simulate(calculator="EMT")
+        sim.simulate()
         mock_nvt.assert_called_once()
 
 
