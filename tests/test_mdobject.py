@@ -3,186 +3,227 @@ import numpy as np
 from pytest import raises
 from mdse.md.simulationmanager import SimulationManager
 from unittest.mock import patch
+from ase import units
 
 
 def test_mdobject():
     sim = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6,
-        "Cubic": True,
-        "Temp": 800,
-        "Timestep": 2,
-        "Length": 800,
-        "TrajInterval": 10,
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "NVE", "Temp": 800},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 800,
+            "TrajInterval": 10,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
     }
 
-    sim3 = SimulationManager(sim, create_trajectory=True)
+    sim3 = SimulationManager(sim)
 
     assert sim3.crystal.symbols[0] == "Cu"
     assert (sim3.crystal.cell.lengths() == 3.6).all()
     assert sim3.temperature == 800
 
-    sim3.simulate_nve(calculator="EMT")
+    sim3.simulate_nve()
 
     traj_file = Path("Cu_800.traj")
     assert Path.exists(traj_file)
     traj_file.unlink()
 
-    sim["Temp"] = 801
-    sim4 = SimulationManager(sim, create_trajectory=True)
+    sim2 = {
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {
+            "Ensamble": "NPT",
+            "Temp": 801,
+            "Pressure": 3.85e-2,
+            "ThermoTime": 100 * units.fs,
+            "BaroTime": 1000 * units.fs,
+        },
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 800,
+            "TrajInterval": 10,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
+    }
+    sim4 = SimulationManager(sim2)
 
     assert sim4.crystal.symbols[0] == "Cu"
     assert (sim4.crystal.cell.lengths() == 3.6).all()
     assert sim4.temperature == 801
 
-    sim4.simulate_npt(calculator="EMT")
+    sim4.simulate_npt()
 
     traj_file = Path("Cu_801.traj")
     assert Path.exists(traj_file)
     traj_file.unlink()
 
 
-def test_default_ensamble():
-    config = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6149,
-        "Cubic": True,
-        "Temp": 100,
-        "Length": 20000,
-        "TrajInterval": 5, }
-    sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "nve")
-    with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate(calculator="EMT")
-        mock_nve.assert_called_once()
-
-    config["Ensamble"] = "NVE"
-    sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "nve")
-    with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate(calculator="EMT")
-        mock_nve.assert_called_once()
-
-    config["Ensamble"] = "NVT"
-    sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "nvt")
-    with patch.object(sim, 'simulate_nvt') as mock_nvt:
-        sim.simulate(calculator="EMT")
-        mock_nvt.assert_called_once()
-
-
 def test_nve_ensamble():
     config = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6149,
-        "Cubic": True,
-        "Temp": 100,
-        "Length": 20000,
-        "TrajInterval": 5,
-        "Ensamble": "NVE"}
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "NVE", "Temp": 100},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
+    }
+
     sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "nve")
-    with patch.object(sim, 'simulate_nve') as mock_nve:
-        sim.simulate(calculator="EMT")
+    assert sim.ensamble.lower() == "nve"
+    with patch.object(sim, "simulate_nve") as mock_nve:
+        sim.simulate()
         mock_nve.assert_called_once()
 
 
 def test_nvt_ensamble():
     config = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6149,
-        "Cubic": True,
-        "Temp": 100,
-        "Length": 20000,
-        "TrajInterval": 5,
-        "Ensamble": "NVT"}
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {
+            "Ensamble": "NVT",
+            "Temp": 100,
+            "ThermoTime": 100 * units.fs,
+        },
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
+    }
+
     sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "nvt")
-    with patch.object(sim, 'simulate_nvt') as mock_nvt:
-        sim.simulate(calculator="EMT")
+    assert sim.ensamble.lower() == "nvt"
+    with patch.object(sim, "simulate_nvt") as mock_nvt:
+        sim.simulate()
         mock_nvt.assert_called_once()
 
 
 def test_npt_ensamble():
     config = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6149,
-        "Cubic": True,
-        "Temp": 100,
-        "Length": 20000,
-        "TrajInterval": 5,
-        "Ensamble": "NPT"}
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {
+            "Ensamble": "NPT",
+            "Temp": 100,
+            "ThermoTime": 100,
+            "Pressure": 100,
+            "BaroTime": 100,
+        },
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
+    }
+
     sim = SimulationManager(config)
-    assert (sim.ensamble.lower() == "npt")
-    with patch.object(sim, 'simulate_npt') as mock_npt:
-        sim.simulate(calculator="EMT")
+    assert sim.ensamble.lower() == "npt"
+    with patch.object(sim, "simulate_npt") as mock_npt:
+        sim.simulate()
         mock_npt.assert_called_once()
 
 
 def test_invalid_ensamble():
     config = {
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6149,
-        "Cubic": True,
-        "Temp": 100,
-        "Length": 20000,
-        "TrajInterval": 5,
-        "Ensamble": "INVALID"}
-    sim = SimulationManager(config)
-    with raises(ValueError, match="ensamble"):
-        sim.simulate(calculator="EMT")
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "INVALID"},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
+    }
+
+    with raises(RuntimeError):
+        SimulationManager(config)
 
 
 def test_init_from_file():
     config = {
-        "Crystal": "crystal.cif",
-        "Temp": 800,
-        "Timestep": 2,
-        "Length": 800,
-        "TrajInterval": 10,
+        "CRYSTAL": {"TYPE": "FILE", "Filepath": "not_a_real_file.cif"},
+        "ENSAMBLE": {"Ensamble": "NVE", "Temp": 100},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
     }
 
-    with raises(FileNotFoundError):
+    with raises(RuntimeError):
         SimulationManager(config)
 
-    config2 = {
-        "Crystal": "crystal.cif",
-        "Temp": 800,
-        "Timestep": 2,
-        "Length": 800,
-        "TrajInterval": 10,
-        "Type": "Cu",
-        "Structure": "fcc",
-        "Lattice_a": 3.6,
-        "Cubic": True,
-    }
-
-    with raises(FileNotFoundError):
-        SimulationManager(config2)
+    # HERE WE SHOULD ADD SOME TEST FOR REAL FILES
 
 
 def test_calculators():
-    calculator = "EMT"
-
-    sim = {
-        "Type": "Ni",
-        "Structure": "fcc",
-        "Lattice_a": 3.6,
-        "Cubic": True,
-        "Temp": 400,
-        "Timestep": 2,
-        "Length": 800,
-        "TrajInterval": 10,
+    config = {
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "NVE", "Temp": 100},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "EMT",
+            "Create_traj": True,
+        },
     }
-    sim1 = SimulationManager(sim)
+    sim1 = SimulationManager(config)
 
-    sim1.simulate_nve(calculator=calculator)
+    sim1.simulate_nve()
 
     numbers = list(set(sim1.crystal.numbers))
     np.random.seed(42)
@@ -190,18 +231,47 @@ def test_calculators():
     sigma = np.random.rand(n)
     epsilon = np.random.rand(n)
 
-    calc_params = {"elements": numbers,
-                   "sigma": sigma,
-                   "epsilon": epsilon
-                   }
+    config = {
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "NVE", "Temp": 100},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "LennardJones",
+            "Create_traj": True,
+        },
+    }
+    sim1 = SimulationManager(config)
+    calc_params = {"elements": numbers, "sigma": sigma, "epsilon": epsilon}
 
-    calculator = "LennardJones"
-
-    result = sim1.simulate_nve(calculator=calculator, calc_params=calc_params)
+    result = sim1.simulate_nve(calc_params=calc_params)
 
     assert len(result.frames) > 0
 
-    with raises(NotImplementedError,
-                match=("Calculator hej123 not implemented,"
-                       " valid calculators are: EMT, LennardJones")):
-        sim1.simulate_nve(calculator="hej123")
+    config = {
+        "CRYSTAL": {
+            "TYPE": "BULK",
+            "Name": "Cu",
+            "Structure": "fcc",
+            "Lattice_a": 3.6149,
+            "Cubic": True,
+        },
+        "ENSAMBLE": {"Ensamble": "hej123", "Temp": 100},
+        "SIMULATION": {
+            "Timestep": 2,
+            "Length": 20000,
+            "TrajInterval": 5,
+            "Calculator": "LennardJones",
+            "Create_traj": True,
+        },
+    }
+
+    with raises(RuntimeError):
+        sim1 = SimulationManager(config)
