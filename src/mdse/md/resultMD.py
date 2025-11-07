@@ -395,7 +395,6 @@ class ResultMD:
         p_au = self.frames[0].info["p_au"]
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
-        print("au_to_Pa: ", constants.eV / (constants.angstrom**3))
 
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
@@ -403,8 +402,6 @@ class ResultMD:
 
         E_J = np.array(E_eV) * constants.eV
         V_m3 = np.array(V_A3) * (constants.angstrom**3)
-        print("ev_to_J: ", constants.eV)
-        print("angstrom: ", constants.angstrom)
 
         enthalpy_J = E_J + p_Pa * V_m3
 
@@ -431,12 +428,10 @@ class ResultMD:
         varH = np.var(H_J)
         # Isobaric heat capacity
         Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
-        print("boltzmann: ", constants.value("Boltzmann constant"))
 
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
         tot_mass_kg = tot_mass_u * constants.atomic_mass
-        print("atomic_mass: ", constants.atomic_mass)
 
         return Cp / tot_mass_kg
 
