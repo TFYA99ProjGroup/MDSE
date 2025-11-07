@@ -92,100 +92,115 @@ class SimulationManager:
     >>> sim.simulate_nve()
     """
 
-    def __init__(self, config: dict = {}, create_trajectory=False):
-        logger.debug(
-            f"Initialize an instance of SimulateMD with config {config}")
-        default = {
-            "Type": "Cu",
-            "Structure": "fcc",
-            "Positions": None,
-            "Lattice_a": 3.6,
-            "Lattice_b": None,
-            "Lattice_c": None,
-            "Cubic": True,
-            "Temp": 800,
-            "Timestep": 2,
-            "Length": 400,
-            "TrajInterval": 10,
-            "Pressure": 3.85e-2,
-            "ThermoTime": 100 * units.fs,
-            "BaroTime": 1000 * units.fs,
-            "Supercrystal": [1, 1, 1],
-            "Ensamble": "NVE"
-        }
-        for key, value in default.items():
-            if config.get(key) is None:
-                config[key] = value
+    def __init__(self, config):
+        """
+        Initialize a molecular dynamics simulation instance.
 
-        if config.get("Crystal") is not None:
-            try:
-                self.crystal = ase.io.read(config.get("Crystal"))
-            except Exception as e:
-                logger.error(e)
-                raise
-        else:
-            self.crystal = self.create_crystal(
-                chem_notation=config.get("Type"),
-                structure=config.get("Structure"),
-                a=config.get("Lattice_a"),
-                b=config.get("Lattice_b"),
-                c=config.get("Lattice_c"),
-                cubic=config.get("Cubic"),
-                positions=config.get("Positions"),
-            ) * tuple(config.get("Supercrystal"))
+        This constructor sets up a crystal structure and initializes
+        molecular dynamics parameters (simulation, ensemble, and crystal setup)
+        from the given configuration dictionary.
 
-        self.temperature = config.get("Temp")
-        self.timestep = config.get("Timestep") * units.fs
-        self.length = config.get("Length")
-        self.traj_interval = config.get("TrajInterval")
-        self.pressure_au = config.get("Pressure")
-        self.thermo_time = config.get("ThermoTime")
-        self.baro_time = config.get("BaroTime")
-        self.create_trajectory = create_trajectory
-        self.result = [self.crystal]
-        self.positions = config.get("Positions")
-        self.ensamble = config.get("Ensamble")
+        The crystal can be created in one of three ways:
+        - **BULK**: Generates a bulk crystal using ASE's `bulk()` function.
+        - **FILE**: Loads a crystal structure from a file using ASE I/O.
+        - **LIST**: Manually defines atoms from provided symbols, positions,
+          and cell parameters.
 
-        logger.debug("Init done")
-
-    def create_crystal(
-        self, chem_notation, structure, a, b, c, cubic, positions=None
-    ) -> Atoms:
-        """Create the atom or molecule or crystal object from the specified params.
+        Simulation parameters such as timestep, total length, trajectory saving
+        intervals, and calculator type are also initialized. Ensemble parameters
+        (e.g., NVE, NVT, NPT) are parsed to configure temperature, pressure,
+        and thermostat/barostat relaxation times.
 
         Parameters
         ----------
-        chem_notation : str
-            The chemical notation of the object.
-        structure : str
-            The Lattice types or Crystal structure of the object.
-        a : float
-            Lattice constant.
-        b : float
-            Secondary lattice constant (optional argument).
-        c : float
-            Third lattice constant (optional argument).
-        cubic : bool
-            Sets cubic unit cell.
-        positions : list
-            Individual atomic positions (optional argument).
+        config : dict
+            Configuration dictionary containing simulation setup parameters.
+            This must be structured according to the standard.
         """
-        logger.debug("Creating crystal")
 
-        # Define if we're using structure or positions
-        if positions is None:
-            crystal = bulk(
-                chem_notation,
-                structure,
-                a=a,
-                b=b,
-                c=c,
-                cubic=cubic,
-            )
-            return crystal
-        else:
-            logger.error("Can not initialize from parameters.")
-            raise NotImplementedError()
+        logger.debug("Initialize an instance of SimulateMD")
+        crystal_params = config.get("CRYSTAL")
+
+        self.result = []
+        try:
+            crystal_type = crystal_params.get("TYPE")
+            logger.debug(f"Initialize the crystal from {crystal_type}")
+
+            # We either create our crystal as a bulk crystal, ...
+            if crystal_type == "BULK":
+                self.crystal = bulk(
+                    crystal_params.get("Name"),
+                    crystal_params.get("Structure"),
+                    a=crystal_params.get("Lattice_a"),
+                    b=crystal_params.get("Lattice_b", None),
+                    c=crystal_params.get("Lattice_c", None),
+                    cubic=crystal_params.get("Cubic"),
+                ) * crystal_params.get("Supercell", (1, 1, 1))
+
+            # ... or from some standard file format, ...
+            elif crystal_type == "FILE":
+                self.crystal = ase.io.read(
+                    crystal_params.get("Filepath")
+                ) * crystal_params.get("Supercell", (1, 1, 1))
+
+            # ... or by specifying each atom individually
+            elif crystal_type == "LIST":
+                self.crystal = Atoms(
+                    symbols=crystal_params.get("Symbols"),
+                    positions=crystal_params.get("Positions"),
+                    cell=crystal_params.get("Cell"),
+                    pbc=crystal_params.get("Pcb"),
+                ) * crystal_params.get("Supercell", (1, 1, 1))
+            else:
+                raise NotImplementedError()
+
+        except Exception as e:
+            logger.error("Error while creating inital crystal:")
+            logger.error(e)
+            raise RuntimeError(e)
+
+        # Parameters related to the simulation
+        simulation_params = config.get("SIMULATION")
+        try:
+            self.timestep = simulation_params.get("Timestep") * units.fs
+            self.length = simulation_params.get("Length")
+            self.traj_interval = simulation_params.get("TrajInterval")
+            self.calculator = simulation_params.get("Calculator")
+            self.create_trajectory = simulation_params.get(
+                "Create_traj", False)
+
+        except Exception as e:
+            logger.error("Error parameter values")
+            logger.error(e)
+            raise RuntimeError(e)
+
+        # Ensamble parameters
+        ensamble_params = config.get("ENSAMBLE")
+        try:
+            ensamble_type = ensamble_params.get("Ensamble")
+            self.ensamble = ensamble_type
+            logger.debug(f"Using ensamble: {ensamble_type}")
+            if ensamble_type == "NVE":
+                self.temperature = ensamble_params.get("Temp")
+
+            elif ensamble_type == "NVT":
+                self.temperature = ensamble_params.get("Temp")
+                self.thermo_time = ensamble_params.get("ThermoTime")
+
+            elif ensamble_type == "NPT":
+                self.temperature = ensamble_params.get("Temp")
+                self.pressure_au = ensamble_params.get("Pressure")
+                self.thermo_time = ensamble_params.get("ThermoTime")
+                self.baro_time = ensamble_params.get("BaroTime")
+            else:
+                raise NotImplementedError()
+
+        except Exception as e:
+            logger.error("Error ensamble values")
+            logger.error(e)
+            raise RuntimeError(e)
+
+        logger.debug("Init done")
 
     def view_super_crystal(self):
         """
@@ -196,10 +211,10 @@ class SimulationManager:
         Requires ASE's `view` function to be available.
         """
         logger.debug("Viewing super crystal")
-        if self.positions is None:
+        try:
             super_crystal = self.crystal
             view(super_crystal)
-        else:
+        except Exception:
             raise RuntimeError(
                 "Supercell visualization only works with bulk crystals.")
 
@@ -242,7 +257,7 @@ class SimulationManager:
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
-    def _check_calculator(self, calculator, calc_params):
+    def _check_calculator(self, calc_params):
         """
         Validate and initialize an ASE calculator.
 
@@ -252,11 +267,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str
-            The calculator to use for energy and force evaluations. Can be:
-              - "EMT": uses the ASE EMT calculator.
-              - "LennardJones": uses the ASE Lennard-Jones calculator.
-            Any other value raises a NotImplementedError.
 
         calc_params : dict
             Keyword arguments passed to the chosen calculator's constructor.
@@ -277,13 +287,13 @@ class SimulationManager:
           - ``EMT``
           - ``LennardJones``
         """
-        if calculator == "EMT":
+        if self.calculator == "EMT":
             calculator = EMT(**calc_params)
-        elif calculator == "LennardJones":
+        elif self.calculator == "LennardJones":
             calculator = LennardJones(**calc_params)
         else:
             error_msg = (
-                f"Calculator {calculator} not implemented, "
+                f"Calculator {self.calculator} not implemented, "
                 "valid calculators are: EMT, LennardJones"
             )
             raise NotImplementedError(error_msg)
@@ -303,20 +313,18 @@ class SimulationManager:
 
         dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
 
-    def simulate(self,
-                 calculator=None,
-                 calc_params={},
-                 distribution=MaxwellBoltzmannDistribution,
-                 print=False,):
+    def simulate(
+        self,
+        calc_params={},
+        distribution=MaxwellBoltzmannDistribution,
+        print=False,
+    ):
         if self.ensamble.lower() == "nve":
-            result = self.simulate_nve(
-                calculator, calc_params, distribution, print)
+            result = self.simulate_nve(calc_params, distribution, print)
         elif self.ensamble.lower() == "nvt":
-            result = self.simulate_nvt(
-                calculator, calc_params, distribution, print)
+            result = self.simulate_nvt(calc_params, distribution, print)
         elif self.ensamble.lower() == "npt":
-            result = self.simulate_npt(
-                calculator, calc_params, distribution, print)
+            result = self.simulate_npt(calc_params, distribution, print)
         else:
             msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
             "Please use one of following: NVE, NVT, NPT"
@@ -326,7 +334,6 @@ class SimulationManager:
 
     def simulate_nve(
         self,
-        calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
@@ -366,7 +373,7 @@ class SimulationManager:
             self._add_distribution(distribution)
 
             self.crystal.info["dt"] = self.timestep
-            self.crystal.calc = self._check_calculator(calculator, calc_params)
+            self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
@@ -384,7 +391,6 @@ class SimulationManager:
 
     def simulate_npt(
         self,
-        calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
@@ -416,7 +422,7 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calculator, calc_params)
+            self.crystal.calc = self._check_calculator(calc_params)
 
             self.crystal.info["p_au"] = self.pressure_au
             dyn = IsotropicMTKNPT(
@@ -440,7 +446,6 @@ class SimulationManager:
 
     def simulate_nvt(
         self,
-        calculator=None,
         calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
@@ -472,7 +477,7 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calculator, calc_params)
+            self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = NoseHooverChainNVT(
                 self.crystal,
