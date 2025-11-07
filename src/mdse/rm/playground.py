@@ -10,7 +10,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 setup_logging(debug=False)
-simulations_config = main_read("../../../examples/test_file.yaml")
+simulations_config = main_read("../../../examples/fcc_metals.yaml")
 
 rm = RunManager(simulation_config=simulations_config)
 
