@@ -181,7 +181,7 @@ def test_invalid_ensamble():
     }
 
     with raises(RuntimeError):
-        sim = SimulationManager(config)
+        SimulationManager(config)
 
 
 def test_init_from_file():
