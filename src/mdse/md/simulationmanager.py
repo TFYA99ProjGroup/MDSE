@@ -103,7 +103,7 @@ class SimulationManager:
         The crystal can be created in one of three ways:
         - **BULK**: Generates a bulk crystal using ASE's `bulk()` function.
         - **FILE**: Loads a crystal structure from a file using ASE I/O.
-        - **LIST**: Manually defines atoms from provided symbols, positions, 
+        - **LIST**: Manually defines atoms from provided symbols, positions,
           and cell parameters.
 
         Simulation parameters such as timestep, total length, trajectory saving
