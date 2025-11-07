@@ -21,15 +21,15 @@ db = client["materials_db"]
 examples = db["examples"]
 
 doc = {
-  "structure_id": "Cu_300K",
+  "structure_id": "Descriptive ID or UUID",
   "atoms": {
-    "elements": ["Cu", "Cu", "Cu"],
-    "positions": [[0,0,0],[1.8,0,0],[0,1.8,0]],  # representative frame
-    "lattice_vectors": [[3.6149,0,0],[0,3.6149,0],[0,0,3.6149]]
+    "elements": None,
+    "positions": None,
+    "lattice_vectors": None,
   },
   "composition": {
-    "elements": ["Cu"],
-    "chemical_formula_reduced": "Cu"
+    "elements": None,
+    "chemical_formula_reduced": None,
   },
   "properties": {
     "msd": msd,
