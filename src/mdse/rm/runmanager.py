@@ -97,11 +97,11 @@ class RunManager:
                 logger.info(f"Self-diffusion: {self_diff}")
                 propertie_values["Self-diffusion"] = self_diff
             # Doesn't work right now
-            """if ("Isobaric specific heat" in properties) or \
+            if ("Isobaric specific heat" in properties) or \
                     ("all" in properties):
                 ish = result.calc_isobaric_specific_heat()
                 logger.info(f"Isobaric specific heat: {ish}")
-                propertie_values["Isobaric specific heat"] = ish"""
+                propertie_values["Isobaric specific heat"] = ish
 
             crystal = config[next(iter(config))]["CRYSTAL"]
             ensamble = config[next(iter(config))]["ENSAMBLE"]

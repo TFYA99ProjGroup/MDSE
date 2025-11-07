@@ -198,7 +198,8 @@ class SimulationManager:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
-        self.result = []
+        self.crystal.calc = self._check_calculator({})
+        self.result = [self.crystal.copy()]
 
         logger.debug("Init done")
 
@@ -376,7 +377,7 @@ class SimulationManager:
             self._add_distribution(distribution)
 
             self.crystal.info["dt"] = self.timestep
-            self.crystal.calc = self._check_calculator(calc_params)
+            # self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
@@ -425,9 +426,8 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calc_params)
+            # self.crystal.calc = self._check_calculator(calc_params)
 
-            self.crystal.info["p_au"] = self.pressure_au
             dyn = IsotropicMTKNPT(
                 self.crystal,
                 timestep=self.timestep,
@@ -445,6 +445,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["p_au"] = self.pressure_au
         return ResultMD(self.result)
 
     def simulate_nvt(
@@ -480,7 +481,7 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calc_params)
+            # self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = NoseHooverChainNVT(
                 self.crystal,

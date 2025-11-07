@@ -392,6 +392,10 @@ class ResultMD:
 
         Returns:
             enthalpy_J (float): Enthalpy with unit Joule.
+
+        Note:
+            Developers, you need a calc to get the total energy. Btw,
+            if you just began reading theese docs, calc stands for calculator.
         """
         E_eV, V_A3 = [], []
 
@@ -399,10 +403,12 @@ class ResultMD:
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
         print("au_to_Pa: ", constants.eV / (constants.angstrom**3))
-
+        i = 0
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
             V_A3.append(frame.get_volume())
+            logger.debug(i)
+            i += 1
 
         E_J = np.array(E_eV) * constants.eV
         V_m3 = np.array(V_A3) * (constants.angstrom**3)
