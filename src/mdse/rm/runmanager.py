@@ -1,6 +1,6 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
-import bson
+import json
 from pathlib import Path
 logger = logging.getLogger(__name__)
 
@@ -89,13 +89,20 @@ class RunManager:
                 self_diff = result.calc_self_diff()
                 logger.info(f"Self-diffusion: {self_diff}")
                 self.docs[index]["Properties"]["Self-diffusion"] = self_diff
+            # Doesn't work right now
+            """if ("Isobaric specific heat" in properties) or \
+                    ("all" in properties):
+                ish = result.calc_isobaric_specific_heat()
+                logger.info(f"Isobaric specific heat: {ish}")
+                self.docs[index]["Properties"]["Isobaric specific heat"] = ish"""
+
         logger.debug(self.docs)
         logger.debug(len(self.docs))
         for index, doc in enumerate(self.docs):
-            path = Path(f"results/test_{index}.bson")
+            path = Path(f"results/test_{index}.json")
             path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "wb") as f:
-                f.write(bson.encode(doc))
+            with open(path, "w") as f:
+                json.dump(doc, f)
 
     def run_simulations(self, overwrite_ensamble=None):
         for index, sim in enumerate(self.md_simulations):

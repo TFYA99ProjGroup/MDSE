@@ -1,5 +1,6 @@
 import glob
 import bson
+import json
 import logging
 from pymongo import MongoClient
 
@@ -12,6 +13,26 @@ class DBWriter:
         self.path = resultpath
 
     def write_jsonfiles_to_db(self):
+        db = self.client["materials_db"]
+        examples = db["resultexamples"]
+        logger.debug(self.path)
+        json_files = glob.glob(f"{self.path}/*.json")
+        logger.debug(json_files)
+        all_docs = []
+        for path in json_files:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                all_docs.append(data)
+        logger.debug(all_docs)
+        if all_docs:
+            result = examples.insert_many(all_docs)
+            logger.info(f"{len(result.inserted_ids)} document inserted.")
+        else:
+            logger.info("No documents to insert")
+
+    def _write_jsonfiles_to_db_bson(self):
+        """Bson variant, not in use right now.
+        """
         db = self.client["materials_db"]
         examples = db["resultexamples"]
         logger.debug(self.path)

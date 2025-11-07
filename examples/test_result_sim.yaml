@@ -8,7 +8,8 @@ Copper:
     - 200
     - 300
   Timestep: 2 #fs
-  Length: 20000
+  Length: 2000
   TrajInterval: 5
+  Ensamble: npt
   Properties:
-    - Lindemann
+    - all
