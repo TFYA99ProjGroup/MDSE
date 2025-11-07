@@ -130,7 +130,7 @@ class ResultMD:
         Returns:
             float: average nearest-neighbor distance for one frame.
         """
-        logger.debug("Estimate nearest-neighbor distance")
+        # logger.debug("Estimate nearest-neighbor distance")
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
         np.fill_diagonal(dists, np.inf)

@@ -121,7 +121,6 @@ class SimulationManager:
         logger.debug("Initialize an instance of SimulateMD")
         crystal_params = config.get("CRYSTAL")
 
-        self.result = []
         try:
             crystal_type = crystal_params.get("TYPE")
             logger.debug(f"Initialize the crystal from {crystal_type}")
@@ -199,6 +198,7 @@ class SimulationManager:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
+        self.result = []
 
         logger.debug("Init done")
 
@@ -311,7 +311,10 @@ class SimulationManager:
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-        dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
+        dyn.attach(
+            lambda: self.result.append(self.crystal.copy()),
+            self.traj_interval
+        )
 
     def simulate(
         self,
@@ -425,6 +428,11 @@ class SimulationManager:
             self.crystal.calc = self._check_calculator(calc_params)
 
             self.crystal.info["p_au"] = self.pressure_au
+            logger.debug(self.crystal)
+            logger.debug(self.timestep)
+            logger.debug(self.pressure_au)
+            logger.debug(self.thermo_time)
+            logger.debug(self.baro_time)
             dyn = IsotropicMTKNPT(
                 self.crystal,
                 timestep=self.timestep,

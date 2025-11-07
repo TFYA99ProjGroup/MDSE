@@ -71,21 +71,28 @@ class RunManager:
         pass
 
     def run_results(self):
+
         logger.debug(self.result_objects)
+
         for index, config in enumerate(self.simulation_config):
-            properties = config[next(iter(config))]["Properties"]
+
+            logger.debug(config)
+
+            properties = config[next(iter(config))]["RESULT"]["Properties"]
+
             result = self.result_objects[index]
+
             logger.debug(properties)
             logger.debug(result)
+
             self.docs[index]["Properties"] = {}
-            if ("Lindemann" in properties) or \
-                    ("all" in properties):
+
+            if ("Lindemann" in properties) or ("all" in properties):
                 lindemann = result.calc_lindemann()
                 logger.info(f"Lindemann: {lindemann}")
                 self.docs[index]["Properties"]["Lindemann"] = lindemann
 
-            if ("Self-diffusion" in properties) or \
-                    ("all" in properties):
+            if ("Self-diffusion" in properties) or ("all" in properties):
                 self_diff = result.calc_self_diff()
                 logger.info(f"Self-diffusion: {self_diff}")
                 self.docs[index]["Properties"]["Self-diffusion"] = self_diff

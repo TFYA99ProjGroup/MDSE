@@ -1,15 +1,26 @@
 Copper:
-  Type: Cu
-  Structure: fcc
-  Lattice_a: 3.6149
-  Cubic: True
-  Temp_list: 
-    - 100
-    - 200
-    - 300
-  Timestep: 2 #fs
-  Length: 2000
-  TrajInterval: 5
-  Ensamble: npt
-  Properties:
-    - all
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NPT
+    Temp_list: 
+      - 100
+      - 200
+      - 300
+      - 1000
+    Pressure: 3.85e-2
+    ThermoTime: 100
+    BaroTime: 1000
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 2000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all
