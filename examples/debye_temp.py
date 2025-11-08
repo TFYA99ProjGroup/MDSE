@@ -13,7 +13,7 @@ config = main_read("fcc_metals.yaml")
 rm = RunManager(config)
 
 if not Path("Cu_300.traj").exists():
-    rm.run_nve_simulations()
+    rm.run_simulations()
 
 Cu_300 = ResultMD.from_file("Cu_300.traj")
 Cu_200 = ResultMD.from_file("Cu_200.traj")
