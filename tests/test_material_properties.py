@@ -11,7 +11,7 @@ def results():
     Run a small MD suite (NVE, NVT, NPT) and return parsed ResultMD objects.
 
     This fixture performs a full simulation run once per test session to avoid
-    re-running expensive trajectories for every property test. The generated 
+    re-running expensive trajectories for every property test. The generated
     trajectory files are then loaded into 'ResultMD' containers.
 
     Returns
@@ -90,7 +90,7 @@ def test_lindemann(nve_result):
 
 
 def test_self_diff(nve_result):
-    """Check for reasonable value of the self diffusion. 
+    """Check for reasonable value of the self diffusion.
     Should be close to zero and positive."""
     self_diff = nve_result.calc_self_diff()
     assert self_diff < 1e-10
@@ -99,7 +99,7 @@ def test_self_diff(nve_result):
 
 def test_isobaric_specific_heat(npt_result):
     """Check for reasonable value of the isobaric specific heat.
-    For copper the value should be 385 J / (kg * K), the test have wide boundaries 
+    For copper the value should be 385 J / (kg * K), the test have wide boundaries
     for the short simulation"""
     specific_heat = npt_result.calc_isobaric_specific_heat()
     assert specific_heat < 500
@@ -112,3 +112,4 @@ def test_isochoric_heat_capacity_per_atom(nvt_result):
     isochoric_heat_per_atom = nvt_result.calc_isochoric_heat_capacity_per_atom()
     assert isochoric_heat_per_atom < 6e-23
     assert isochoric_heat_per_atom > 2e-23
+
