@@ -9,20 +9,57 @@
 #Parameters may be nested, via "Parameter_list" or "Parameter_range"
 
 Copper_nve:
-  Type: Cu
-  Structure: fcc
-  Lattice_a: 3.6
-  Temp: 300
-  Cubic: True
-  Timestep: 2 #fs
-  Length: 10000
-  TrajInterval: 10
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp_list: 
+      - 300
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 10000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
+Copper_nvt:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVT
+    ThermoTime: 100
+    Temp_list: 
+      - 301
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 10000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
 Copper_npt:
-  Type: Cu
-  Structure: fcc
-  Lattice_a: 3.6
-  Temp: 500
-  Cubic : True
-  Timestep: 2 #fs
-  Length: 10000
-  TrajInterval: 10
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NPT
+    ThermoTime: 100
+    BaroTime: 1000
+    Pressure: 3.85e-2
+    Temp_list: 
+      - 302
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 10000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
