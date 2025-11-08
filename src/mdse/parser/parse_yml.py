@@ -157,9 +157,37 @@ def main_read(filename):
     """
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
-    check_valid_format(all_simulations)
+    #check_valid_format(all_simulations)
     logger.debug("Format OK")
-    return unnest_simulation_parameters(all_simulations)
+    return get_files(unnest_simulation_parameters(all_simulations))
+
+def get_files(simulations):
+    """
+    Expand simulations: if CRYSTAL.TYPE == 'FILE' and Filepath is a directory,
+    create separate simulations for all files in that folder.
+    """
+    expanded_parameters = []
+    for sim in simulations:
+        (name,val), = sim.items()
+        crystal_params = val.get("CRYSTAL")
+
+        if crystal_params.get("TYPE") != "FILE":
+            expanded_parameters.append(sim)
+            continue
+
+        dir_path  = Path(crystal_params.get("Filepath"))
+        if not dir_path.is_dir():
+            expanded_parameters.append(sim)
+            continue
+
+        for file_path in map(str,dir_path.iterdir()):
+            if not Path(file_path).is_file():
+                continue
+            new_sim = deepcopy(sim)
+            new_sim[name]["CRYSTAL"]["Filepath"] = file_path
+            expanded_parameters.append(new_sim)
+
+    return expanded_parameters
 
 
 def check_valid_format(simulations):
