@@ -1,6 +1,7 @@
 import yaml
 import logging
 from copy import deepcopy
+from pathlib import Path
 logger = logging.getLogger(__name__)
 # from yaml.loader import SafeLoader
 
@@ -160,6 +161,7 @@ def main_read(filename):
     logger.debug("Format OK")
     return unnest_simulation_parameters(all_simulations)
 
+
 def check_valid_format(simulations):
     """
     Takes a dictionary (from ``read_yaml_simulations(...)`` most likely) and
@@ -173,5 +175,14 @@ def check_valid_format(simulations):
     for key, sim in simulations.items():
         # first check the uppermost level is correct
         if any(key not in sim for key in ["CRYSTAL","SIMULATION","ENSAMBLE"]):
-            raise RuntimeError("YAML-file not correctely formated")
-    # TODO: This should also check the content of each sub-dictionary more in detail
+            raise RuntimeError("The config file is missing either the sub-dictionary \
+                                CRYSTAL, SIMULATION or ENSAMBLE")
+
+        # Now check crystal okay
+        crystal_params = simulations.get("CRYSTAL")
+        if crystal_params.get("TYPE") not in ["FILE","BULK","LIST"]:
+            raise RuntimeError("The TYPE parameter not set to correct value")
+
+        if(crystal_params.get("TYPE") == "FILE"):
+            if any(key not in crystal_params for key in ["TYPE","Filepath",""]):
+                raise RuntimeError("Not correct parameters for TYPE = FILE")
