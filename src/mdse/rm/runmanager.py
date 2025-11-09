@@ -77,6 +77,7 @@ class RunManager:
         if size < 2:
             logger.warning("MPI size < 2. Now the poor Master has to do all the work \
                             alone! But right now he's shy and won't do it. Exiting...")
+            # Insert single core execution here if desired
             return
 
         TAG_WORK = 1
@@ -107,14 +108,12 @@ class RunManager:
 
             logger.debug("[Master] All jobs completed.")
         else:
+            # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
             while True:
                 status = MPI.Status()
                 job = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
-                if tag == TAG_STOP:
-                    logger.debug(f"[Worker {rank}] Received stop signal from master.")
-                    break
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
@@ -122,6 +121,9 @@ class RunManager:
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
+                elif tag == TAG_STOP:
+                    logger.debug(f"[Worker {rank}] Received stop signal from master.")
+                    break
 
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""
