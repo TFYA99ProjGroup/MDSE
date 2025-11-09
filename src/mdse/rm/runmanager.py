@@ -69,7 +69,7 @@ class RunManager:
     def run_simulations(self, overwrite_ensamble=None):
         """
         Distribute simulations across MPI ranks using a work queue.
-        Each rank (including master) runs simulations.
+        Each rank (not including master) runs simulations.
         """
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
@@ -78,6 +78,7 @@ class RunManager:
             logger.warning("MPI size < 2. Now the poor Master has to do all the work \
                             alone! But right now he's shy and won't do it. Exiting...")
             return
+
         TAG_WORK = 1
         TAG_DONE = 2
         TAG_STOP = 3
@@ -116,12 +117,11 @@ class RunManager:
                     break
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
-                    # Run the simulation here! ##################
+                    ########## Run the simulation here! #########
                     #
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
-
 
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""
