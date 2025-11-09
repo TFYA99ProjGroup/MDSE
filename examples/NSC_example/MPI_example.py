@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 setup_logging(debug=True)
 
-simulations_config = main_read("fcc_metals.yaml")
+simulations_config = main_read("../fcc_metals.yaml")
 rm = RunManager(simulation_config=simulations_config)
 
 rm.run_simulations()
