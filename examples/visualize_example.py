@@ -1,4 +1,3 @@
-import numpy as np
 from mdse.md.resultMD import ResultMD
 from mdse.md.visualize import VisualizeResult
 from mdse.rm.runmanager import RunManager
