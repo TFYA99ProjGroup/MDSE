@@ -1,6 +1,8 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI
+from time import sleep # Only for simulating work being done
+from random import uniform # Only for simulating work being done
 logger = logging.getLogger(__name__)
 
 
@@ -75,8 +77,10 @@ class RunManager:
         rank = comm.Get_rank()
         size = comm.Get_size()
         if size < 2:
-            logger.warning("MPI size < 2. Now the poor Master has to do all the work \
-                            alone! But right now he's shy and won't do it. Exiting...")
+            logger.warning(
+                "MPI size < 2. Now the poor Master has to do all the work " \
+                "alone! But right now he's shy and won't do it. Exiting..."
+                )
             # Insert single core execution here if desired
             return
 
@@ -99,12 +103,12 @@ class RunManager:
                 if tag == TAG_DONE:
                     if jobs:
                         job = jobs.pop(0)
-                        comm.send(job, dest=src, tag=TAG_WORK)
                         logger.debug(f"[Master] Sent new job {job} to worker {src}")
+                        comm.send(job, dest=src, tag=TAG_WORK)
                     else:
+                        logger.debug(f"[Master] Sent stop signal to worker {src}")
                         comm.send(None, dest=src, tag=TAG_STOP)
                         finished_workers += 1
-                        logger.debug(f"[Master] Sent stop signal to worker {src}")
 
             logger.debug("[Master] All jobs completed.")
         else:
@@ -117,7 +121,11 @@ class RunManager:
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
-                    #
+                    sleep_time = uniform(0.5, 3.0)
+                    logger.debug(
+                        f"[Worker {rank}] Simulating work for {sleep_time:.2f} seconds."
+                        )
+                    sleep(sleep_time)
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
