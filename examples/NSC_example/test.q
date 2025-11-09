@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 #SBATCH -J testjob
-#SBATCH -A <project>
+#SBATCH -A liu-compute-2025-38
 #SBATCH --reservation devel
 #SBATCH -t 00:05:00
 #SBATCH -N 1
-#SBATCH -n 32
+#SBATCH -n 4
 #SBATCH --exclusive
 #
 
