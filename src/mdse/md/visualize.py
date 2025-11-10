@@ -114,8 +114,8 @@ class VisualizeResult:
                 )
         names = [res.name for res in self.results]
         for DOS_i, omega_i,name in zip(DOS,omega,names):
-            plt.plot(DOS_i,omega_i)
-            plt.text(DOS_i[-1],omega_i[-1],f"{name}")
+            plt.plot(omega_i,DOS_i)
+            plt.text(omega_i[-1],DOS_i[-1],f"{name}")
 
         logger.debug("DOS plot values were sucesfully fetched")
         plt.xlabel("Angular frequency")
@@ -127,8 +127,8 @@ class VisualizeResult:
         """Plots specified energy for all the simulations stored
         """
 
-        available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies"}
-        labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)"}
+        available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies", "tot" : "get_tot_energies"}
+        labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)", "tot" : "Total energy (eV)"}
 
         if energy_type not in available_energies:
             logger.error(
