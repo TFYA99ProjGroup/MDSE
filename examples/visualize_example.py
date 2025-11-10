@@ -24,10 +24,11 @@ def main():
 
     vis = VisualizeResult([Cu_100,Cu_200,Cu_300,Ni_300,Ni_200,Ni_100])
 
+    vis.plot_energy("tot")
+    vis.plot_DOS()
     vis.plot_energy("kin")
     vis.plot_MSD()
-
-    #vis.plot_scatter("self_diff","lindemann","avg_a")
+    vis.plot_scatter("lindemann","self_diff","avg_a")
 
 
 if __name__ == "__main__":
