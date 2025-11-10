@@ -2,6 +2,8 @@
 # ASE files
 *.traj
 
+# NSC Output files
+slurm-*.out
 
 # MongoDB
 mongo_data/

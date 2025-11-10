@@ -7,6 +7,7 @@ from ase.visualize import view
 from asap3 import EMT
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
+from ase.parallel import DummyMPI
 
 import logging
 
@@ -249,7 +250,8 @@ class SimulationManager:
         if not self.temperature:
             raise ValueError("Temperature must be set to apply a distribution.")
         try:
-            distribution(self.crystal, temperature_K=self.temperature)
+            world = DummyMPI()
+            distribution(self.crystal, temperature_K=self.temperature, comm=world)
             Stationary(self.crystal)
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
