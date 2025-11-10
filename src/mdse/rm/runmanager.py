@@ -76,9 +76,12 @@ class RunManager:
         size = comm.Get_size()
         if size < 2:
             logger.warning(
-                "MPI size < 2. Now the poor Master has to do all the work " \
-                "alone! But right now he's shy and won't do it. Exiting..."
+                "MPI size < 2. Now the poor Master has to do all the work alone!"
                 )
+            for sim in self.md_simulations:
+                if overwrite_ensamble is not None:
+                    sim.ensamble = overwrite_ensamble
+                sim.simulate()
             # Insert single core execution here if desired
             return
 
