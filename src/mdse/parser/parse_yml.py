@@ -157,7 +157,6 @@ def main_read(filename):
     """
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
-    #check_valid_format(all_simulations)
     logger.debug("Format OK")
     return get_files(unnest_simulation_parameters(all_simulations))
 
@@ -165,6 +164,9 @@ def get_files(simulations):
     """
     Expand simulations: if CRYSTAL.TYPE == 'FILE' and Filepath is a directory,
     create separate simulations for all files in that folder.
+
+    Currently this does not work recursively, so all the relvant files must be
+    in the uppermost level of the specified directory
     """
     expanded_parameters = []
     for sim in simulations:
@@ -172,45 +174,24 @@ def get_files(simulations):
         crystal_params = val.get("CRYSTAL")
 
         if crystal_params.get("TYPE") != "FILE":
+            logger.debug("Specified crystal input is not")
             expanded_parameters.append(sim)
             continue
 
         dir_path  = Path(crystal_params.get("Filepath"))
         if not dir_path.is_dir():
+            logger.debug("CRYSTAL input is direct path to config file")
             expanded_parameters.append(sim)
             continue
 
+        logger.debug("CRYSTAL input is path to folder")
+        logger.debug(f"Searching folder at: {str(dir_path)}")
         for file_path in map(str,dir_path.iterdir()):
             if not Path(file_path).is_file():
                 continue
+            logger.debug(f"Config file found: {file_path}")
             new_sim = deepcopy(sim)
             new_sim[name]["CRYSTAL"]["Filepath"] = file_path
             expanded_parameters.append(new_sim)
 
     return expanded_parameters
-
-
-def check_valid_format(simulations):
-    """
-    Takes a dictionary (from ``read_yaml_simulations(...)`` most likely) and
-    checks if it is on a format accepted by ```SimulationManager``.
-
-    Args:
-        dict (dictionary): The parsed dictionary
-
-    """
-    # loop over individual simulations
-    for key, sim in simulations.items():
-        # first check the uppermost level is correct
-        if any(key not in sim for key in ["CRYSTAL","SIMULATION","ENSAMBLE"]):
-            raise RuntimeError("The config file is missing either the sub-dictionary \
-                                CRYSTAL, SIMULATION or ENSAMBLE")
-
-        # Now check crystal okay
-        crystal_params = simulations.get("CRYSTAL")
-        if crystal_params.get("TYPE") not in ["FILE","BULK","LIST"]:
-            raise RuntimeError("The TYPE parameter not set to correct value")
-
-        if(crystal_params.get("TYPE") == "FILE"):
-            if any(key not in crystal_params for key in ["TYPE","Filepath",""]):
-                raise RuntimeError("Not correct parameters for TYPE = FILE")

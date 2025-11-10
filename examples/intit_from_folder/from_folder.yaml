@@ -1,0 +1,12 @@
+Simulation2:
+  CRYSTAL:
+    TYPE: FILE
+    Filepath: configs
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 800
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 2000
+    TrajInterval: 10
+    Calculator: EMT
