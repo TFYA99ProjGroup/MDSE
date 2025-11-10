@@ -57,7 +57,7 @@ class DBWriter:
     def write_jsonfiles_to_db(self):
         """
         Upload all JSON files from `self.path` to the MongoDB collection
-        `resultexamples3`.
+        `structures`.
 
         The method:
         1. Scans the directory specified by `self.path` for `.json` files.
@@ -70,7 +70,7 @@ class DBWriter:
         - Info: Number of successfully inserted documents.
         """
         db = self.client["materials_db"]
-        examples = db["resultexamples3"]
+        examples = db["structures"]
         logger.debug(self.path)
         json_files = glob.glob(f"{self.path}/*.json")
         logger.debug(json_files)
@@ -89,7 +89,7 @@ class DBWriter:
     def _write_jsonfiles_to_db_bson(self):
         """Bson variant, not in use right now."""
         db = self.client["materials_db"]
-        examples = db["resultexamples2"]
+        examples = db["structures"]
         logger.debug(self.path)
         bson_files = glob.glob(f"{self.path}/*.bson")
         logger.debug(bson_files)

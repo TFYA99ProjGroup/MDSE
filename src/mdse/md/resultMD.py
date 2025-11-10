@@ -132,7 +132,6 @@ class ResultMD:
         Returns:
             float: average nearest-neighbor distance for one frame.
         """
-        # logger.debug("Estimate nearest-neighbor distance")
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
         np.fill_diagonal(dists, np.inf)
@@ -431,8 +430,6 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(H_J) * frame_skips)
-        # Skip the part of the simulation before equilibration
-        H_J = H_J[nskip:]
         # Skip the part of the simulation before equilibration
         H_J = H_J[nskip:]
 

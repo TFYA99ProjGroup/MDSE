@@ -101,7 +101,7 @@ class RunManager:
                     self_diff = 0.0
                 logger.info(f"Self-diffusion: {self_diff}")
                 propertie_values["Self-diffusion"] = self_diff
-            # Doesn't work right now
+
             if ("Isobaric specific heat" in properties) or ("all" in properties):
                 ish = result.calc_isochoric_heat_capacity_per_atom()
                 if math.isnan(ish):

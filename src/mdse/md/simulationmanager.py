@@ -310,7 +310,6 @@ class SimulationManager:
 
     def simulate(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -326,9 +325,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calc_params : dict, optional
-            Dictionary of parameters passed to the ASE calculator.
-            Defaults to an empty dictionary.
         distribution : callable, optional
             Function used to initialize particle velocities.
             Defaults to ``MaxwellBoltzmannDistribution``.
@@ -361,11 +357,11 @@ class SimulationManager:
         - :meth:`simulate_npt`
         """
         if self.ensamble.lower() == "nve":
-            result = self.simulate_nve(calc_params, distribution, print)
+            result = self.simulate_nve(distribution, print)
         elif self.ensamble.lower() == "nvt":
-            result = self.simulate_nvt(calc_params, distribution, print)
+            result = self.simulate_nvt(distribution, print)
         elif self.ensamble.lower() == "npt":
-            result = self.simulate_npt(calc_params, distribution, print)
+            result = self.simulate_npt(distribution, print)
         else:
             msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
             "Please use one of following: NVE, NVT, NPT"
@@ -375,7 +371,6 @@ class SimulationManager:
 
     def simulate_nve(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -388,8 +383,6 @@ class SimulationManager:
         calculator : str, optional
             The ASE calculator to use for force and energy evaluation
             (default: ``'EMT'``).
-        calc_params: dictionary, optional
-            Parameters to pass on to calculator as a dictionary.
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -413,7 +406,6 @@ class SimulationManager:
             self._add_distribution(distribution)
 
             self.crystal.info["dt"] = self.timestep
-            # self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
@@ -431,7 +423,6 @@ class SimulationManager:
 
     def simulate_npt(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -441,9 +432,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str, optional
-            The ASE calculator to use for force and energy evaluation
-            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -462,7 +450,6 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            # self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = IsotropicMTKNPT(
                 self.crystal,
@@ -492,7 +479,6 @@ class SimulationManager:
 
     def simulate_nvt(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -502,9 +488,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str, optional
-            The ASE calculator to use for force and energy evaluation
-            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -523,7 +506,6 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            # self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = NoseHooverChainNVT(
                 self.crystal,
