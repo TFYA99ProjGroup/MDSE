@@ -74,8 +74,7 @@ def remove_all_traj(args):
     else:
         if args.recursive:
             # Recursively search subdirectories
-            files = glob.glob(os.path.join(
-                filepath, "**", "*.traj"), recursive=True)
+            files = glob.glob(os.path.join(filepath, "**", "*.traj"), recursive=True)
         else:
             # Only in the specified directory
             files = glob.glob(os.path.join(filepath, "*.traj"))
@@ -172,8 +171,8 @@ def calc_self_diff(args):
         logger.debug(f"Running self_diff calculation from {path}")
         result = ResultMD.from_file(path)
         logger.info(
-            f"Self diffusion coefficient calculation from {path}:" +
-            f"{result.calc_self_diff()}"
+            f"Self diffusion coefficient calculation from {path}:"
+            + f"{result.calc_self_diff()}"
         )
 
 
@@ -194,8 +193,8 @@ def calc_isobaric_specific_heat(args):
         logger.debug(f"Running isobaric_specific_heat calculation from {path}")
         result = ResultMD.from_file(path)
         logger.info(
-            f"Isobaric specific heat per atom calculation from {path}:" +
-            f"{result.calc_isochoric_heat_capacity_per_atom()}"
+            f"Isobaric specific heat per atom calculation from {path}:"
+            + f"{result.calc_isochoric_heat_capacity_per_atom()}"
         )
 
 
@@ -214,8 +213,8 @@ def build_website_locally(args):
     """
     logger.info("Building the documentation locally")
     subprocess.run(
-        "sphinx-build -b html docs/source docs/_build/html",
-        shell=True, check=True)
+        "sphinx-build -b html docs/source docs/_build/html", shell=True, check=True
+    )
     logger.info("Build has been done to docs/_build")
 
 
@@ -263,8 +262,7 @@ def main():
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE")
 
-    parser.add_argument("--debug", action="store_true",
-                        help="Enable debug logging")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     subparsers = parser.add_subparsers(title="subcommands", dest="command")
     # ----------Subparsers----------
@@ -314,8 +312,7 @@ def main():
 
     parser_remove_traj.set_defaults(func=remove_all_traj)
 
-    parser_calc_msd = subparsers.add_parser(
-        "msd", help="Calculate msd from traj-file")
+    parser_calc_msd = subparsers.add_parser("msd", help="Calculate msd from traj-file")
     parser_calc_msd.add_argument(
         "-f",
         "--filepath",
@@ -359,33 +356,31 @@ def main():
         metavar="FILEPATH",
         help="The filepath to be calculated",
     )
-    parser_calc_isobaric_specific_heat.set_defaults(
-        func=calc_isobaric_specific_heat)
+    parser_calc_isobaric_specific_heat.set_defaults(func=calc_isobaric_specific_heat)
 
     build_website = subparsers.add_parser(
         "build_docs",
-        help="Build the website locally and open it in default web-browser"
+        help="Build the website locally and open it in default web-browser",
     )
 
-    build_website.set_defaults(
-        func=build_website_locally)
+    build_website.set_defaults(func=build_website_locally)
 
     view_website = subparsers.add_parser(
         "view_docs", help="View the website with default web-browser"
     )
 
-    view_website.set_defaults(
-        func=view_website_browser)
+    view_website.set_defaults(func=view_website_browser)
 
     write_to_db = subparsers.add_parser(
-        "write_db", help="Write all json-files in a directory to database")
+        "write_db", help="Write all json-files in a directory to database"
+    )
     write_to_db.add_argument(
         "-f",
         "--filepath",
         nargs="+",
         metavar="FILEPATH",
         help="The filepath to be writing from",
-        required=True
+        required=True,
     )
 
     write_to_db.add_argument(
@@ -393,7 +388,7 @@ def main():
         "--adress",
         metavar="ADRESS",
         help="The adress to be writing to",
-        required=True
+        required=True,
     )
 
     write_to_db.set_defaults(func=write_to_database)

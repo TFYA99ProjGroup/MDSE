@@ -333,8 +333,7 @@ class ResultMD:
         _, natoms = np.shape(self.frames)
         dos, omega = self.calc_density_of_states(frame_skip)
 
-        cum_int = np.cumsum(
-            0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
+        cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
 
         target = 3.0 * natoms
 

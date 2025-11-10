@@ -165,8 +165,7 @@ class SimulationManager:
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
             self.calculator = simulation_params.get("Calculator")
-            self.create_trajectory = simulation_params.get(
-                "Create_traj", False)
+            self.create_trajectory = simulation_params.get("Create_traj", False)
 
         except Exception as e:
             logger.error("Error parameter values")
@@ -216,8 +215,7 @@ class SimulationManager:
             super_crystal = self.crystal
             view(super_crystal)
         except Exception:
-            raise RuntimeError(
-                "Supercell visualization only works with bulk crystals.")
+            raise RuntimeError("Supercell visualization only works with bulk crystals.")
 
     def print_energy(self):
         """
@@ -250,8 +248,7 @@ class SimulationManager:
             `MaxwellBoltzmannDistribution`.
         """
         if not self.temperature:
-            raise ValueError(
-                "Temperature must be set to apply a distribution.")
+            raise ValueError("Temperature must be set to apply a distribution.")
         try:
             distribution(self.crystal, temperature_K=self.temperature)
             Stationary(self.crystal)
@@ -305,17 +302,13 @@ class SimulationManager:
         """Attach outputs to simulation."""
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
         if self.create_trajectory:
-            traj = Trajectory(
-                f"{symbols}_{self.temperature}.traj", "w", self.crystal)
+            traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
             dyn.attach(traj.write, interval=self.traj_interval)
 
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-        dyn.attach(
-            lambda: self.result.append(self.crystal.copy()),
-            self.traj_interval
-        )
+        dyn.attach(lambda: self.result.append(self.crystal.copy()), self.traj_interval)
 
     def simulate(
         self,
@@ -371,8 +364,7 @@ class SimulationManager:
 
         try:
             symbols = "".join(set(self.crystal.get_chemical_symbols()))
-            logger.debug(
-                f"Beggining simulation of {symbols}_{self.temperature}")
+            logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
 

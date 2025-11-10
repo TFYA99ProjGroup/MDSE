@@ -12,8 +12,11 @@ class DBWriter:
     def __init__(self, resultpath, adress):
         # self.client = MongoClient("mongodb://admin:secret@localhost:27017/")
         self.client = MongoClient(
-            adress, serverSelectionTimeoutMS=2000,
-            connectTimeoutMS=2000, socketTimeoutMS=2000)
+            adress,
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+            socketTimeoutMS=2000,
+        )
         try:
             self.client.admin.command("ping")
         except ServerSelectionTimeoutError as e:
@@ -40,8 +43,7 @@ class DBWriter:
             logger.info("No documents to insert")
 
     def _write_jsonfiles_to_db_bson(self):
-        """Bson variant, not in use right now.
-        """
+        """Bson variant, not in use right now."""
         db = self.client["materials_db"]
         examples = db["resultexamples2"]
         logger.debug(self.path)
