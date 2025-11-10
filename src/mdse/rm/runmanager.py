@@ -1,8 +1,6 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI
-from time import sleep # Only for simulating work being done
-from random import uniform # Only for simulating work being done
 logger = logging.getLogger(__name__)
 
 
@@ -121,11 +119,8 @@ class RunManager:
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
-                    sleep_time = uniform(0.5, 3.0)
-                    logger.debug(
-                        f"[Worker {rank}] Simulating work for {sleep_time:.2f} seconds."
-                        )
-                    sleep(sleep_time)
+                    sim = self.md_simulations[job]
+                    sim.simulate()
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
