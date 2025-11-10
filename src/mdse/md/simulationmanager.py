@@ -9,6 +9,7 @@ from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
+import copy
 
 from mdse.md.resultMD import ResultMD
 
@@ -483,7 +484,13 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        logger.debug("CALC!")
+        logger.debug(self.result[0].calc)
         self.result[0].info["p_au"] = self.pressure_au
+        calc = self._check_calculator({})
+        for result in self.result:
+            result.calc = calc
+
         return ResultMD(self.result)
 
     def simulate_nvt(

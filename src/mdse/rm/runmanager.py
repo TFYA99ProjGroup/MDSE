@@ -2,6 +2,8 @@ from mdse.md.simulationmanager import SimulationManager
 import logging
 import json
 from pathlib import Path
+import math
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,8 @@ class RunManager:
                                                 simulation parameters.
         """
         logger.debug(
-            f"Initializes an instance of RunManager with config {simulation_config}")
+            f"Initializes an instance of RunManager with config {simulation_config}"
+        )
 
         self.md_simulations = []
         self.result_objects = []
@@ -71,11 +74,9 @@ class RunManager:
         pass
 
     def run_results(self):
-
         logger.debug(self.result_objects)
 
         for index, config in enumerate(self.simulation_config):
-
             logger.debug(config)
 
             properties = config[next(iter(config))]["RESULT"]["Properties"]
@@ -90,23 +91,29 @@ class RunManager:
             if ("Lindemann" in properties) or ("all" in properties):
                 lindemann = result.calc_lindemann()
                 logger.info(f"Lindemann: {lindemann}")
+                if math.isnan(lindemann):
+                    lindemann = 0.0
                 propertie_values["Lindemann"] = lindemann
 
             if ("Self-diffusion" in properties) or ("all" in properties):
                 self_diff = result.calc_self_diff()
+                if math.isnan(self_diff):
+                    self_diff = 0.0
                 logger.info(f"Self-diffusion: {self_diff}")
                 propertie_values["Self-diffusion"] = self_diff
             # Doesn't work right now
-            if ("Isobaric specific heat" in properties) or \
-                    ("all" in properties):
-                ish = result.calc_isobaric_specific_heat()
+            if ("Isobaric specific heat" in properties) or ("all" in properties):
+                ish = result.calc_isochoric_heat_capacity_per_atom()
+                if math.isnan(ish):
+                    ish = 0.0
                 logger.info(f"Isobaric specific heat: {ish}")
                 propertie_values["Isobaric specific heat"] = ish
 
             crystal = config[next(iter(config))]["CRYSTAL"]
             ensamble = config[next(iter(config))]["ENSAMBLE"]
-            self.docs[index]["Structure_id"] = str(crystal["Name"]) + \
-                "_" + str(ensamble["Temp"]) + "K"
+            self.docs[index]["Structure_id"] = (
+                str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+            )
 
             atoms = {}
             atoms["elements"] = result.frames[0].get_chemical_symbols()
@@ -115,8 +122,7 @@ class RunManager:
             self.docs[index]["atoms"] = atoms
 
             composition = {}
-            composition["elements"] = list(
-                set(result.frames[0].get_chemical_symbols()))
+            composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
             formula, _ = result.frames[0].symbols.formula.reduce()
             composition["chemical_formula_reduced"] = str(formula)
             self.docs[index]["composition"] = composition
