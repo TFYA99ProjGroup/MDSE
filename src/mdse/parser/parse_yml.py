@@ -1,5 +1,7 @@
 import yaml
 import logging
+from copy import deepcopy
+from pathlib import Path
 logger = logging.getLogger(__name__)
 # from yaml.loader import SafeLoader
 
@@ -47,8 +49,7 @@ def unnest_simulation_parameters(all_simulations):
     logger.debug("Beginning unnesting parameters")
     parameters_to_expand = [
         "Temp",
-        "Type",
-        "Time",
+        "Pressure"
     ]  # Parameters that may be nested as lists or ranges
     final_simulation_configs = []  # Will hold all expanded simulation configs
     for simulation_name, simulation_full_config in all_simulations.items():
@@ -101,39 +102,39 @@ def expand_parameter(simulation_to_expand, parameter):
 
     param_list = parameter + "_list"  # e.g., 'Temp_list'
     param_range = parameter + "_range"  # e.g., 'Temp_range'
-
+    ensamble_params = sim_params.get("ENSAMBLE")
     # If parameter exists as a single value, leave as is
-    if sim_params.get(parameter):
+    if ensamble_params.get(parameter):
         logger.debug(f"Parameter {parameter} was a single value")
         return [(sim_name, sim_params)]
 
     # If parameter is a list, expand for each value
-    values_as_list = sim_params.get(param_list)
+    values_as_list = ensamble_params.get(param_list)
     if values_as_list:
         logger.debug(f"Parameter {parameter} was a list, extracting...")
-        for i, value in enumerate(values_as_list):
+        for value in values_as_list:
             # Shallow copy, might need more for nested structures
-            new_params = sim_params.copy()
-            new_params.pop(param_list)
-            new_params[parameter] = value
-            result.append((f"{sim_name}_{value}", new_params))
+            new_params = deepcopy(sim_params)
+            logger.debug(sim_params)
+            new_params.get("ENSAMBLE").pop(param_list)
+            logger.debug(sim_params)
+            new_params.get("ENSAMBLE")[parameter] = value
+            result.append((f"{sim_name}_{parameter}_{value}", new_params))
         return result
 
     # If parameter is a range, expand for each value in the range
     values_as_range = sim_params.get(param_range)
     if values_as_range:
         logger.debug(f"Parameter {parameter} was a range, iterating...")
-        for i, index in enumerate(
-            range(
+        for value in range(
                 values_as_range["Start"],
                 values_as_range["Stop"],
                 values_as_range["Step"],
-            )
-        ):
-            new_params = sim_params.copy()
-            new_params.pop(param_range)
-            new_params[parameter] = index
-            result.append((f"{sim_name}_{index}", new_params))
+            ):
+            new_params = deepcopy(sim_params)
+            new_params.get("ENSAMBLE").pop(param_range)
+            new_params.get("ENSAMBLE")[parameter] = value
+            result.append((f"{sim_name}_{parameter}_{value}", new_params))
         return result
 
     # If parameter is not present, leave as is
@@ -156,4 +157,41 @@ def main_read(filename):
     """
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
-    return unnest_simulation_parameters(all_simulations)
+    logger.debug("Format OK")
+    return get_files(unnest_simulation_parameters(all_simulations))
+
+def get_files(simulations):
+    """
+    Expand simulations: if CRYSTAL.TYPE == 'FILE' and Filepath is a directory,
+    create separate simulations for all files in that folder.
+
+    Currently this does not work recursively, so all the relvant files must be
+    in the uppermost level of the specified directory
+    """
+    expanded_parameters = []
+    for sim in simulations:
+        (name,val), = sim.items()
+        crystal_params = val.get("CRYSTAL")
+
+        if crystal_params.get("TYPE") != "FILE":
+            logger.debug("Specified crystal input is not")
+            expanded_parameters.append(sim)
+            continue
+
+        dir_path  = Path(crystal_params.get("Filepath"))
+        if not dir_path.is_dir():
+            logger.debug("CRYSTAL input is direct path to config file")
+            expanded_parameters.append(sim)
+            continue
+
+        logger.debug("CRYSTAL input is path to folder")
+        logger.debug(f"Searching folder at: {str(dir_path)}")
+        for file_path in map(str,dir_path.iterdir()):
+            if not Path(file_path).is_file():
+                continue
+            logger.debug(f"Config file found: {file_path}")
+            new_sim = deepcopy(sim)
+            new_sim[name]["CRYSTAL"]["Filepath"] = file_path
+            expanded_parameters.append(new_sim)
+
+    return expanded_parameters

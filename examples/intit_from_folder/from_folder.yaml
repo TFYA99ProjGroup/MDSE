@@ -1,8 +1,7 @@
-
-Simulation1:
+Simulation2:
   CRYSTAL:
     TYPE: FILE
-    Filepath: optimade_structure_mp-1076737.cif
+    Filepath: configs
   ENSAMBLE:
     Ensamble: NVE
     Temp: 800
