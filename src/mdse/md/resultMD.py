@@ -25,7 +25,6 @@ class ResultMD:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
         logger.debug("Initialize ResultMD")
-        self.chemical_notation = data[0].symbols
 
         self.frames = data
         self.frames_in_fs = 50
@@ -463,9 +462,6 @@ class ResultMD:
 
         E_J = np.array(E_eV) * constants.eV
         T_K = np.mean(T_K)
-
-        logger.debug(f"E_eV {E_eV}")
-        logger.debug(f"T_K {T_K}")
 
         frame_skips = 0.5
         nskip = int(len(E_J) * frame_skips)

@@ -9,7 +9,6 @@ from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 
 import logging
-import copy
 
 from mdse.md.resultMD import ResultMD
 
@@ -198,7 +197,11 @@ class SimulationManager:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
-        self.crystal.calc = self._check_calculator({})
+        if simulation_params.get("Calc_params") is not None:
+            self.calc_params = simulation_params.get("Calc_params")
+        else:
+            self.calc_params = {}
+        self.crystal.calc = self._check_calculator()
         self.result = [self.crystal.copy()]
 
         logger.debug("Init done")
@@ -256,19 +259,13 @@ class SimulationManager:
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
-    def _check_calculator(self, calc_params):
+    def _check_calculator(self):
         """
         Validate and initialize an ASE calculator.
 
         This method checks whether a valid calculator has been specified and returns
         an initialized instance accordingly. If no calculator is provided, the EMT
         (Effective Medium Theory) calculator is used by default.
-
-        Parameters
-        ----------
-
-        calc_params : dict
-            Keyword arguments passed to the chosen calculator's constructor.
 
         Returns
         -------
@@ -287,9 +284,9 @@ class SimulationManager:
           - ``LennardJones``
         """
         if self.calculator == "EMT":
-            calculator = EMT(**calc_params)
+            calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
-            calculator = LennardJones(**calc_params)
+            calculator = LennardJones(**self.calc_params)
         else:
             error_msg = (
                 f"Calculator {self.calculator} not implemented, "
@@ -487,7 +484,7 @@ class SimulationManager:
         logger.debug("CALC!")
         logger.debug(self.result[0].calc)
         self.result[0].info["p_au"] = self.pressure_au
-        calc = self._check_calculator({})
+        calc = self._check_calculator()
         for result in self.result:
             result.calc = calc
 

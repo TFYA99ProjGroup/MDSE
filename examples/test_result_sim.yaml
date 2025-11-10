@@ -20,6 +20,7 @@ Copper:
     Length: 2000
     TrajInterval: 5
     Calculator: EMT
+    CalcParams: 
     Create_traj: True
   RESULT:
     Properties:
