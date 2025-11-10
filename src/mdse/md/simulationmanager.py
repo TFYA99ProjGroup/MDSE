@@ -316,6 +316,52 @@ class SimulationManager:
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
+        """
+        Run a molecular dynamics simulation for the selected ensemble.
+
+        This method acts as a high-level dispatcher that selects and executes
+        the appropriate simulation routine based on ``self.ensamble``.
+        Supported ensembles are:
+        - ``NVE``: microcanonical (constant energy)
+        - ``NVT``: canonical (constant temperature)
+        - ``NPT``: isothermal-isobaric (constant pressure and temperature)
+
+        Parameters
+        ----------
+        calc_params : dict, optional
+            Dictionary of parameters passed to the ASE calculator.
+            Defaults to an empty dictionary.
+        distribution : callable, optional
+            Function used to initialize particle velocities.
+            Defaults to ``MaxwellBoltzmannDistribution``.
+        print : bool, optional
+            If ``True``, prints simulation output at runtime.
+            Defaults to ``False``.
+
+        Returns
+        -------
+        ResultMD
+            Object containing the trajectory and simulation data.
+
+        Raises
+        ------
+        ValueError
+            If ``self.ensamble`` is not one of ``NVE``, ``NVT``, or ``NPT``.
+        pymongo.errors.ServerSelectionTimeoutError
+            If a connection to the MongoDB server fails (depending on context).
+        Exception
+            Propagates other unexpected errors from lower-level methods.
+
+        Notes
+        -----
+        The ensemble type is read from the instance attribute ``self.ensamble``.
+        This attribute must be one of ``'NVE'``, ``'NVT'``, or ``'NPT'``.
+
+        The simulation is carried out using one of:
+        - :meth:`simulate_nve`
+        - :meth:`simulate_nvt`
+        - :meth:`simulate_npt`
+        """
         if self.ensamble.lower() == "nve":
             result = self.simulate_nve(calc_params, distribution, print)
         elif self.ensamble.lower() == "nvt":

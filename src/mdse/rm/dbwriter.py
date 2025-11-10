@@ -9,7 +9,37 @@ logger = logging.getLogger(__name__)
 
 
 class DBWriter:
+    """
+    Handles writing JSON result files to a MongoDB database.
+
+    This class establishes a MongoDB connection, searches a given directory
+    for result files (JSON), and uploads their contents into a
+    predefined MongoDB collection.
+
+    Attributes
+    ----------
+    client : MongoClient
+        The MongoDB client used to communicate with the database.
+    path : str
+        Filesystem path to the directory containing result files.
+    """
+
     def __init__(self, resultpath, adress):
+        """
+        Initialize a DBWriter instance and connect to a MongoDB server.
+
+        Parameters
+        ----------
+        resultpath : str
+            Path to the directory containing result files (JSON).
+        adress : str
+            MongoDB connection string or address (e.g. "mongodb://localhost:27017/").
+
+        Notes
+        -----
+        - Attempts to ping the MongoDB server to verify connectivity.
+        - Logs an error if the server is unreachable.
+        """
         # self.client = MongoClient("mongodb://admin:secret@localhost:27017/")
         self.client = MongoClient(
             adress,
@@ -25,6 +55,20 @@ class DBWriter:
         self.path = resultpath
 
     def write_jsonfiles_to_db(self):
+        """
+        Upload all JSON files from `self.path` to the MongoDB collection
+        `resultexamples3`.
+
+        The method:
+        1. Scans the directory specified by `self.path` for `.json` files.
+        2. Reads each file into a Python dictionary.
+        3. Inserts all documents into the MongoDB collection.
+
+        Logs
+        ----
+        - Debug: Lists found files and their contents before insertion.
+        - Info: Number of successfully inserted documents.
+        """
         db = self.client["materials_db"]
         examples = db["resultexamples3"]
         logger.debug(self.path)
