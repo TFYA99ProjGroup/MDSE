@@ -24,11 +24,14 @@ class ResultMD:
         Parameters:
             data (list): List of ASE Atoms objects representing simulation frames.
         """
-        logger.debug("Initilizing an instance of ResultMD")
+        logger.debug("Initialize ResultMD")
+
         self.frames = data
         self.frames_in_fs = 50
+        self.name = ""
 
         self.dos = None
+        logger.debug("Init done")
 
     @classmethod
     def from_file(cls, filepath):
@@ -130,7 +133,6 @@ class ResultMD:
         Returns:
             float: average nearest-neighbor distance for one frame.
         """
-        logger.debug("Estimate nearest-neighbor distance")
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
         np.fill_diagonal(dists, np.inf)
@@ -389,6 +391,10 @@ class ResultMD:
 
         Returns:
             enthalpy_J (float): Enthalpy with unit Joule.
+
+        Note:
+            Developers, you need a calc to get the total energy. Btw,
+            if you just began reading theese docs, calc stands for calculator.
         """
         E_eV, V_A3 = [], []
 
@@ -396,6 +402,7 @@ class ResultMD:
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
 
+        logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
             V_A3.append(frame.get_volume())
@@ -403,8 +410,11 @@ class ResultMD:
         E_J = np.array(E_eV) * constants.eV
         V_m3 = np.array(V_A3) * (constants.angstrom**3)
 
-        enthalpy_J = E_J + p_Pa * V_m3
+        logger.debug(f"ev_to_J: {constants.eV}")
+        logger.debug(f"angstrom: {constants.angstrom}")
 
+        enthalpy_J = E_J + p_Pa * V_m3
+        logger.debug(f"enthalpy {enthalpy_J}")
         return enthalpy_J
 
     def calc_isobaric_specific_heat(self):
@@ -423,15 +433,20 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(H_J) * frame_skips)
-        H_J = H_J[nskip:]  # Skip the part of the simulation before equilibration
+        # Skip the part of the simulation before equilibration
+        H_J = H_J[nskip:]
 
         varH = np.var(H_J)
         # Isobaric heat capacity
         Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
+        
+        logger.debug(f"boltzmann: {constants.value('Boltzmann constant')}")
 
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
         tot_mass_kg = tot_mass_u * constants.atomic_mass
+
+        logger.debug(f"atomic_mass: {constants.atomic_mass}")
 
         return Cp / tot_mass_kg
 
@@ -452,7 +467,8 @@ class ResultMD:
 
         frame_skips = 0.5
         nskip = int(len(E_J) * frame_skips)
-        E_J = E_J[nskip:]  # Skip the part of the simulation before equilibration
+        # Skip the part of the simulation before equilibration
+        E_J = E_J[nskip:]
 
         varE = np.var(E_J)
 
@@ -461,3 +477,29 @@ class ResultMD:
         n_atoms = len(self.frames[0])
 
         return Cv / n_atoms
+
+    def get_pot_energies(self):
+        """Gets the potential energis at each frame.
+
+        returns:
+            list: Potential energy at each frame
+        """
+        return [frame.get_potential_energy() for frame in self.frames]
+
+    def get_kin_energies(self):
+        """Gets the kinnetic energis at each frame.
+
+        returns:
+            list: Kinnetic energy at each frame
+        """
+        return [frame.get_kinetic_energy() for frame in self.frames]
+
+    def get_time_axis(self):
+        """Gets the time steps where frames are from.
+
+        returns:
+            times (list): Contains at what times each frame is from.
+        """
+        dt = self.frames[0].info["dt"]
+        times = np.arange(len(self.frames))*dt
+        return times

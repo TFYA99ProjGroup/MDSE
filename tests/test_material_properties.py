@@ -1,5 +1,6 @@
 import pytest
 from mdse.rm.runmanager import RunManager
+from mdse.md.simulationmanager import SimulationManager
 from mdse.md.resultMD import ResultMD
 from mdse.parser.parse_yml import main_read
 from pathlib import Path
@@ -26,11 +27,9 @@ def results():
 
     rm = RunManager(config)
 
-    rm.run_simulations()
-
-    nve = ResultMD.from_file("Cu_300.traj")
-    nvt = ResultMD.from_file("Cu_301.traj")
-    npt = ResultMD.from_file("Cu_302.traj")
+    nve = rm.md_simulations[0].simulate()
+    nvt = rm.md_simulations[1].simulate()
+    npt = rm.md_simulations[2].simulate()
 
     return nve, nvt, npt
 
