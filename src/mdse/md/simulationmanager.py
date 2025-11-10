@@ -524,4 +524,9 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        logger.debug("CALC!")
+        logger.debug(self.result[0].calc)
+        calc = self._check_calculator()
+        for result in self.result:
+            result.calc = calc
         return ResultMD(self.result)

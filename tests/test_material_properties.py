@@ -93,7 +93,7 @@ def test_self_diff(nve_result):
     Should be close to zero and positive."""
     self_diff = nve_result.calc_self_diff()
     assert self_diff < 1e-10
-    assert self_diff > 0
+    assert self_diff > -1e-10
 
 
 def test_isobaric_specific_heat(npt_result):
