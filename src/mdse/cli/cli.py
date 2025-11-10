@@ -235,22 +235,9 @@ def view_website_browser(args):
     webbrowser.open("docs/_build/html/index.html")
 
 
-def start_database(args):
-    subprocess.run(["sudo", "docker", "compose", "up", "-d"],
-                   cwd="src/mdse/database")
-
-
-def stop_database(args):
-    subprocess.run(["sudo", "docker", "compose", "down"],
-                   cwd="src/mdse/database")
-
-
-def view_database(args):
-    webbrowser.open("http://localhost:8081/")
-
-
 def write_to_database(args):
-    writer = DBWriter(args.filepath[0])
+    writer = DBWriter(args.filepath[0], args.adress)
+    logger.info(f"Writing data from {args.filepath[0]} to {args.adress}")
     writer.write_jsonfiles_to_db()
 
 
@@ -390,24 +377,6 @@ def main():
     view_website.set_defaults(
         func=view_website_browser)
 
-    start_db = subparsers.add_parser(
-        "start_db", help="Start the database"
-    )
-
-    start_db.set_defaults(func=start_database)
-
-    stop_db = subparsers.add_parser(
-        "stop_db", help="Shut down the database"
-    )
-
-    stop_db.set_defaults(func=stop_database)
-
-    view_db = subparsers.add_parser(
-        "view_db", help="View the database in the default browser"
-    )
-
-    view_db.set_defaults(func=view_database)
-
     write_to_db = subparsers.add_parser(
         "write_db", help="Write all json-files in a directory to database")
     write_to_db.add_argument(
@@ -418,6 +387,15 @@ def main():
         help="The filepath to be writing from",
         required=True
     )
+
+    write_to_db.add_argument(
+        "-a",
+        "--adress",
+        metavar="ADRESS",
+        help="The adress to be writing to",
+        required=True
+    )
+
     write_to_db.set_defaults(func=write_to_database)
 
     # ----------Other----------
