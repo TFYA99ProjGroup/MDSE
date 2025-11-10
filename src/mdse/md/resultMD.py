@@ -66,12 +66,13 @@ class ResultMD:
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
-        if self.reached_equilibrium:
-            positions = positions[self.check_equilibrium() : ]
+        #Check if equilibrium
+        positions = positions[self.check_equilibrium() : ]
 
-        taus = range(7, len(self.frames) - 7)
+        #taus = range(7, len(self.frames) - 7)
+        taus = range(7, len(positions) - 7)
         #Comment: This removes very short taus. So short timesteps
-        #But we still get the early frames
+        #But we still get the early frames. Nothing to-do with equilibrium
         
 
         MSD_at_tau_x = []
@@ -209,6 +210,8 @@ class ResultMD:
             numpy.ndarray: A 1D array containing the normalized VACF. Its
                 length will be `int((1 - frame_skip) * len(self.frames) * max_lag)`.
         """
+        self.check_equilibrium()
+
         if self.reached_equilibrium:
             nskip = self.check_equilibrium()
         else:
@@ -260,6 +263,7 @@ class ResultMD:
                   angular frequencies. The units depend on the units of
                   `dt` (e.g., rad/fs if `dt` is in fs).
         """
+        self.check_equilibrium()
         if self.reached_equilibrium:
             max_lag = self.check_equilibrium()
             frame_skip = max_lag/len(self.frames)
@@ -345,6 +349,7 @@ class ResultMD:
         hbar = constants.hbar
         _, natoms = np.shape(self.frames)
 
+        self.check_equilibrium()
         if self.reached_equilibrium:
             frame_skip = self.check_equilibrium() / len(self.frames)
 
@@ -448,6 +453,8 @@ class ResultMD:
 
         H_J = self.calc_isobaric_enthalpy()
 
+        self.check_equilibrium()
+
         if self.reached_equilibrium:
             frame_skips = self.check_equilibrium() / len(self.frames)
         else:
@@ -482,6 +489,8 @@ class ResultMD:
         E_J = np.array(E_eV) * constants.eV
         T_K = np.mean(T_K)
 
+        self.check_equilibrium()
+
         if self.reached_equilibrium:
             frame_skips = self.check_equilibrium() / len(self.frames)
         else:
@@ -512,6 +521,14 @@ class ResultMD:
             list: Kinnetic energy at each frame
         """
         return [frame.get_kinetic_energy() for frame in self.frames]
+    
+    def get_tot_energies(self):
+        """Gets total energy at each frame
+        
+        returns:
+            list: Total energy at each frame
+        """
+        return[frame.get_kinetic_energy() + frame.get_potential_energy() for frame in self.frames]
 
     def get_time_axis(self):
         """Gets the time steps where frames are from.
@@ -543,7 +560,6 @@ class ResultMD:
         pot_energy = self.get_pot_energies()
         Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
         temperatures = self.get_temperatures()
-
          #----Based on total energy-----
 
         energy_frame = self._check_equilibrium_const(Tot_energy,0.0001)
