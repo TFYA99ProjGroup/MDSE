@@ -439,7 +439,7 @@ class ResultMD:
         varH = np.var(H_J)
         # Isobaric heat capacity
         Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
-        
+
         logger.debug(f"boltzmann: {constants.value('Boltzmann constant')}")
 
         m_u = self.frames[0].get_masses()

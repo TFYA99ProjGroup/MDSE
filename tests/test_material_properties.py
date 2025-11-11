@@ -1,7 +1,5 @@
 import pytest
 from mdse.rm.runmanager import RunManager
-from mdse.md.simulationmanager import SimulationManager
-from mdse.md.resultMD import ResultMD
 from mdse.parser.parse_yml import main_read
 from pathlib import Path
 
