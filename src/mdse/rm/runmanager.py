@@ -18,6 +18,7 @@ except Exception as e:
     _MPI_AVAILABLE = False
     # This below is not strictly necessary since we never use 'comm'
     # in single-process mode, but it's here for completeness.
+    # Should probably be removed later.
     class _FakeComm:
         def Get_rank(self): return 0
         def Get_size(self): return 1
