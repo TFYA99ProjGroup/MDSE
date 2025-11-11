@@ -3,7 +3,7 @@ import logging
 from mpi4py import MPI as _TrueMPI
 logger = logging.getLogger(__name__)
 
-_FORCE_NO_MPI = True # Set to True to simulate missing MPI backend for testing
+_FORCE_NO_MPI = False # Set to True to simulate missing MPI backend for testing
 try:
     comm = _TrueMPI.COMM_WORLD
     _ = comm.Get_rank()
