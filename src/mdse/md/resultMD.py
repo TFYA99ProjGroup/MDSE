@@ -255,9 +255,9 @@ class ResultMD:
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
         dt = frames[0].info["dt"] * 1e-15 / units.fs
-        logger.debug(
-            f"Calculating density of states for system. \
-                frames: {max_lag}, natoms: {natoms}, dt: {dt} fs"
+        logger.debug((
+            ("Calculating density of states for system."),
+            (f"frames: {max_lag}, natoms: {natoms}, dt: {dt} fs")),
         )
 
         vacf = self._calc_vacf(frame_skip)
@@ -496,5 +496,5 @@ class ResultMD:
             times (list): Contains at what times each frame is from.
         """
         dt = self.frames[0].info["dt"]
-        times = np.arange(len(self.frames))*dt
+        times = np.arange(len(self.frames)) * dt
         return times

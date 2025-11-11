@@ -50,6 +50,7 @@ class RunManager:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
+                self.docs.append({})
 
         logger.debug("RunManager done innit bruv!")
 
@@ -74,8 +75,15 @@ class RunManager:
         """
         pass
 
+    def _add_property(self, property, propertie_values, func):
+        value = func()
+        logger.info(f"{property}: {value}")
+        if math.isnan(value):
+            value = 0.0
+        propertie_values[property] = value
+
     def run_results(self):
-        logger.debug(self.result_objects)
+        logger.debug(f"Results: {self.result_objects}")
 
         for index, config in enumerate(self.simulation_config):
             logger.debug(config)
@@ -87,28 +95,17 @@ class RunManager:
             logger.debug(properties)
             logger.debug(result)
 
-            propertie_values = {}
+            property_values = {}
+            property_functions = {
+                "Lindemann" : result.calc_lindemann,
+                "Self-diffusion" : result.calc_self_diff,
+                "Isobaric specific heat" : result.calc_isochoric_heat_capacity_per_atom,
+                "Debye" : result.calc_debye_temperature
+            }
 
-            if ("Lindemann" in properties) or ("all" in properties):
-                lindemann = result.calc_lindemann()
-                logger.info(f"Lindemann: {lindemann}")
-                if math.isnan(lindemann):
-                    lindemann = 0.0
-                propertie_values["Lindemann"] = lindemann
-
-            if ("Self-diffusion" in properties) or ("all" in properties):
-                self_diff = result.calc_self_diff()
-                if math.isnan(self_diff):
-                    self_diff = 0.0
-                logger.info(f"Self-diffusion: {self_diff}")
-                propertie_values["Self-diffusion"] = self_diff
-
-            if ("Isobaric specific heat" in properties) or ("all" in properties):
-                ish = result.calc_isochoric_heat_capacity_per_atom()
-                if math.isnan(ish):
-                    ish = 0.0
-                logger.info(f"Isobaric specific heat: {ish}")
-                propertie_values["Isobaric specific heat"] = ish
+            for name, func in property_functions.items():
+                if (name in properties) or ("all" in properties):
+                    self._add_property(name, property_values, func)
 
             crystal = config[next(iter(config))]["CRYSTAL"]
             ensamble = config[next(iter(config))]["ENSAMBLE"]
@@ -128,7 +125,7 @@ class RunManager:
             composition["chemical_formula_reduced"] = str(formula)
             self.docs[index]["composition"] = composition
 
-            self.docs[index]["Properties"] = propertie_values
+            self.docs[index]["Properties"] = property_values
         logger.debug(self.docs)
         logger.debug(len(self.docs))
         for index, doc in enumerate(self.docs):
@@ -152,7 +149,7 @@ class RunManager:
             for sim in self.md_simulations:
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
-                sim.simulate()
+                self.result_objects.append(sim.simulate())
             # Insert single core execution here if desired
             return
 
@@ -194,7 +191,7 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    sim.simulate()
+                    self.result_objects.append(sim.simulate())
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)

@@ -193,17 +193,19 @@ class SimulationManager:
                 self.baro_time = ensamble_params.get("BaroTime")
             else:
                 raise NotImplementedError()
-
         except Exception as e:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
+
         if simulation_params.get("Calc_params") is not None:
             self.calc_params = simulation_params.get("Calc_params")
         else:
             self.calc_params = {}
         self.crystal.calc = self._check_calculator()
+        self.crystal.info["dt"] = self.timestep
         self.result = [self.crystal.copy()]
+        self.result[0].calc = self.crystal.calc
 
         logger.debug("Init done")
 
@@ -298,6 +300,10 @@ class SimulationManager:
 
         return calculator
 
+    def _attach_calc(self):
+        self.result.append(self.crystal.copy())
+        self.result[-1].calc = self._check_calculator()
+
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
@@ -308,7 +314,7 @@ class SimulationManager:
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-        dyn.attach(lambda: self.result.append(self.crystal.copy()), self.traj_interval)
+        dyn.attach(self._attach_calc, self.traj_interval)
 
     def simulate(
         self,
@@ -407,8 +413,6 @@ class SimulationManager:
 
             self._add_distribution(distribution)
 
-            self.crystal.info["dt"] = self.timestep
-
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
             self._attach_outputs(dyn, print)
@@ -470,13 +474,6 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
-        logger.debug("CALC!")
-        logger.debug(self.result[0].calc)
-        self.result[0].info["p_au"] = self.pressure_au
-        calc = self._check_calculator()
-        for result in self.result:
-            result.calc = calc
-
         return ResultMD(self.result)
 
     def simulate_nvt(
