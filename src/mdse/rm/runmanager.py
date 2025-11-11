@@ -1,8 +1,36 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
-from mpi4py import MPI
+from mpi4py import MPI as _TrueMPI
 logger = logging.getLogger(__name__)
 
+_FORCE_NO_MPI = True # Set to True to simulate missing MPI backend for testing
+try:
+    comm = _TrueMPI.COMM_WORLD
+    _ = comm.Get_rank()
+    MPI = _TrueMPI
+    _MPI_AVAILABLE = True
+    if _FORCE_NO_MPI:
+        raise RuntimeError("Simulated missing MPI backend")
+except Exception as e:
+    logger.warning(
+        f"No working MPI backend detected ({e}). Falling back to single-process mode."
+        )
+    _MPI_AVAILABLE = False
+    # This below is not strictly necessary since we never use 'comm'
+    # in single-process mode, but it's here for completeness.
+    class _FakeComm:
+        def Get_rank(self): return 0
+        def Get_size(self): return 1
+        def send(self, *_, **__): pass
+        def recv(self, *_, **__): return None
+
+    class _FakeMPI:
+        COMM_WORLD = _FakeComm()
+        ANY_SOURCE = 0
+        ANY_TAG = 0
+        Status = object
+
+    MPI = _FakeMPI()
 
 class RunManager:
     """Manages settings, I/O, and execution of molecular dynamics simulations.
@@ -74,9 +102,9 @@ class RunManager:
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-        if size < 2:
-            logger.warning(
-                "MPI size < 2. Now the poor Master has to do all the work alone!"
+        if (not _MPI_AVAILABLE) or (size < 2):
+            logger.info(
+                "Running in single-process mode (single rank or no MPI backend)."
                 )
             for sim in self.md_simulations:
                 if overwrite_ensamble is not None:
