@@ -401,6 +401,7 @@ class ResultMD:
         p_au = self.frames[0].info["p_au"]
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
+
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
         for frame in self.frames:
             E_eV.append(frame.get_total_energy())
@@ -408,6 +409,7 @@ class ResultMD:
 
         E_J = np.array(E_eV) * constants.eV
         V_m3 = np.array(V_A3) * (constants.angstrom**3)
+
         logger.debug(f"ev_to_J: {constants.eV}")
         logger.debug(f"angstrom: {constants.angstrom}")
 
@@ -437,11 +439,13 @@ class ResultMD:
         varH = np.var(H_J)
         # Isobaric heat capacity
         Cp = varH / (constants.value("Boltzmann constant") * T_K**2)
+
         logger.debug(f"boltzmann: {constants.value('Boltzmann constant')}")
 
         m_u = self.frames[0].get_masses()
         tot_mass_u = m_u.sum()
         tot_mass_kg = tot_mass_u * constants.atomic_mass
+
         logger.debug(f"atomic_mass: {constants.atomic_mass}")
 
         return Cp / tot_mass_kg
@@ -469,7 +473,8 @@ class ResultMD:
         varE = np.var(E_J)
 
         Cv = varE / (constants.value("Boltzmann constant") * T_K**2)
-        n_atoms = len(self.frames) - 1
+
+        n_atoms = len(self.frames[0])
 
         return Cv / n_atoms
 
