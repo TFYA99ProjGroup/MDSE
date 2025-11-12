@@ -5,20 +5,38 @@ from mdse.md.resultMD import ResultMD
 
 
 class MockAtoms:
-    def __init__(self, positions):
+    def __init__(self, positions, velocities=None, pot = 0, kin = 0):
         self.positions = positions
+        self.velocities = velocities
+        self.info = {
+            "dt": 5
+        }
+        self.kinetic_energy = kin
+        self.potential_energy = pot
 
     def __len__(self):
         return len(self.positions)
 
+    def __array__(self):
+        return self.positions[:,0]
+
+    def get_velocities(self):
+        return self.velocities
+
+    def get_potential_energy(self):
+        return self.potential_energy
+
+    def get_kinetic_energy(self):
+        return self.kinetic_energy
+
 
 @pytest.fixture
 def mock_frames():
-    """Generate mock ASE-like frames with positions."""
+    """Generate mock ASE-like frames with positions and velocities."""
     np.random.seed(42)
-    frames = [MockAtoms(np.random.rand(5, 3)) for _ in range(20)]
+    frames = [MockAtoms(np.random.rand(5, 3),
+                        np.random.rand(5, 3), 1, 2) for _ in range(20)]
     return frames
-
 
 @pytest.fixture
 def mock_frames_simple():
@@ -230,4 +248,44 @@ def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert (Diff_coeff == 0)
+    assert(Diff_coeff == 0)
+
+def test_calc_debye_temperature(mock_frames):
+    result = ResultMD(mock_frames)
+
+    theta_D = result.calc_debye_temperature(frame_skip=0.5)
+
+    assert(theta_D != 0)
+
+def test_calc_density_of_states(mock_frames):
+    result = ResultMD(mock_frames)
+
+    dos, omega = result.calc_density_of_states(frame_skip=0.5)
+
+    assert(len(dos) > 0)
+    assert(len(omega) > 0)
+    for i in range(len(dos)):
+        assert(dos[i] >= 0)
+
+def test_energies(mock_frames):
+    """Check so getters get the correct energies, and correct amount"""
+    result = ResultMD(mock_frames)
+
+    pot_energ = result.get_pot_energies()
+    kin_energ = result.get_kin_energies()
+
+    assert(len(mock_frames) == len(pot_energ))
+    assert(len(mock_frames) == len(kin_energ))
+
+    right_pot = [1]*len(mock_frames)
+    right_kin = [2]*len(mock_frames)
+
+    assert(pot_energ == right_pot)
+    assert(kin_energ == right_kin)
+
+def test_time_axis(mock_frames):
+    """Check so get time axis gets list of times"""
+    result = ResultMD(mock_frames)
+    times = result.get_time_axis()
+
+    assert(len(times) == len(mock_frames))

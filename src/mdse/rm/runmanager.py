@@ -1,6 +1,49 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
+from mpi4py import MPI as _TrueMPI
+import json
+from pathlib import Path
+import math
+
 logger = logging.getLogger(__name__)
+
+_FORCE_NO_MPI = False  # Set to True to simulate missing MPI backend for testing
+try:
+    comm = _TrueMPI.COMM_WORLD
+    _ = comm.Get_rank()
+    MPI = _TrueMPI
+    _MPI_AVAILABLE = True
+    if _FORCE_NO_MPI:
+        raise RuntimeError("Simulated missing MPI backend")
+except Exception as e:
+    logger.warning(
+        f"No working MPI backend detected ({e}). Falling back to single-process mode."
+    )
+    _MPI_AVAILABLE = False
+
+    # This below is not strictly necessary since we never use 'comm'
+    # in single-process mode, but it's here for completeness.
+    # Should probably be removed later.
+    class _FakeComm:
+        def Get_rank(self):
+            return 0
+
+        def Get_size(self):
+            return 1
+
+        def send(self, *_, **__):
+            pass
+
+        def recv(self, *_, **__):
+            return None
+
+    class _FakeMPI:
+        COMM_WORLD = _FakeComm()
+        ANY_SOURCE = 0
+        ANY_TAG = 0
+        Status = object
+
+    MPI = _FakeMPI()
 
 
 class RunManager:
@@ -31,10 +74,14 @@ class RunManager:
                                                 simulation parameters.
         """
         logger.debug(
-            f"Initializes an instance of RunManager with config {simulation_config}")
+            f"Initializes an instance of RunManager with config {simulation_config}"
+        )
 
         self.md_simulations = []
+        self.result_objects = []
         self.outputs = []
+        self.simulation_config = simulation_config
+        self.docs = []
 
         if simulation_config is not None:
             for config in simulation_config:
@@ -42,7 +89,7 @@ class RunManager:
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
 
-        logger.debug("RunManager init done")
+        logger.debug("RunManager done innit bruv!")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
@@ -64,6 +111,133 @@ class RunManager:
         simulation results (e.g., to files or other storage).
         """
         pass
+
+    def _add_property(self, property, propertie_values, func):
+        value = func()
+        logger.info(f"{property}: {value}")
+        if math.isnan(value):
+            value = 0.0
+        propertie_values[property] = value
+
+    def run_results(self, result, config):
+        logger.debug(f"Results: {result}")
+
+        # for index, config in enumerate(self.simulation_config):
+        logger.debug(config)
+        properties = config[next(iter(config))]["RESULT"]["Properties"]
+        # result = self.result_objects[index]
+        logger.debug(properties)
+        logger.debug(result)
+        property_values = {}
+        property_functions = {
+            "Lindemann": result.calc_lindemann,
+            "Self-diffusion": result.calc_self_diff,
+            "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
+            "Debye": result.calc_debye_temperature,
+        }
+        for name, func in property_functions.items():
+            if (name in properties) or ("all" in properties):
+                self._add_property(name, property_values, func)
+        crystal = config[next(iter(config))]["CRYSTAL"]
+        ensamble = config[next(iter(config))]["ENSAMBLE"]
+        docs = {}
+        docs["Structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+        atoms = {}
+        atoms["elements"] = result.frames[0].get_chemical_symbols()
+        atoms["positions"] = result.frames[0].get_positions().tolist()
+        atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
+        docs["atoms"] = atoms
+        composition = {}
+        composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
+        formula, _ = result.frames[0].symbols.formula.reduce()
+        composition["chemical_formula_reduced"] = str(formula)
+        docs["composition"] = composition
+        docs["Properties"] = property_values
+        logger.debug(docs)
+        logger.debug(len(docs))
+        return docs
+
+    def write_json(self):
+        for index, doc in enumerate(self.docs):
+            path = Path(f"results/test_{index}.json")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(doc, f)
+
+    def run_simulations(self, overwrite_ensamble=None):
+        """
+        Distribute simulations across MPI ranks using a work queue.
+        Each rank (not including master) runs simulations.
+        """
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        size = comm.Get_size()
+        if size < 2:
+            logger.warning(
+                "MPI size < 2. Now the poor Master has to do all the work alone!"
+            )
+            for index, sim in enumerate(self.md_simulations):
+                if overwrite_ensamble is not None:
+                    sim.ensamble = overwrite_ensamble
+                res = sim.simulate()
+                config = self.simulation_config[index]
+                docs = self.run_results(res, config)
+                self.docs.append(docs)
+            self.write_json()
+            # Insert single core execution here if desired
+            return
+
+        TAG_WORK = 1
+        TAG_DONE = 2
+        TAG_STOP = 3
+
+        # Only master prepares the list of jobs
+        if rank == 0:
+            finished_workers = 0
+            num_workers = size - 1
+            jobs = list(range(len(self.md_simulations)))
+
+            while finished_workers < num_workers:
+                status = MPI.Status()
+                msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+                src = status.Get_source()
+                tag = status.Get_tag()
+
+                if tag == TAG_DONE:
+                    if msg != "":
+                        self.docs.append(msg)
+                    if jobs:
+                        job = jobs.pop(0)
+                        logger.debug(f"[Master] Sent new job {job} to worker {src}")
+                        comm.send(job, dest=src, tag=TAG_WORK)
+                    else:
+                        logger.debug(f"[Master] Sent stop signal to worker {src}")
+                        comm.send(None, dest=src, tag=TAG_STOP)
+                        finished_workers += 1
+
+            logger.debug("[Master] All jobs completed.")
+            self.write_json()
+        else:
+            # Initialize worker by notifying master
+            comm.send("", dest=0, tag=TAG_DONE)
+            while True:
+                status = MPI.Status()
+                job = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                tag = status.Get_tag()
+                if tag == TAG_WORK:
+                    logger.debug(f"[Worker {rank}] Received job {job}")
+                    ########## Run the simulation here! #########
+                    sim = self.md_simulations[job]
+                    res = sim.simulate()
+                    #############################################
+                    config = self.simulation_config[job]
+                    logger.debug(f"config::: {config}")
+                    docs = self.run_results(res, config)
+                    logger.debug(f"[Worker {rank}] Completed job {job}")
+                    comm.send(docs, dest=0, tag=TAG_DONE)
+                elif tag == TAG_STOP:
+                    logger.debug(f"[Worker {rank}] Received stop signal from master.")
+                    break
 
     def run_nvt_simulations(self):
         """Executes all simulations managed by this RunManager."""
