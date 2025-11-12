@@ -567,7 +567,7 @@ class ResultMD:
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.
         Also sets at what frame this happens
-    
+
         returns:
             pos (int): Index of where equilibrium was found. 0 if no equilibrium found.
         """
@@ -637,7 +637,7 @@ class ResultMD:
 
     def _check_equilibrium_oscill(self, Tot_energy, tol):
         """Checks if energy follows an oscillating pattern. Look at a window, do a mean.
-        Then move the window along the frames and see how mean changes. 
+        Then move the window along the frames and see how mean changes.
         When stops changing much, we are over an oscillating area.
 
         args:
