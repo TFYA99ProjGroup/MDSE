@@ -88,7 +88,6 @@ class RunManager:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
-                self.docs.append({})
 
         logger.debug("RunManager done innit bruv!")
 
@@ -120,52 +119,45 @@ class RunManager:
             value = 0.0
         propertie_values[property] = value
 
-    def run_results(self):
-        logger.debug(f"Results: {self.result_objects}")
+    def run_results(self, result, config):
+        logger.debug(f"Results: {result}")
 
-        for index, config in enumerate(self.simulation_config):
-            logger.debug(config)
+        # for index, config in enumerate(self.simulation_config):
+        logger.debug(config)
+        properties = config[next(iter(config))]["RESULT"]["Properties"]
+        # result = self.result_objects[index]
+        logger.debug(properties)
+        logger.debug(result)
+        property_values = {}
+        property_functions = {
+            "Lindemann": result.calc_lindemann,
+            "Self-diffusion": result.calc_self_diff,
+            "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
+            "Debye": result.calc_debye_temperature,
+        }
+        for name, func in property_functions.items():
+            if (name in properties) or ("all" in properties):
+                self._add_property(name, property_values, func)
+        crystal = config[next(iter(config))]["CRYSTAL"]
+        ensamble = config[next(iter(config))]["ENSAMBLE"]
+        docs = {}
+        docs["Structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+        atoms = {}
+        atoms["elements"] = result.frames[0].get_chemical_symbols()
+        atoms["positions"] = result.frames[0].get_positions().tolist()
+        atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
+        docs["atoms"] = atoms
+        composition = {}
+        composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
+        formula, _ = result.frames[0].symbols.formula.reduce()
+        composition["chemical_formula_reduced"] = str(formula)
+        docs["composition"] = composition
+        docs["Properties"] = property_values
+        logger.debug(docs)
+        logger.debug(len(docs))
+        return docs
 
-            properties = config[next(iter(config))]["RESULT"]["Properties"]
-
-            result = self.result_objects[index]
-
-            logger.debug(properties)
-            logger.debug(result)
-
-            property_values = {}
-            property_functions = {
-                "Lindemann": result.calc_lindemann,
-                "Self-diffusion": result.calc_self_diff,
-                "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
-                "Debye": result.calc_debye_temperature,
-            }
-
-            for name, func in property_functions.items():
-                if (name in properties) or ("all" in properties):
-                    self._add_property(name, property_values, func)
-
-            crystal = config[next(iter(config))]["CRYSTAL"]
-            ensamble = config[next(iter(config))]["ENSAMBLE"]
-            self.docs[index]["Structure_id"] = (
-                str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
-            )
-
-            atoms = {}
-            atoms["elements"] = result.frames[0].get_chemical_symbols()
-            atoms["positions"] = result.frames[0].get_positions().tolist()
-            atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
-            self.docs[index]["atoms"] = atoms
-
-            composition = {}
-            composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
-            formula, _ = result.frames[0].symbols.formula.reduce()
-            composition["chemical_formula_reduced"] = str(formula)
-            self.docs[index]["composition"] = composition
-
-            self.docs[index]["Properties"] = property_values
-        logger.debug(self.docs)
-        logger.debug(len(self.docs))
+    def write_json(self):
         for index, doc in enumerate(self.docs):
             path = Path(f"results/test_{index}.json")
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -180,14 +172,18 @@ class RunManager:
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
         size = comm.Get_size()
-        if (not _MPI_AVAILABLE) or (size < 2):
-            logger.info(
-                "Running in single-process mode (single rank or no MPI backend)."
+        if size < 2:
+            logger.warning(
+                "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
-            for sim in self.md_simulations:
+            for index, sim in enumerate(self.md_simulations):
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
-                self.result_objects.append(sim.simulate())
+                res = sim.simulate()
+                config = self.simulation_config[index]
+                docs = self.run_results(res, config)
+                self.docs.append(docs)
+            self.write_json()
             # Insert single core execution here if desired
             return
 
@@ -203,11 +199,13 @@ class RunManager:
 
             while finished_workers < num_workers:
                 status = MPI.Status()
-                _ = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+                msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
 
                 if tag == TAG_DONE:
+                    if msg != "":
+                        self.docs.append(msg)
                     if jobs:
                         job = jobs.pop(0)
                         logger.debug(f"[Master] Sent new job {job} to worker {src}")
@@ -218,6 +216,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
+            self.write_json()
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
@@ -230,11 +229,12 @@ class RunManager:
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
                     res = sim.simulate()
-
-                    self.result_objects.append()
                     #############################################
+                    config = self.simulation_config[job]
+                    logger.debug(f"config::: {config}")
+                    docs = self.run_results(res, config)
                     logger.debug(f"[Worker {rank}] Completed job {job}")
-                    comm.send("", dest=0, tag=TAG_DONE)
+                    comm.send(docs, dest=0, tag=TAG_DONE)
                 elif tag == TAG_STOP:
                     logger.debug(f"[Worker {rank}] Received stop signal from master.")
                     break
