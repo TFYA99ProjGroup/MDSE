@@ -491,3 +491,21 @@ class SimulationManager:
             logger.error(e)
             raise
         return ResultMD(self.result)
+
+    def single_atom_energy(self):
+        """This function returns the energy of a single atom in the structure.
+        Used when calculating cohesive energy.
+
+        returns:
+            E_atom (float): The energy of one atom in the structure
+        """
+
+        element = self.crystal.get_chemical_symbols()[0]
+        calc = self._check_calculator({})
+
+        atom = ase.Atoms(element, positions = [(0,0,0)], cell = [15,15,15], pbc = False)
+        atom.calc = calc
+
+        E_atom = atom.get_potential_energy()
+
+        return E_atom
