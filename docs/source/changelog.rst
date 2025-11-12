@@ -18,7 +18,7 @@ Version 0.2.0 (2025-11-10)
 **Changed**
 ------------
 - New format of the config-files.
-- New dependency: `Open MPI <https://www.open-mpi.org/>`_ in order to run multithreaded. 
+- New dependency: MPI, e.g. `Open MPI <https://www.open-mpi.org/>`_ in order to run parallel on many cores. 
 
 ----
 
