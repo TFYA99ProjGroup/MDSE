@@ -644,7 +644,6 @@ class ResultMD:
             tol (float): The tolerance in % from total mean value
         returns:
             pos (int): At what frame we start getting within tolerance
-        
         """
         logger.debug("Check if equilibrium, in oscillating behavior")
         window_lenght = 5
@@ -652,12 +651,12 @@ class ResultMD:
         #Mean of each window
         windows_means = np.array([sum(win)/len(win) for win in windows])
 
-        
+
         diffs = [abs(windows_means[i+1]-windows_means[i]) / windows_means[i] for i in range(len(windows_means)-1)]
         #Find where we start oscillating
         if len(diffs) == 0:
             pos = len(Tot_energy)-2
-        
+
         for pos, diff in enumerate(diffs):
             if( diff < tol):
                 return pos
