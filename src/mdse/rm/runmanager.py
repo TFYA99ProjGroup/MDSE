@@ -1,6 +1,10 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
+import json
+from pathlib import Path
+import math
+
 logger = logging.getLogger(__name__)
 
 _FORCE_NO_MPI = False # Set to True to simulate missing MPI backend for testing
@@ -61,16 +65,21 @@ class RunManager:
                                                 simulation parameters.
         """
         logger.debug(
-            f"Initializes an instance of RunManager with config {simulation_config}")
+            f"Initializes an instance of RunManager with config {simulation_config}"
+        )
 
         self.md_simulations = []
+        self.result_objects = []
         self.outputs = []
+        self.simulation_config = simulation_config
+        self.docs = []
 
         if simulation_config is not None:
             for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
+                self.docs.append({})
 
         logger.debug("RunManager done innit bruv!")
 
@@ -95,6 +104,65 @@ class RunManager:
         """
         pass
 
+    def _add_property(self, property, propertie_values, func):
+        value = func()
+        logger.info(f"{property}: {value}")
+        if math.isnan(value):
+            value = 0.0
+        propertie_values[property] = value
+
+    def run_results(self):
+        logger.debug(f"Results: {self.result_objects}")
+
+        for index, config in enumerate(self.simulation_config):
+            logger.debug(config)
+
+            properties = config[next(iter(config))]["RESULT"]["Properties"]
+
+            result = self.result_objects[index]
+
+            logger.debug(properties)
+            logger.debug(result)
+
+            property_values = {}
+            property_functions = {
+                "Lindemann" : result.calc_lindemann,
+                "Self-diffusion" : result.calc_self_diff,
+                "Isobaric specific heat" : result.calc_isochoric_heat_capacity_per_atom,
+                "Debye" : result.calc_debye_temperature
+            }
+
+            for name, func in property_functions.items():
+                if (name in properties) or ("all" in properties):
+                    self._add_property(name, property_values, func)
+
+            crystal = config[next(iter(config))]["CRYSTAL"]
+            ensamble = config[next(iter(config))]["ENSAMBLE"]
+            self.docs[index]["Structure_id"] = (
+                str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+            )
+
+            atoms = {}
+            atoms["elements"] = result.frames[0].get_chemical_symbols()
+            atoms["positions"] = result.frames[0].get_positions().tolist()
+            atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
+            self.docs[index]["atoms"] = atoms
+
+            composition = {}
+            composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
+            formula, _ = result.frames[0].symbols.formula.reduce()
+            composition["chemical_formula_reduced"] = str(formula)
+            self.docs[index]["composition"] = composition
+
+            self.docs[index]["Properties"] = property_values
+        logger.debug(self.docs)
+        logger.debug(len(self.docs))
+        for index, doc in enumerate(self.docs):
+            path = Path(f"results/test_{index}.json")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(doc, f)
+
     def run_simulations(self, overwrite_ensamble=None):
         """
         Distribute simulations across MPI ranks using a work queue.
@@ -110,7 +178,7 @@ class RunManager:
             for sim in self.md_simulations:
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
-                sim.simulate()
+                self.result_objects.append(sim.simulate())
             # Insert single core execution here if desired
             return
 
@@ -152,7 +220,7 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    sim.simulate()
+                    self.result_objects.append(sim.simulate())
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
