@@ -72,7 +72,6 @@ class ResultMD:
         self.check_equilibrium()
         if self.reached_equilibrium:
             positions = positions[self.check_equilibrium() :]
-
         #taus = range(7, len(self.frames) - 7)
         taus = range(7, len(positions) - 7)
         #Comment: This removes very short taus. So short timesteps
@@ -524,6 +523,7 @@ class ResultMD:
         returns:
             list: Potential energy at each frame
         """
+        logger.debug("Get potential energies")
         return [frame.get_potential_energy() for frame in self.frames]
 
     def get_kin_energies(self):
@@ -532,6 +532,7 @@ class ResultMD:
         returns:
             list: Kinnetic energy at each frame
         """
+        logger.debug("Get kinetic energies")
         return [frame.get_kinetic_energy() for frame in self.frames]
     
     def get_tot_energies(self):
@@ -540,6 +541,7 @@ class ResultMD:
         returns:
             list: Total energy at each frame
         """
+        logger.debug("Get total energies")
         return[frame.get_kinetic_energy() + frame.get_potential_energy() for frame in self.frames]
 
     def get_time_axis(self):
@@ -548,6 +550,7 @@ class ResultMD:
         returns:
             times (list): Contains at what times each frame is from.
         """
+        logger.debug("Get an time-axis")
         dt = self.frames[0].info["dt"]
         times = np.arange(len(self.frames)) * dt
         return times
@@ -558,6 +561,7 @@ class ResultMD:
         returns:
             list: List of all temperatures at each frame
         """
+        logger.debug("Get tempertures")
         return [frame.get_temperature() for frame in self.frames]
     
     def check_equilibrium(self):
@@ -576,6 +580,7 @@ class ResultMD:
         #Too short to check equilibrium
         if (len(self.get_kin_energies()) < 10):
             self.reached_equilibrium = False
+            logger.debug("Simulation had too few frames. No equilibrium")
             return 0
          #----Based on total energy-----
 
@@ -597,7 +602,7 @@ class ResultMD:
         
         #----If oscillating system----
 
-        oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.00005)
+        oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.005)
         if oscill_frame != len(Tot_energy)-2: #We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, energy oscillates")
@@ -618,6 +623,7 @@ class ResultMD:
         returns:
             pos (int): Position of frame where equilibrium starts
         """
+        logger.debug("Check if we have equilibrium in the form of constant energy")
         difference = [abs(property[i+1]-property[i])/property[i] for i in range(len(property)-1)]
  
         for pos,diff in enumerate(difference):
@@ -629,9 +635,9 @@ class ResultMD:
         return pos
 
     def _check_equilibrium_oscill(self, Tot_energy, tol):
-        """Checks if energy follows an oscillating pattern, by sweeping window along the frames
-        and checking mean value of window compared to total mean value.
-        Determine if equilibrium is reached if sweep gives a mean value within tolerance of the total.
+        """Checks if energy follows an oscillating pattern. Look at a window, do a mean.
+        Then move the window along the frames and see how mean changes. When stops changing much,
+        we are over an oscillating area.
 
         args:
             Tot_energy (list): List of total energy for all frames
@@ -640,25 +646,22 @@ class ResultMD:
             pos (int): At what frame we start getting within tolerance
         
         """
-        #do a sweep
-        window_lenght = 20
+        logger.debug("Check if equilibrium, in oscillating behavior")
+        window_lenght = 5
         windows = [Tot_energy[i: (i+window_lenght)] for i in range(0,len(Tot_energy)-window_lenght)]
         #Mean of each window
         windows_means = np.array([sum(win)/len(win) for win in windows])
 
-        #Global mean
-        tot_mean = sum(Tot_energy)/len(Tot_energy)
-        #deviations from this
-        deviations = np.abs((windows_means - tot_mean) / tot_mean)
-
+        
+        diffs = [abs(windows_means[i+1]-windows_means[i]) / windows_means[i] for i in range(len(windows_means)-1)]
         #Find where we start oscillating
-        if len(deviations) == 0:
+        if len(diffs) == 0:
             pos = len(Tot_energy)-2
         
-        for pos, devs in enumerate(deviations):
-            if( devs < tol):
-                break
+        for pos, diff in enumerate(diffs):
+            if( diff < tol):
+                return pos
             else:
                 pass
-        
-        return pos
+
+        return len(Tot_energy)-2

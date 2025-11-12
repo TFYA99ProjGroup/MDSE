@@ -5,7 +5,7 @@ from mdse.md.resultMD import ResultMD
 
 
 class MockAtoms:
-    def __init__(self, positions, velocities=None, pot = 0, kin = 0, temp = 0):
+    def __init__(self, positions, velocities=None, pot = 1, kin = 1, temp = 1):
         self.positions = positions
         self.velocities = velocities
         self.info = {
@@ -68,8 +68,8 @@ def mock_frames_simple():
         [0.0, 2.0, 0.0],
         [2.0, 2.0, 0.0]
     ])
-    frame1 = MockAtoms(pos1, kin = 1, pot = 1)
-    frame2 = MockAtoms(pos2, kin = 1, pot = 1)
+    frame1 = MockAtoms(pos1, kin = 1, pot = 1, temp = 1)
+    frame2 = MockAtoms(pos2, kin = 1, pot = 1, temp = 1)
     frames = [frame1, frame2]
     return frames
 
@@ -89,11 +89,11 @@ def mock_linear_walk():
             [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
-    frames = [MockAtoms(pos, kin = 1, pot = 1)]
+    frames = [MockAtoms(pos, kin = 1, pot = 1, temp = 1)]
 
     for i in range(1, 50):
         pos += step
-        frames.append(MockAtoms(pos.copy(), kin = 1, pot = 1))
+        frames.append(MockAtoms(pos.copy(), kin = 1, pot = 1, temp = 1))
 
     return frames
 
@@ -127,11 +127,11 @@ def mock_oscillation_walk():
             [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
-    frames = [MockAtoms(pos1, kin = 1, pot = 1)]
+    frames = [MockAtoms(pos1, kin = 1.5, pot = 1.5, temp = 5)]
 
     for i in range(1, 25):
-        frames.append(MockAtoms(pos2.copy(), kin = 1, pot = 1))
-        frames.append(MockAtoms(pos1.copy(), kin = 1, pot = 1))
+        frames.append(MockAtoms(pos2.copy(), kin = 0.5, pot = 0.5, temp = 1))
+        frames.append(MockAtoms(pos1.copy(), kin = 0.51, pot = 0.51, temp = 2))
 
     return frames
 
@@ -260,7 +260,6 @@ def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
     """Checks that for a oscillatory crystal, self diffusion is zero"""
     result = ResultMD(mock_oscillation_walk)
     result.frames_in_fs = 1
-
     Diff_coeff = result.calc_self_diff()
 
     assert(Diff_coeff == 0)
@@ -305,10 +304,30 @@ def test_time_axis(mock_frames):
 
     assert(len(times) == len(mock_frames))
 
-def test_equilibrium_check(mock_frames_non_equil):
+def test_equilibrium_check_non_equil(mock_frames_non_equil):
     """Use an random energy and temperature frames. Should give non-equilibrium
     """
     result = ResultMD(mock_frames_non_equil)
     position = result.check_equilibrium()
     assert(position == 0)
     assert(not result.reached_equilibrium)
+
+def test_equilibrium_check_oscill(mock_oscillation_walk):
+    """Use oscillatary walk."""
+    result = ResultMD(mock_oscillation_walk)
+    kin_energy = result.get_kin_energies()
+    pot_energy = result.get_pot_energies()
+    temperatures = result.get_temperatures()
+    Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
+
+    #Const energy check, should not trigger 
+    equil_index = result._check_equilibrium_const(Tot_energy,0.0001)
+    assert(equil_index == (len(Tot_energy)-2))
+
+    #Const temperature, should not trigger
+    equil_index = result._check_equilibrium_const(temperatures,0.001)
+    assert(equil_index == (len(Tot_energy)-2))
+
+    #Oscillating energy, should trigger
+    equil_index = result._check_equilibrium_oscill(Tot_energy,0.005)
+    assert(equil_index == 1)
