@@ -1,12 +1,49 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
+from mpi4py import MPI as _TrueMPI
 import json
 from pathlib import Path
 import math
 
-from mpi4py import MPI
-
 logger = logging.getLogger(__name__)
+
+_FORCE_NO_MPI = False  # Set to True to simulate missing MPI backend for testing
+try:
+    comm = _TrueMPI.COMM_WORLD
+    _ = comm.Get_rank()
+    MPI = _TrueMPI
+    _MPI_AVAILABLE = True
+    if _FORCE_NO_MPI:
+        raise RuntimeError("Simulated missing MPI backend")
+except Exception as e:
+    logger.warning(
+        f"No working MPI backend detected ({e}). Falling back to single-process mode."
+    )
+    _MPI_AVAILABLE = False
+
+    # This below is not strictly necessary since we never use 'comm'
+    # in single-process mode, but it's here for completeness.
+    # Should probably be removed later.
+    class _FakeComm:
+        def Get_rank(self):
+            return 0
+
+        def Get_size(self):
+            return 1
+
+        def send(self, *_, **__):
+            pass
+
+        def recv(self, *_, **__):
+            return None
+
+    class _FakeMPI:
+        COMM_WORLD = _FakeComm()
+        ANY_SOURCE = 0
+        ANY_TAG = 0
+        Status = object
+
+    MPI = _FakeMPI()
 
 
 class RunManager:

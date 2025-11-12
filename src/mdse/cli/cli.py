@@ -88,6 +88,51 @@ def remove_all_traj(args):
     logger.info(f"Removed {len(files)} files")
 
 
+def simulate_mpi(args):
+    """
+    MPI-safe simulation: minimal logging, suitable for running under mpirun.
+    Run molecular dynamics simulations defined in a YAML configuration.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+
+        - filepath (str): Path to a YAML file describing simulation parameters.
+        - mpi (bool): If True, run simulations using MPI with less logging.
+        - ensamble (str | None): If provided, overwrite the ensamble setting.
+
+    Notes
+    -----
+    Parses the input YAML using ``main_read()``, creates a ``RunManager``,
+    and executes all simulations.
+    """
+
+    try:
+        import mpi4py.MPI as MPI
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+    except Exception as e:
+        logger.error(f"MPI backend not available: {e}. Exiting.")
+        return
+
+    sim_list = main_read(args.filepath)
+
+    if rank == 0:
+        logger.info(
+            f"MPI run: {len(sim_list)} simulations using {comm.Get_size()} ranks."
+            )
+
+    rm = RunManager(sim_list)
+    if args.ensamble is not None:
+        if rank == 0:
+            logger.debug(f"Overwriting config ensamble with {args.ensamble}")
+
+    rm.run_simulations(overwrite_ensamble=args.ensamble)
+
+    if rank == 0:
+        logger.info("MPI simulations done")
+
 def simulate(args):
     """
     Run molecular dynamics simulations defined in a YAML configuration.
@@ -98,12 +143,18 @@ def simulate(args):
         Command-line arguments. Should contain:
 
         - filepath (str): Path to a YAML file describing simulation parameters.
+        - mpi (bool): If True, run simulations using MPI with less logging.
+        - ensamble (str | None): If provided, overwrite the ensamble setting.
 
     Notes
     -----
     Parses the input YAML using ``main_read()``, creates a ``RunManager``,
-    and executes all simulations sequentially.
+    and executes all simulations.
     """
+
+    if args.mpi:
+        simulate_mpi(args)
+        return
 
     sim_list = main_read(args.filepath)
     logger.info(f"Starting {len(sim_list)} simulations")
@@ -280,6 +331,16 @@ def main():
         required=False,
         metavar="ENSAMBLE",
         help="Which ensamble to be used: NVT, NVE or NPT",
+    )
+    parser_simulate.add_argument(
+    "--mpi",
+    required=False,
+    action="store_true",
+    help=(
+        "Run in MPI-safe mode: only the master process logs output. "
+        "Requires launching with an MPI command, e.g., "
+        "mpirun -n 4 mdse simulate [args]."
+        )
     )
     parser_simulate.set_defaults(func=simulate)
 
