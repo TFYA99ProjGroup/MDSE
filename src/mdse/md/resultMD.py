@@ -68,8 +68,10 @@ class ResultMD:
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
-        #Check if equilibrium
-        positions = positions[self.check_equilibrium() : ]
+        #Check if equilibrium, filter out bad start
+        self.check_equilibrium()
+        if self.reached_equilibrium:
+            positions = positions[self.check_equilibrium() :]
 
         #taus = range(7, len(self.frames) - 7)
         taus = range(7, len(positions) - 7)
@@ -570,6 +572,11 @@ class ResultMD:
         pot_energy = self.get_pot_energies()
         Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
         temperatures = self.get_temperatures()
+
+        #Too short to check equilibrium
+        if (len(self.get_kin_energies()) < 10):
+            self.reached_equilibrium = False
+            return 0
          #----Based on total energy-----
 
         energy_frame = self._check_equilibrium_const(Tot_energy,0.0001)
@@ -655,7 +662,3 @@ class ResultMD:
                 pass
         
         return pos
-
-if __name__ == "__main__":
-    res = ResultMD.from_file("cu_dt.traj")
-    res.check_equilibrium()

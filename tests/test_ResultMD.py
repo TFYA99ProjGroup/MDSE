@@ -68,8 +68,8 @@ def mock_frames_simple():
         [0.0, 2.0, 0.0],
         [2.0, 2.0, 0.0]
     ])
-    frame1 = MockAtoms(pos1)
-    frame2 = MockAtoms(pos2)
+    frame1 = MockAtoms(pos1, kin = 1, pot = 1)
+    frame2 = MockAtoms(pos2, kin = 1, pot = 1)
     frames = [frame1, frame2]
     return frames
 
@@ -89,11 +89,11 @@ def mock_linear_walk():
             [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
-    frames = [MockAtoms(pos)]
+    frames = [MockAtoms(pos, kin = 1, pot = 1)]
 
     for i in range(1, 50):
         pos += step
-        frames.append(MockAtoms(pos.copy()))
+        frames.append(MockAtoms(pos.copy(), kin = 1, pot = 1))
 
     return frames
 
@@ -107,7 +107,7 @@ def mock_stationary_walk():
         ]
     ])
 
-    frames = [MockAtoms(pos) for _ in range(0, 50)]
+    frames = [MockAtoms(pos, kin = 1, pot = 1) for _ in range(0, 50)]
 
     return frames
 
@@ -127,11 +127,11 @@ def mock_oscillation_walk():
             [0, 0, 1], [0, 1, 0], [1, 0, 0]
         ]
     ])
-    frames = [MockAtoms(pos1)]
+    frames = [MockAtoms(pos1, kin = 1, pot = 1)]
 
     for i in range(1, 25):
-        frames.append(MockAtoms(pos2.copy()))
-        frames.append(MockAtoms(pos1.copy()))
+        frames.append(MockAtoms(pos2.copy(), kin = 1, pot = 1))
+        frames.append(MockAtoms(pos1.copy(), kin = 1, pot = 1))
 
     return frames
 
