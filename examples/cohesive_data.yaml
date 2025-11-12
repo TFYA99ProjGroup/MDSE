@@ -1,0 +1,16 @@
+Gold:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Au
+    Structure: fcc
+    Lattice_a: 4.08
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 100
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 5000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
