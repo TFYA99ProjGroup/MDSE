@@ -29,7 +29,7 @@ class MockAtoms:
 
     def get_kinetic_energy(self):
         return self.kinetic_energy
-    
+
     def get_temperature(self):
         return self.temperature
 
@@ -320,7 +320,7 @@ def test_equilibrium_check_oscill(mock_oscillation_walk):
     temperatures = result.get_temperatures()
     Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
 
-    #Const energy check, should not trigger 
+    #Const energy check, should not trigger
     equil_index = result._check_equilibrium_const(Tot_energy,0.0001)
     assert(equil_index == (len(Tot_energy)-2))
 

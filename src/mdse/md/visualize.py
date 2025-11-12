@@ -127,8 +127,10 @@ class VisualizeResult:
         """Plots specified energy for all the simulations stored
         """
 
-        available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies", "tot" : "get_tot_energies"}
-        labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)", "tot" : "Total energy (eV)"}
+        available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies",
+                              "tot" : "get_tot_energies"}
+        labels = {"kin" : "Kinetic energy (eV)", "pot" : "Potential energy (eV)",
+                  "tot" : "Total energy (eV)"}
 
         if energy_type not in available_energies:
             logger.error(
