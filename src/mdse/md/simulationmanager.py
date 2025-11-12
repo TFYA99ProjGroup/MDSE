@@ -474,6 +474,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["p_au"] = self.pressure_au
         return ResultMD(self.result)
 
     def simulate_nvt(
