@@ -112,7 +112,6 @@ def simulate(args):
     if args.ensamble is not None:
         logger.debug(f"Overwriting config ensamble with {args.ensamble}")
     rm.run_simulations(overwrite_ensamble=args.ensamble)
-    rm.run_results()
     logger.info("Simulation done!")
 
 
