@@ -4,7 +4,7 @@ Changelog
 
 All notable changes to this project are documented here.
 
-Version 0.2.0 (2025-11-10)
+Version 0.2.0 (2025-11-12)
 ===========================
 
 **Added**
