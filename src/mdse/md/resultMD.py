@@ -493,3 +493,14 @@ class ResultMD:
         dt = self.frames[0].info["dt"]
         times = np.arange(len(self.frames))*dt
         return times
+
+    def get_bulk_energi_per_atom(self):
+        """The bulk energy, per atom. Used to calc cohesive.
+
+        Returns:
+            float: The E_bulk energy per atom
+        """
+
+        pots = self.get_pot_energies()
+        equil_frame = 7
+        return np.mean(pots[equil_frame:]) / len(self.frames[0])
