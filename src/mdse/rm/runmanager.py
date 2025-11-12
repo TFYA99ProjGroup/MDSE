@@ -7,7 +7,7 @@ import math
 
 logger = logging.getLogger(__name__)
 
-_FORCE_NO_MPI = False # Set to True to simulate missing MPI backend for testing
+_FORCE_NO_MPI = False  # Set to True to simulate missing MPI backend for testing
 try:
     comm = _TrueMPI.COMM_WORLD
     _ = comm.Get_rank()
@@ -18,16 +18,24 @@ try:
 except Exception as e:
     logger.warning(
         f"No working MPI backend detected ({e}). Falling back to single-process mode."
-        )
+    )
     _MPI_AVAILABLE = False
+
     # This below is not strictly necessary since we never use 'comm'
     # in single-process mode, but it's here for completeness.
     # Should probably be removed later.
     class _FakeComm:
-        def Get_rank(self): return 0
-        def Get_size(self): return 1
-        def send(self, *_, **__): pass
-        def recv(self, *_, **__): return None
+        def Get_rank(self):
+            return 0
+
+        def Get_size(self):
+            return 1
+
+        def send(self, *_, **__):
+            pass
+
+        def recv(self, *_, **__):
+            return None
 
     class _FakeMPI:
         COMM_WORLD = _FakeComm()
@@ -36,6 +44,7 @@ except Exception as e:
         Status = object
 
     MPI = _FakeMPI()
+
 
 class RunManager:
     """Manages settings, I/O, and execution of molecular dynamics simulations.
@@ -126,10 +135,10 @@ class RunManager:
 
             property_values = {}
             property_functions = {
-                "Lindemann" : result.calc_lindemann,
-                "Self-diffusion" : result.calc_self_diff,
-                "Isobaric specific heat" : result.calc_isochoric_heat_capacity_per_atom,
-                "Debye" : result.calc_debye_temperature
+                "Lindemann": result.calc_lindemann,
+                "Self-diffusion": result.calc_self_diff,
+                "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
+                "Debye": result.calc_debye_temperature,
             }
 
             for name, func in property_functions.items():
@@ -174,7 +183,7 @@ class RunManager:
         if (not _MPI_AVAILABLE) or (size < 2):
             logger.info(
                 "Running in single-process mode (single rank or no MPI backend)."
-                )
+            )
             for sim in self.md_simulations:
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
@@ -220,7 +229,9 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    self.result_objects.append(sim.simulate())
+                    res = sim.simulate()
+
+                    self.result_objects.append()
                     #############################################
                     logger.debug(f"[Worker {rank}] Completed job {job}")
                     comm.send("", dest=0, tag=TAG_DONE)
