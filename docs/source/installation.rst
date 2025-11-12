@@ -1,6 +1,10 @@
 Installation
 ============
 
+**Open MPI**
+
+In order to run the program multithreaded, Open MPI needs to be installed. Follow the installation guide here: https://www.open-mpi.org/software/ompi/v5.0/ 
+
 **Python venv**
 
 Activate a python virtual enviroment either with python venv
