@@ -8,7 +8,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 logger = logging.getLogger(__name__)
 
 
-class DBWriter:
+class DBManager:
     """
     Handles writing JSON result files to a MongoDB database.
 
@@ -24,9 +24,9 @@ class DBWriter:
         Filesystem path to the directory containing result files.
     """
 
-    def __init__(self, resultpath, adress):
+    def __init__(self, adress):
         """
-        Initialize a DBWriter instance and connect to a MongoDB server.
+        Initialize a DBManager instance and connect to a MongoDB server.
 
         Parameters
         ----------
@@ -52,9 +52,7 @@ class DBWriter:
         except ServerSelectionTimeoutError as e:
             logger.error(f"MongoClient is not connected: {e}")
 
-        self.path = resultpath
-
-    def write_jsonfiles_to_db(self):
+    def write_jsonfiles_to_db(self, resultpath):
         """
         Upload all JSON files from `self.path` to the MongoDB collection
         `structures`.
@@ -71,8 +69,8 @@ class DBWriter:
         """
         db = self.client["materials_db"]
         examples = db["structures"]
-        logger.debug(self.path)
-        json_files = glob.glob(f"{self.path}/*.json")
+        logger.debug(resultpath)
+        json_files = glob.glob(f"{resultpath}/*.json")
         logger.debug(json_files)
         all_docs = []
         for path in json_files:
@@ -86,12 +84,12 @@ class DBWriter:
         else:
             logger.info("No documents to insert")
 
-    def _write_jsonfiles_to_db_bson(self):
+    def _write_jsonfiles_to_db_bson(self, resultpath):
         """Bson variant, not in use right now."""
         db = self.client["materials_db"]
         examples = db["structures"]
-        logger.debug(self.path)
-        bson_files = glob.glob(f"{self.path}/*.bson")
+        logger.debug(resultpath)
+        bson_files = glob.glob(f"{resultpath}/*.bson")
         logger.debug(bson_files)
         all_docs = []
         for path in bson_files:
@@ -103,3 +101,29 @@ class DBWriter:
             logger.info(f"{len(result.inserted_ids)} document inserted.")
         else:
             logger.info("No documents to insert")
+
+    def _get_nested(self, doc, key):
+        """Hämta värde från nästlad dict med punktnotation, returnerar None om saknas"""
+        keys = key.split(".")
+        val = doc
+        for k in keys:
+            if isinstance(val, dict) and k in val:
+                val = val[k]
+            else:
+                return None
+        return val
+
+    def read_from_db(self, conditions, outputs):
+        db = self.client["materials_db"]
+        collection = db["structures"]
+
+        docs = collection.find(conditions)
+        result = {}
+        for doc in docs:
+            result[str(doc["_id"])] = {}
+            for requested_output in outputs:
+                result[str(doc["_id"])][requested_output] = self._get_nested(
+                    doc, requested_output
+                )
+
+        return result
