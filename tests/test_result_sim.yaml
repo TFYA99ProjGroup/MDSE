@@ -1,0 +1,55 @@
+Copper:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NPT
+    Temp_list: 
+      - 100
+      - 200
+      - 300
+      - 1000
+    Pressure: 3.85e-2
+    ThermoTime: 100
+    BaroTime: 1000
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 2000
+    TrajInterval: 5
+    Calculator: EMT
+    CalcParams: 
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all
+Iron:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Fe
+    Structure: bcc
+    Lattice_a: 2.8665
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp_list: 
+      - 100
+      - 200
+      - 300
+      - 1000
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 2000
+    TrajInterval: 5
+    Calculator: LennardJones
+    CalcParams: 
+      - [0]
+      - [[0.70641]]
+      - [[0.226738]]
+      - [[1.3]]
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all

@@ -10,7 +10,7 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
 
 import logging
-
+import numpy as np
 from mdse.md.resultMD import ResultMD
 
 logger = logging.getLogger(__name__)
@@ -198,8 +198,8 @@ class SimulationManager:
             logger.error(e)
             raise RuntimeError(e)
 
-        if simulation_params.get("Calc_params") is not None:
-            self.calc_params = simulation_params.get("Calc_params")
+        if simulation_params.get("CalcParams") is not None:
+            self.calc_params = simulation_params.get("CalcParams")
         else:
             self.calc_params = {}
         self.crystal.calc = self._check_calculator()
@@ -290,7 +290,10 @@ class SimulationManager:
         if self.calculator == "EMT":
             calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
-            calculator = LennardJones(**self.calc_params)
+            for i in range(1, len(self.calc_params)):
+                self.calc_params[i] = np.array(self.calc_params[i])
+
+            calculator = LennardJones(*self.calc_params)
         else:
             error_msg = (
                 f"Calculator {self.calculator} not implemented, "
