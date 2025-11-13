@@ -367,14 +367,12 @@ class SimulationManager:
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
-
             self.crystal.info["dt"] = self.timestep
+            self.crystal.info["E_single_atom"] = self.single_atom_energy(calc_params)
             self.crystal.calc = self._check_calculator(calc_params)
-
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
             self._attach_outputs(dyn, print)
-
             dyn.run(self.length)
             logger.debug("Simulation done")
         except IOError as e:
@@ -492,20 +490,51 @@ class SimulationManager:
             raise
         return ResultMD(self.result)
 
-    def single_atom_energy(self):
+    def single_atom_energy(self, calc_params = {}):
         """This function returns the energy of a single atom in the structure.
         Used when calculating cohesive energy.
+        If the system is ex NaCl, we treat NaCl pair as "single atom" 
+        (Otherwise LJ potential fails)
 
         returns:
             E_atom (float): The energy of one atom in the structure
         """
 
-        element = self.crystal.get_chemical_symbols()[0]
-        calc = self._check_calculator({})
+        """Notes: (REMOVE!)
+        For NaCl need Lennard-Jones.
+        But Lennard-Jones doesnt allow single-atom-energy as it works pair-wise...
+        And EMT doesnt work with NaCl
+        
+        """
 
-        atom = ase.Atoms(element, positions = [(0,0,0)], cell = [15,15,15], pbc = False)
-        atom.calc = calc
+        elements = self.crystal.get_chemical_symbols()
+        unique_elements = list(dict.fromkeys(elements))
 
-        E_atom = atom.get_potential_energy()
+        if len(unique_elements) == 1:
+            calc = self._check_calculator(calc_params)
 
-        return E_atom
+            atom = ase.Atoms(unique_elements[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
+            atom.calc = calc
+
+            E_atom = atom.get_potential_energy()
+
+            return E_atom
+        
+        if len(unique_elements) == 2:
+            calc = self._check_calculator(calc_params)
+            positions = []
+            symbols = []
+            for elem in unique_elements:
+                for i, s in enumerate(self.crystal.get_chemical_symbols()):
+                    if s == elem:
+                        symbols.append(s)
+                        positions.append(self.crystal.positions[i])
+                        break  # take only first occurrence
+
+
+            atom = ase.Atoms(symbols , positions = positions , cell = [15,15,15], pbc = False)
+            atom.calc = calc
+
+            E_atom = atom.get_potential_energy()
+
+            return E_atom
