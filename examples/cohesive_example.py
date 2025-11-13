@@ -4,24 +4,15 @@ from mdse.md.simulationmanager import SimulationManager
 from mdse.parser.parse_yml import main_read
 
 
-
 def main():
     #A fcc metal, single element, EMT
     config = main_read("cohesive_data.yaml")
 
     sm = SimulationManager(list(config[0].values())[0])
 
-    sm.simulate_nve()
-
-    res = ResultMD.from_file("Cu_200.traj")
+    res = sm.simulate_nve()
 
     print(res.get_cohesive_energy())
-
-
-    """Bug.
-    Doing res = sm.siimulate_nve()
-    doesnt attach calculator to the frames!
-    """
 
     #Many elements
     config = main_read("cohesive_data_cif.yaml")
@@ -41,8 +32,6 @@ def main():
     calc_parameters = {"elements" : elements_Z, "epsilon" : epsilon, "sigma" : sigma}
 
     res = sm.simulate_nve(calc_parameters)
-
-    res = ResultMD.from_file("ClNa_800.traj")
 
     print(res.get_cohesive_energy())
 

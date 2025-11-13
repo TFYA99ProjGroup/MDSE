@@ -500,7 +500,6 @@ class ResultMD:
         Returns:
             float: The cohesive energy
         """
-
         pots = self.get_pot_energies()
         equil_frame = 7
         return (self.frames[0].info["E_single_atom"] - np.mean(pots[equil_frame:]) / len(self.frames[0]))
