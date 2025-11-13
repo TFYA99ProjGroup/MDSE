@@ -8,6 +8,7 @@ from asap3 import EMT
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
+from ase.calculators.singlepoint import SinglePointCalculator
 
 import logging
 
@@ -309,7 +310,19 @@ class SimulationManager:
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-        dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
+
+        #dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
+        def store_frame(atoms):
+            """Callable function we pass into dyn.attach.
+            Saves energies to the frames. Is not necessary when creating .traj
+            file, but when returning a ResultMD(self.result) we need this.
+            """
+            atoms_copy = atoms.copy()
+            epot = atoms.get_potential_energy()
+            atoms_copy.calc = SinglePointCalculator(atoms_copy, energy=epot)
+            self.result.append(atoms_copy)
+
+        dyn.attach(store_frame, self.traj_interval, self.crystal)
 
     def simulate(
         self,
@@ -500,13 +513,6 @@ class SimulationManager:
             E_atom (float): The energy of one atom in the structure
         """
 
-        """Notes: (REMOVE!)
-        For NaCl need Lennard-Jones.
-        But Lennard-Jones doesnt allow single-atom-energy as it works pair-wise...
-        And EMT doesnt work with NaCl
-        
-        """
-
         elements = self.crystal.get_chemical_symbols()
         unique_elements = list(dict.fromkeys(elements))
 
@@ -529,7 +535,7 @@ class SimulationManager:
                     if s == elem:
                         symbols.append(s)
                         positions.append(self.crystal.positions[i])
-                        break  # take only first occurrence
+                        break
 
 
             atom = ase.Atoms(symbols , positions = positions , cell = [15,15,15], pbc = False)
