@@ -123,7 +123,6 @@ class SimulationManager:
         logger.debug("Initialize an instance of SimulateMD")
         crystal_params = config.get("CRYSTAL")
 
-        self.result = []
         try:
             crystal_type = crystal_params.get("TYPE")
             logger.debug(f"Initialize the crystal from {crystal_type}")
@@ -137,13 +136,13 @@ class SimulationManager:
                     b=crystal_params.get("Lattice_b", None),
                     c=crystal_params.get("Lattice_c", None),
                     cubic=crystal_params.get("Cubic"),
-                ) * crystal_params.get("Supercell",(1,1,1))
+                ) * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
                 self.crystal = ase.io.read(
                     crystal_params.get("Filepath")
-                ) * crystal_params.get("Supercell",(1,1,1))
+                ) * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
@@ -152,7 +151,7 @@ class SimulationManager:
                     positions=crystal_params.get("Positions"),
                     cell=crystal_params.get("Cell"),
                     pbc=crystal_params.get("Pcb"),
-                ) * crystal_params.get("Supercell",(1,1,1))
+                ) * crystal_params.get("Supercell", (1, 1, 1))
             else:
                 raise NotImplementedError()
 
@@ -168,7 +167,7 @@ class SimulationManager:
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
             self.calculator = simulation_params.get("Calculator")
-            self.create_trajectory = simulation_params.get("Create_traj",False)
+            self.create_trajectory = simulation_params.get("Create_traj", False)
 
         except Exception as e:
             logger.error("Error parameter values")
@@ -195,11 +194,20 @@ class SimulationManager:
                 self.baro_time = ensamble_params.get("BaroTime")
             else:
                 raise NotImplementedError()
-
         except Exception as e:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
+
+        if simulation_params.get("Calc_params") is not None:
+            self.calc_params = simulation_params.get("Calc_params")
+        else:
+            self.calc_params = {}
+        self.crystal.calc = self._check_calculator()
+        self.crystal.info["dt"] = self.timestep
+        self.crystal.info["E_single_atom"] = self.single_atom_energy()
+        self.result = [self.crystal.copy()]
+        self.result[0].calc = self.crystal.calc
 
         logger.debug("Init done")
 
@@ -257,19 +265,13 @@ class SimulationManager:
         except Exception as e:
             raise RuntimeError("Failed to apply velocity distribution.") from e
 
-    def _check_calculator(self, calc_params):
+    def _check_calculator(self):
         """
         Validate and initialize an ASE calculator.
 
         This method checks whether a valid calculator has been specified and returns
         an initialized instance accordingly. If no calculator is provided, the EMT
         (Effective Medium Theory) calculator is used by default.
-
-        Parameters
-        ----------
-
-        calc_params : dict
-            Keyword arguments passed to the chosen calculator's constructor.
 
         Returns
         -------
@@ -288,9 +290,9 @@ class SimulationManager:
           - ``LennardJones``
         """
         if self.calculator == "EMT":
-            calculator = EMT(**calc_params)
+            calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
-            calculator = LennardJones(**calc_params)
+            calculator = LennardJones(**self.calc_params)
         else:
             error_msg = (
                 f"Calculator {self.calculator} not implemented, "
@@ -299,6 +301,10 @@ class SimulationManager:
             raise NotImplementedError(error_msg)
 
         return calculator
+
+    def _attach_calc(self):
+        self.result.append(self.crystal.copy())
+        self.result[-1].calc = self._check_calculator()
 
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""
@@ -312,39 +318,82 @@ class SimulationManager:
 
 
         #dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
-        def store_frame(atoms):
-            """Callable function we pass into dyn.attach.
-            Saves energies to the frames. Is not necessary when creating .traj
-            file, but when returning a ResultMD(self.result) we need this.
-            """
-            atoms_copy = atoms.copy()
-            epot = atoms.get_potential_energy()
-            atoms_copy.calc = SinglePointCalculator(atoms_copy, energy=epot)
-            self.result.append(atoms_copy)
+        #def store_frame(atoms):
+        #    """Callable function we pass into dyn.attach.
+        #    Saves energies to the frames. Is not necessary when creating .traj
+        #    file, but when returning a ResultMD(self.result) we need this.
+        #    """
+        #    atoms_copy = atoms.copy()
+        #    epot = atoms.get_potential_energy()
+        #    atoms_copy.calc = SinglePointCalculator(atoms_copy, energy=epot)
+        #    self.result.append(atoms_copy)
 
-        dyn.attach(store_frame, self.traj_interval, self.crystal)
+        #dyn.attach(store_frame, self.traj_interval, self.crystal)
+        dyn.attach(self._attach_calc, self.traj_interval)
 
     def simulate(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
+        """
+        Run a molecular dynamics simulation for the selected ensemble.
+
+        This method acts as a high-level dispatcher that selects and executes
+        the appropriate simulation routine based on ``self.ensamble``.
+        Supported ensembles are:
+        - ``NVE``: microcanonical (constant energy)
+        - ``NVT``: canonical (constant temperature)
+        - ``NPT``: isothermal-isobaric (constant pressure and temperature)
+
+        Parameters
+        ----------
+        distribution : callable, optional
+            Function used to initialize particle velocities.
+            Defaults to ``MaxwellBoltzmannDistribution``.
+        print : bool, optional
+            If ``True``, prints simulation output at runtime.
+            Defaults to ``False``.
+
+        Returns
+        -------
+        ResultMD
+            Object containing the trajectory and simulation data.
+
+        Raises
+        ------
+        ValueError
+            If ``self.ensamble`` is not one of ``NVE``, ``NVT``, or ``NPT``.
+        pymongo.errors.ServerSelectionTimeoutError
+            If a connection to the MongoDB server fails (depending on context).
+        Exception
+            Propagates other unexpected errors from lower-level methods.
+
+        Notes
+        -----
+        The ensemble type is read from the instance attribute ``self.ensamble``.
+        This attribute must be one of ``'NVE'``, ``'NVT'``, or ``'NPT'``.
+
+        The simulation is carried out using one of:
+        - :meth:`simulate_nve`
+        - :meth:`simulate_nvt`
+        - :meth:`simulate_npt`
+        """
         if self.ensamble.lower() == "nve":
-            self.simulate_nve(calc_params, distribution, print)
+            result = self.simulate_nve(distribution, print)
         elif self.ensamble.lower() == "nvt":
-            self.simulate_nvt(calc_params, distribution, print)
+            result = self.simulate_nvt(distribution, print)
         elif self.ensamble.lower() == "npt":
-            self.simulate_npt(calc_params, distribution, print)
+            result = self.simulate_npt(distribution, print)
         else:
             msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
             "Please use one of following: NVE, NVT, NPT"
             logger.error(msg)
             raise ValueError(msg)
+        return result
 
     def simulate_nve(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -357,8 +406,6 @@ class SimulationManager:
         calculator : str, optional
             The ASE calculator to use for force and energy evaluation
             (default: ``'EMT'``).
-        calc_params: dictionary, optional
-            Parameters to pass on to calculator as a dictionary.
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -380,9 +427,10 @@ class SimulationManager:
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
-            self.crystal.info["dt"] = self.timestep
-            self.crystal.info["E_single_atom"] = self.single_atom_energy(calc_params)
-            self.crystal.calc = self._check_calculator(calc_params)
+            #self.crystal.info["dt"] = self.timestep
+            #self.crystal.info["E_single_atom"] = self.single_atom_energy()
+            #self.crystal.calc = self._check_calculator(calc_params)
+
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
             self._attach_outputs(dyn, print)
@@ -398,7 +446,6 @@ class SimulationManager:
 
     def simulate_npt(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -408,9 +455,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str, optional
-            The ASE calculator to use for force and energy evaluation
-            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -429,9 +473,7 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calc_params)
 
-            self.crystal.info["p_au"] = self.pressure_au
             dyn = IsotropicMTKNPT(
                 self.crystal,
                 timestep=self.timestep,
@@ -449,11 +491,11 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["p_au"] = self.pressure_au
         return ResultMD(self.result)
 
     def simulate_nvt(
         self,
-        calc_params={},
         distribution=MaxwellBoltzmannDistribution,
         print=False,
     ):
@@ -463,9 +505,6 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str, optional
-            The ASE calculator to use for force and energy evaluation
-            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
@@ -484,7 +523,6 @@ class SimulationManager:
 
         try:
             self._add_distribution(distribution)
-            self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = NoseHooverChainNVT(
                 self.crystal,
@@ -501,9 +539,14 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        logger.debug("CALC!")
+        logger.debug(self.result[0].calc)
+        calc = self._check_calculator()
+        for result in self.result:
+            result.calc = calc
         return ResultMD(self.result)
 
-    def single_atom_energy(self, calc_params = {}):
+    def single_atom_energy(self):
         """This function returns the energy of a single atom in the structure.
         Used when calculating cohesive energy.
         If the system is ex NaCl, we treat NaCl pair as "single atom" 
@@ -517,7 +560,7 @@ class SimulationManager:
         unique_elements = list(dict.fromkeys(elements))
 
         if len(unique_elements) == 1:
-            calc = self._check_calculator(calc_params)
+            calc = self._check_calculator()
 
             atom = ase.Atoms(unique_elements[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
             atom.calc = calc
@@ -527,7 +570,7 @@ class SimulationManager:
             return E_atom
         
         if len(unique_elements) == 2:
-            calc = self._check_calculator(calc_params)
+            calc = self._check_calculator()
             positions = []
             symbols = []
             for elem in unique_elements:

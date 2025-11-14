@@ -16,4 +16,11 @@ Simulation1:
     Length: 2000
     TrajInterval: 10
     Calculator: LennardJones
-    Create_traj: True
+    Calc_params:
+      elements: [11, 17]
+      epsilon:
+        - [0.0104, 0.0104]  # eps_11, eps_12
+        - [0.0104, 0.0104]  # eps_21, eps_22
+      sigma:
+        - [3.40, 3.40]      # sigma_11, sigma_12
+        - [3.40, 3.40]      # sigma_21, sigma_22

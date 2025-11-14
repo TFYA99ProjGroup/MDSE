@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdse"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10.12"
 dependencies = [
     "Cython==3.1.4",
@@ -19,6 +19,7 @@ dependencies = [
     "asap3==3.13.9",
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
+    "mace-torch"
 ]
 
 [tool.ruff]
