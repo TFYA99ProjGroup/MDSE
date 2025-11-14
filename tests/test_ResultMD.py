@@ -9,7 +9,9 @@ class MockAtoms:
         self.positions = positions
         self.velocities = velocities
         self.info = {
-            "dt": 5
+            "dt": 5,
+            "atoms_per_unit" : 1,
+            "E_single_atom" : 1
         }
         self.kinetic_energy = kin
         self.potential_energy = pot
@@ -289,3 +291,10 @@ def test_time_axis(mock_frames):
     times = result.get_time_axis()
 
     assert(len(times) == len(mock_frames))
+
+def test_cohesive_energy(mock_frames):
+    """Check that cohesive energy runs, and returns a float"""
+    result = ResultMD(mock_frames)
+    coh_energy = result.get_cohesive_energy()
+
+    assert(isinstance(coh_energy,float))

@@ -510,6 +510,8 @@ class ResultMD:
         Returns:
             float: The cohesive energy
         """
+        logger.debug("Calc cohesive energy")
         pots = self.get_pot_energies()
+        atoms_per_unit = self.frames[0].info["atoms_per_unit"]
         equil_frame = 7
-        return (self.frames[0].info["E_single_atom"] - np.mean(pots[equil_frame:]) / len(self.frames[0]))
+        return (self.frames[0].info["E_single_atom"] - np.mean(pots[equil_frame:]) / len(self.frames[0])*atoms_per_unit)

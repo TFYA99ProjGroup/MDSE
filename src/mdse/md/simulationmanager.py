@@ -205,7 +205,11 @@ class SimulationManager:
             self.calc_params = {}
         self.crystal.calc = self._check_calculator()
         self.crystal.info["dt"] = self.timestep
-        self.crystal.info["E_single_atom"] = self.single_atom_energy()
+        logger.debug("Start saving single_atom_energy info to .info[]")
+        E_atom, n_atoms = self.single_atom_energy()
+        self.crystal.info["E_single_atom"] = E_atom
+        self.crystal.info["atoms_per_unit"] = n_atoms
+        logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
         self.result[0].calc = self.crystal.calc
 
@@ -555,11 +559,12 @@ class SimulationManager:
         returns:
             E_atom (float): The energy of one atom in the structure
         """
-
+        logger.debug("Start calculating single_atom energies")
         elements = self.crystal.get_chemical_symbols()
         unique_elements = list(dict.fromkeys(elements))
 
         if len(unique_elements) == 1:
+            logger.debug("Found 1 type of element in crystal")
             calc = self._check_calculator()
 
             atom = ase.Atoms(unique_elements[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
@@ -567,9 +572,10 @@ class SimulationManager:
 
             E_atom = atom.get_potential_energy()
 
-            return E_atom
+            return E_atom, 1
         
         if len(unique_elements) == 2:
+            logger.debug("Found 2 unique elements in crystal")
             calc = self._check_calculator()
             positions = []
             symbols = []
@@ -586,4 +592,4 @@ class SimulationManager:
 
             E_atom = atom.get_potential_energy()
 
-            return E_atom
+            return E_atom, len(symbols)
