@@ -1,7 +1,10 @@
 from mdse.rm.runmanager import RunManager
 from mdse.parser.parse_yml import main_read
+from mdse.rm.dbwriter import DBWriter
+
 from pathlib import Path
 import json
+import pymongo
 
 
 def test_regular_run():
@@ -12,12 +15,14 @@ def test_regular_run():
     rm = RunManager(sim_list)
     rm.run_simulations()
     jsonfiledir = file_path.parent.parent / "results"
+    json_files = list(jsonfiledir.glob("*.json"))
+    assert len(json_files) == 8, f"Expected 8 json files, found {len(json_files)}"
+
     for jsonfile in jsonfiledir.iterdir():
         if jsonfile.suffix == ".json":
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                print(data)
 
                 assert data["Structure_id"] is not None
                 assert isinstance(data["Structure_id"], str)
@@ -69,3 +74,32 @@ def test_regular_run():
                 for key in expected_props:
                     assert key in props
                     assert isinstance(props[key], (float, int))
+    adress = "mongodb://admin:secret@localhost:27017/"
+    db_str = "test_db"
+    collection_str = "test_collection"
+
+    client = pymongo.MongoClient(adress)
+    db = client[db_str]
+    collection = db[collection_str]
+
+    collection.delete_many({})
+    count_before = collection.count_documents({})
+
+    writer = DBWriter(jsonfiledir, adress)
+    writer.write_jsonfiles_to_db(db_str, collection_str)
+
+    count_after = collection.count_documents({})
+
+    expected_new_docs = 8
+
+    assert count_after - count_before == expected_new_docs, (
+        f"Expected {expected_new_docs} new documents, got {count_after - count_before}"
+    )
+
+    print(f"count before {count_before}")
+    print(f"count after {count_after}")
+
+    collection.delete_many({})
+
+
+test_regular_run()
