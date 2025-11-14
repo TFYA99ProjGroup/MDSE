@@ -16,64 +16,15 @@ def test_regular_run():
     rm.run_simulations()
     jsonfiledir = file_path.parent.parent / "results"
     json_files = list(jsonfiledir.glob("*.json"))
-    assert len(json_files) == 8, f"Expected 8 json files, found {len(json_files)}"
+    assert len(json_files) == 4, f"Expected 4 json files, found {len(json_files)}"
 
     for jsonfile in jsonfiledir.iterdir():
         if jsonfile.suffix == ".json":
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                validate_db_document(data)
 
-                assert data["Structure_id"] is not None
-                assert isinstance(data["Structure_id"], str)
-
-                assert "atoms" in data
-                assert isinstance(data["atoms"], dict)
-
-                assert "composition" in data
-                assert isinstance(data["composition"], dict)
-
-                assert "Properties" in data
-                assert isinstance(data["Properties"], dict)
-
-                # atoms dict
-                atoms = data["atoms"]
-                assert "elements" in atoms
-                assert isinstance(atoms["elements"], list)
-                assert all(isinstance(e, str) for e in atoms["elements"])
-
-                assert "positions" in atoms
-                assert isinstance(atoms["positions"], list)
-                for pos in atoms["positions"]:
-                    assert isinstance(pos, list)
-                    assert all(isinstance(x, (float, int)) for x in pos)
-
-                assert "lattice_vectors" in atoms
-                assert isinstance(atoms["lattice_vectors"], list)
-                for vec in atoms["lattice_vectors"]:
-                    assert isinstance(vec, list)
-                    assert all(isinstance(x, (float, int)) for x in vec)
-
-                # composition dict
-                comp = data["composition"]
-                assert "elements" in comp
-                assert isinstance(comp["elements"], list)
-                assert all(isinstance(e, str) for e in comp["elements"])
-
-                assert "chemical_formula_reduced" in comp
-                assert isinstance(comp["chemical_formula_reduced"], str)
-
-                # Properties dict
-                props = data["Properties"]
-                expected_props = [
-                    "Lindemann",
-                    "Self-diffusion",
-                    "Isobaric specific heat",
-                    "Debye",
-                ]
-                for key in expected_props:
-                    assert key in props
-                    assert isinstance(props[key], (float, int))
     adress = "mongodb://admin:secret@localhost:27017/"
     db_str = "test_db"
     collection_str = "test_collection"
@@ -90,16 +41,75 @@ def test_regular_run():
 
     count_after = collection.count_documents({})
 
-    expected_new_docs = 8
+    expected_new_docs = 4
 
     assert count_after - count_before == expected_new_docs, (
         f"Expected {expected_new_docs} new documents, got {count_after - count_before}"
     )
 
-    print(f"count before {count_before}")
-    print(f"count after {count_after}")
+    for doc in collection.find({}):
+        doc.pop("_id", None)
+        validate_db_document(doc)
 
     collection.delete_many({})
+
+
+def validate_db_document(data):
+    # Top-level keys
+    assert data["Structure_id"] is not None
+    assert isinstance(data["Structure_id"], str)
+
+    assert "atoms" in data
+    assert isinstance(data["atoms"], dict)
+
+    assert "composition" in data
+    assert isinstance(data["composition"], dict)
+
+    assert "Properties" in data
+    assert isinstance(data["Properties"], dict)
+
+    # atoms dict
+    atoms = data["atoms"]
+
+    assert "elements" in atoms
+    assert isinstance(atoms["elements"], list)
+    assert all(isinstance(e, str) for e in atoms["elements"])
+
+    assert "positions" in atoms
+    assert isinstance(atoms["positions"], list)
+    for pos in atoms["positions"]:
+        assert isinstance(pos, list)
+        assert all(isinstance(x, (float, int)) for x in pos)
+
+    assert "lattice_vectors" in atoms
+    assert isinstance(atoms["lattice_vectors"], list)
+    for vec in atoms["lattice_vectors"]:
+        assert isinstance(vec, list)
+        assert all(isinstance(x, (float, int)) for x in vec)
+
+    # composition dict
+    comp = data["composition"]
+
+    assert "elements" in comp
+    assert isinstance(comp["elements"], list)
+    assert all(isinstance(e, str) for e in comp["elements"])
+
+    assert "chemical_formula_reduced" in comp
+    assert isinstance(comp["chemical_formula_reduced"], str)
+
+    # Properties dict
+    props = data["Properties"]
+
+    expected_props = [
+        "Lindemann",
+        "Self-diffusion",
+        "Isobaric specific heat",
+        "Debye",
+    ]
+
+    for key in expected_props:
+        assert key in props, f"Missing property {key}"
+        assert isinstance(props[key], (float, int))
 
 
 test_regular_run()

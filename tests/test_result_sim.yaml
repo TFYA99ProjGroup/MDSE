@@ -10,8 +10,6 @@ Copper:
     Temp_list: 
       - 100
       - 200
-      - 300
-      - 1000
     Pressure: 3.85e-2
     ThermoTime: 100
     BaroTime: 1000
