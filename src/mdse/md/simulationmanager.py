@@ -290,10 +290,11 @@ class SimulationManager:
         if self.calculator == "EMT":
             calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
-            for i in range(1, len(self.calc_params)):
-                self.calc_params[i] = np.array(self.calc_params[i])
-
-            calculator = LennardJones(*self.calc_params)
+            for key in self.calc_params.keys():
+                if key == "elements":
+                    continue
+                self.calc_params[key] = np.array(self.calc_params[key])
+            calculator = LennardJones(**self.calc_params)
         else:
             error_msg = (
                 f"Calculator {self.calculator} not implemented, "

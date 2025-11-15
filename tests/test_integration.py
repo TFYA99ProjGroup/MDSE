@@ -5,25 +5,29 @@ from mdse.rm.dbwriter import DBWriter
 from pathlib import Path
 import json
 import pymongo
+import os
 
 
-def test_regular_run():
+def test_regular_onecore():
     file_path = Path(__file__).resolve()
     path = file_path.parent / "test_result_sim.yaml"
-    print(path)
     sim_list = main_read(path)
+    validate_rm(file_path, sim_list)
+
+
+def validate_rm(file_path, sim_list):
     rm = RunManager(sim_list)
     rm.run_simulations()
     jsonfiledir = file_path.parent.parent / "results"
     json_files = list(jsonfiledir.glob("*.json"))
-    assert len(json_files) == 4, f"Expected 4 json files, found {len(json_files)}"
+    assert len(json_files) == 1, f"Expected 1 json files, found {len(json_files)}"
 
     for jsonfile in jsonfiledir.iterdir():
         if jsonfile.suffix == ".json":
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                validate_db_document(data)
+                for data in json.load(f):
+                    validate_db_document(data)
 
     adress = "mongodb://admin:secret@localhost:27017/"
     db_str = "test_db"
@@ -50,6 +54,14 @@ def test_regular_run():
     for doc in collection.find({}):
         doc.pop("_id", None)
         validate_db_document(doc)
+
+    for path in json_files:
+        try:
+            os.remove(path)
+        except PermissionError:
+            pass
+        except IsADirectoryError:
+            pass
 
     collection.delete_many({})
 
@@ -110,6 +122,3 @@ def validate_db_document(data):
     for key in expected_props:
         assert key in props, f"Missing property {key}"
         assert isinstance(props[key], (float, int))
-
-
-test_regular_run()

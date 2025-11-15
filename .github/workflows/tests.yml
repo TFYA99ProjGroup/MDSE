@@ -48,5 +48,7 @@ jobs:
 
       - name: Create mongoDB Docker container      
         run: sudo docker run -d -p 27017:27017 mongo:latest
-      - name: Run pytest
+      - name: Run regular tests
         run: pytest
+      - name: Run MPI tests
+        run: mpirun -n 3 pytest -m mpi

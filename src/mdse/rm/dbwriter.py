@@ -77,8 +77,8 @@ class DBWriter:
         all_docs = []
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                all_docs.append(data)
+                for data in json.load(f):
+                    all_docs.append(data)
         logger.debug(all_docs)
         if all_docs:
             result = examples.insert_many(all_docs)
