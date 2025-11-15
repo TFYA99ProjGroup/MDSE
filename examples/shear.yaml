@@ -1,0 +1,22 @@
+Copper:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp_list: 
+      - 100
+      - 200
+      - 300
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 2000
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all
