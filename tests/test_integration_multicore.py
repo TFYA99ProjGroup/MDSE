@@ -46,7 +46,7 @@ def validate_rm_without_runmanager(file_path):
             for data_point in data:
                 validate_db_document(data_point)
 
-    adress = "mongodb://admin:secret@localhost:27017/"
+    adress = "mongodb://localhost:27017"
     db_str = "test_db"
     collection_str = "test_collection"
 
