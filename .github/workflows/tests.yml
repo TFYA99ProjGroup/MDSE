@@ -49,7 +49,12 @@ jobs:
       - name: Start MongoDB container
         run: |
           docker run -d --name mongo-test -p 27017:27017 mongo:latest
-          until docker exec mongo-test mongo --eval "print(\"Mongo ready\")"; do
+          # Vänta tills port 27017 är redo
+          for i in {1..30}; do
+            if nc -z localhost 27017; then
+              echo "MongoDB ready"
+              break
+            fi
             echo "Waiting for MongoDB..."
             sleep 1
           done
