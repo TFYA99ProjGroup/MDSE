@@ -1,10 +1,9 @@
 import ase.io
 from ase import Atoms, units
 from ase.md.verlet import VelocityVerlet
-from asap3 import LennardJones, Trajectory
+from asap3 import LennardJones, Trajectory, EMT
 from ase.build import bulk
 from ase.visualize import view
-from asap3 import EMT
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
