@@ -63,7 +63,11 @@ jobs:
         env:
           MONGO_URI: "mongodb://localhost:27017"
         run: pytest -m "not mpi"
-      - name: Run MPI tests
+
+      - name: Run MPI tests (auto cores)
         env:
           MONGO_URI: "mongodb://localhost:27017"
-        run: mpirun -n 3 pytest -m mpi
+        run: |
+          CORES=$NUMBER_OF_PROCESSORS
+          echo "Running MPI with $CORES processes"
+          mpirun --oversubscribe -n $CORES pytest -m mpi
