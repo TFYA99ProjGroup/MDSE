@@ -109,3 +109,9 @@ def test_isochoric_heat_capacity_per_atom(nvt_result):
     isochoric_heat_per_atom = nvt_result.calc_isochoric_heat_capacity_per_atom()
     assert isochoric_heat_per_atom < 6e-23
     assert isochoric_heat_per_atom > 2e-23
+
+def test_cohesive_energy(nve_result):
+    """Check that cohesive energy reasonable.
+    Table value for Cu is 3.49
+    """
+    assert(abs(nve_result.get_cohesive_energy() - 3.49)/3.49 < 0.005)

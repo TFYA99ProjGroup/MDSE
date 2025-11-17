@@ -8,7 +8,6 @@ from asap3 import EMT
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
-from ase.calculators.singlepoint import SinglePointCalculator
 
 import logging
 
