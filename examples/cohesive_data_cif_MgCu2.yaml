@@ -16,5 +16,5 @@ Simulation1:
     Length: 2000
     TrajInterval: 10
     Calculator: EMT
-    Calc_params:
+    CalculatorParams:
       use_glass: True

@@ -19,13 +19,20 @@ dependencies = [
     "asap3==3.13.9",
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
-    "mace-torch"
+    "mace-torch",
+    "httk"
 ]
 
 [tool.ruff]
 line-length = 88
 lint.select = ["E", "F", "W"]
 lint.ignore = ["E203"]
+exclude = ["httk-src"]
 
 [project.scripts]
 mdse = "mdse.cli.cli:main"
+
+[tool.pytest.ini_options]
+addopts = ""
+testpaths = ["tests"]
+norecursedirs = ["httk-src"]

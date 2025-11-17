@@ -16,7 +16,7 @@ Simulation1:
     Length: 2000
     TrajInterval: 10
     Calculator: LennardJones
-    Calc_params:
+    CalculatorParams:
       elements: [11, 17]
       epsilon:
         - [0.0104, 0.0104]  # eps_11, eps_12
