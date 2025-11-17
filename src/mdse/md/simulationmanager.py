@@ -8,6 +8,10 @@ from asap3 import EMT
 from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
+from asap3 import EMTMetalGlassParameters
+import re
+from functools import reduce
+import math
 
 import logging
 
@@ -293,7 +297,10 @@ class SimulationManager:
           - ``LennardJones``
         """
         if self.calculator == "EMT":
-            calculator = EMT(**self.calc_params)
+            if self.calc_params.get("use_glass"):
+                calculator = EMT(EMTMetalGlassParameters())
+            else:
+                calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
             calculator = LennardJones(**self.calc_params)
         else:
@@ -536,39 +543,47 @@ class SimulationManager:
     def single_atom_energy(self):
         """This function returns the energy of a single atom in the structure.
         Used when calculating cohesive energy.
-        If the system is ex NaCl, we treat NaCl pair as "single atom" 
-        (Otherwise LJ potential fails)
 
         returns:
             E_atom (float): The energy of one atom in the structure
+            int: How many atoms in formula. Ex MgCu2 gives 3
         """
         logger.debug("Start calculating single_atom energies")
-        elements = self.crystal.get_chemical_symbols()
-        unique_elements = list(dict.fromkeys(elements))
 
-        if len(unique_elements) == 1:
+        #Get chemical formula of the "super" crystal
+        formula_super = self.crystal.get_chemical_formula()
+
+        #Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
+        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
+        counts = {el: int(n) if n else 1 for el, n in matches} 
+
+        common_divider = reduce(math.gcd, counts.values())
+        formula_unit = {el: n//common_divider for el, n in counts.items()} 
+        logger.debug(f"Found following formula: {formula_unit}")
+
+        if len(formula_unit) == 1:
             logger.debug("Found 1 type of element in crystal")
             calc = self._check_calculator()
 
-            atom = ase.Atoms(unique_elements[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
+            atom = ase.Atoms(list(formula_unit.keys())[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
 
             return E_atom, 1
         
-        if len(unique_elements) == 2:
+        if len(formula_unit) == 2:
             logger.debug("Found 2 unique elements in crystal")
             calc = self._check_calculator()
             positions = []
             symbols = []
-            for elem in unique_elements:
-                for i, s in enumerate(self.crystal.get_chemical_symbols()):
-                    if s == elem:
-                        symbols.append(s)
-                        positions.append(self.crystal.positions[i])
-                        break
+            offset = 0
 
+            for element, amount in formula_unit.items():
+                for _ in range(amount):
+                    symbols.append(element)
+                    positions.append((offset,0,0))
+                    offset = offset+2
 
             atom = ase.Atoms(symbols , positions = positions , cell = [15,15,15], pbc = False)
             atom.calc = calc

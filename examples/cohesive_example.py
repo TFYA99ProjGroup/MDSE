@@ -14,6 +14,16 @@ def main():
 
     print(res.get_cohesive_energy())
 
+    #A MgCu2 crystal, using EMT with parameter
+    config = main_read("cohesive_data_cif_MgCu2.yaml")
+    sm = SimulationManager(list(config[0].values())[0])
+
+    res = sm.simulate_nve()
+
+    print(res.get_cohesive_energy())
+
+
+
     #NaCl with LJ
     config = main_read("cohesive_data_cif.yaml")
 
