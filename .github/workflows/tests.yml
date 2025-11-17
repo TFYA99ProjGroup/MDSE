@@ -49,7 +49,7 @@ jobs:
       - name: Start MongoDB container
         run: |
           docker run -d --name mongo-test -p 27017:27017 mongo:latest
-          # Waite until port 27017 is ready
+          # Wait until port 27017 is ready
           for i in {1..30}; do
             if nc -z localhost 27017; then
               echo "MongoDB ready"
@@ -61,12 +61,12 @@ jobs:
 
       - name: Run regular tests
         env:
-          MONGO_URI: "mongodb://admin:secret@localhost:27017/"
+          MONGO_URI: "mongodb://localhost:27017"
         run: pytest -m "not mpi"
 
       - name: Run MPI tests
         env:
-          MONGO_URI: "mongodb://admin:secret@localhost:27017/"
+          MONGO_URI: "mongodb://localhost:27017"
         run: |
           CORES=$(nproc --all)
           N=$(( CORES < 2 ? 1 : 2 ))
