@@ -35,4 +35,10 @@ mdse = "mdse.cli.cli:main"
 [tool.pytest.ini_options]
 addopts = ""
 testpaths = ["tests"]
-norecursedirs = ["httk-src"]
+python_files = ["test_*.py"]
+norecursedirs = [
+    "httk-src",
+    "database/mongo_data",
+    "*/mongo_data/*",
+    "*.data",
+]

@@ -5,6 +5,7 @@ on:
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main", "develop" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -61,7 +62,29 @@ jobs:
           pip install -e .
           pip install pytest
 
-      - name: Create mongoDB Docker container      
-        run: sudo docker run -d -p 27017:27017 mongo:latest
-      - name: Run pytest
-        run: pytest
+      - name: Start MongoDB container
+        run: |
+          docker run -d --name mongo-test -p 27017:27017 mongo:latest
+          # Wait until port 27017 is ready
+          for i in {1..30}; do
+            if nc -z localhost 27017; then
+              echo "MongoDB ready"
+              break
+            fi
+            echo "Waiting for MongoDB..."
+            sleep 1
+          done
+
+      - name: Run regular tests
+        env:
+          MONGO_URI: "mongodb://localhost:27017"
+        run: pytest -m "not mpi"
+
+      - name: Run MPI tests
+        env:
+          MONGO_URI: "mongodb://localhost:27017"
+        run: |
+          CORES=$(nproc --all)
+          N=$(( CORES < 2 ? 1 : 2 ))
+          echo "Running MPI tests with $N processes"
+          mpirun --oversubscribe -n $N pytest -m mpi

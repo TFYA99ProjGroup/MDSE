@@ -51,13 +51,15 @@ class DBManager:
         except ServerSelectionTimeoutError as e:
             logger.error(f"MongoClient is not connected: {e}")
 
-    def write_jsonfiles_to_db(self, resultpath):
+    def write_jsonfiles_to_db(
+        self, path, db_str="materials_db", collection_str="structures"
+    ):
         """
-        Upload all JSON files from `self.path` to the MongoDB collection
+        Upload all JSON files from `path` to the MongoDB collection
         `structures`.
 
         The method:
-        1. Scans the directory specified by `self.path` for `.json` files.
+        1. Scans the directory specified by `path` for `.json` files.
         2. Reads each file into a Python dictionary.
         3. Inserts all documents into the MongoDB collection.
 
@@ -66,16 +68,16 @@ class DBManager:
         - Debug: Lists found files and their contents before insertion.
         - Info: Number of successfully inserted documents.
         """
-        db = self.client["materials_db"]
-        examples = db["structures"]
-        logger.debug(resultpath)
-        json_files = glob.glob(f"{resultpath}/*.json")
+        db = self.client[db_str]
+        examples = db[collection_str]
+        logger.debug(path)
+        json_files = glob.glob(f"{path}/*.json")
         logger.debug(json_files)
         all_docs = []
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                all_docs.append(data)
+                for data in json.load(f):
+                    all_docs.append(data)
         logger.debug(all_docs)
         if all_docs:
             result = examples.insert_many(all_docs)
