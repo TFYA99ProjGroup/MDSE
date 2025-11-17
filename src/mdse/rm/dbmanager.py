@@ -40,7 +40,6 @@ class DBManager:
         - Attempts to ping the MongoDB server to verify connectivity.
         - Logs an error if the server is unreachable.
         """
-        # self.client = MongoClient("mongodb://admin:secret@localhost:27017/")
         self.client = MongoClient(
             adress,
             serverSelectionTimeoutMS=2000,
@@ -103,7 +102,22 @@ class DBManager:
             logger.info("No documents to insert")
 
     def _get_nested(self, doc, key):
-        """Hämta värde från nästlad dict med punktnotation, returnerar None om saknas"""
+        """
+        Safely retrieve a nested value from a dictionary using dot notation.
+
+        Parameters
+        ----------
+        doc : dict
+            The dictionary (typically a MongoDB document) to search.
+        key : str
+            A dot-separated path specifying the nested key to retrieve.
+
+        Returns
+        -------
+        any or None
+            The value found at the nested key path, or ``None`` if any part
+            of the path does not exist.
+        """
         keys = key.split(".")
         val = doc
         for k in keys:
@@ -114,6 +128,52 @@ class DBManager:
         return val
 
     def read_from_db(self, conditions, outputs):
+        """
+        Query the MongoDB collection and extract selected fields.
+
+        This method performs a MongoDB ``find`` query using the provided
+        conditions, then returns only the requested output fields for each
+        matching document. Nested fields can be specified using dot notation,
+        which is resolved via ``_get_nested``.
+
+        Parameters
+        ----------
+        conditions : dict
+            MongoDB query conditions passed directly to ``collection.find()``.
+        outputs : list of str
+            List of fields to extract from each document. Supports dotted
+            paths for nested fields (e.g. ``"properties.lindemann"``).
+
+        Returns
+        -------
+        dict
+            A dictionary mapping document IDs (as strings) to dictionaries
+            containing the requested output fields. Missing fields resolve to
+            ``None``.
+
+        Examples
+        --------
+        >>> read_from_db(
+                {"composition.elements": "Cu"},
+                outputs=[
+                    "structure_id",
+                    "atoms.elements",
+                    "Properties",
+                    "composition.chemical_formula_reduced",
+                    ],
+        )
+        {
+            "65fd12...": {'Structure_id': 'Cu_100K',
+                          'atoms.elements': ['Cu', 'Cu', 'Cu', 'Cu'],
+                          'Properties': {'Lindemann': 0.01658868622028913,
+                                        'Self-diffusion': -8.850633492320649e-09,
+                                        'Isobaric specific heat': 4.35330392367842e-22,
+                                        'Debye': 1199.8107683415553},
+                                        'composition.chemical_formula_reduced': 'Cu'
+                                        },
+            ...
+        }
+        """
         db = self.client["materials_db"]
         collection = db["structures"]
 
