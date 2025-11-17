@@ -404,7 +404,7 @@ class ResultMD:
 
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
         for frame in self.frames:
-            E_eV.append(frame.get_total_energy())
+            E_eV.append(frame.info["pot_energy"]+frame.get_kinetic_energy())
             V_A3.append(frame.get_volume())
 
         E_J = np.array(E_eV) * constants.eV
@@ -459,7 +459,7 @@ class ResultMD:
         E_eV, T_K = [], []
 
         for frame in self.frames:
-            E_eV.append(frame.get_total_energy())
+            E_eV.append(frame.info["pot_energy"]+frame.get_kinetic_energy())
             T_K.append(frame.get_temperature())
 
         E_J = np.array(E_eV) * constants.eV
@@ -484,7 +484,7 @@ class ResultMD:
         returns:
             list: Potential energy at each frame
         """
-        return [frame.get_potential_energy() for frame in self.frames]
+        return [frame.info["pot_energy"] for frame in self.frames]
 
     def get_kin_energies(self):
         """Gets the kinnetic energis at each frame.

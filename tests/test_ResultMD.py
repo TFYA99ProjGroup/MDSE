@@ -9,7 +9,8 @@ class MockAtoms:
         self.positions = positions
         self.velocities = velocities
         self.info = {
-            "dt": 5
+            "dt": 5,
+            "pot_energy" : 1
         }
         self.kinetic_energy = kin
         self.potential_energy = pot

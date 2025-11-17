@@ -167,7 +167,7 @@ class SimulationManager:
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
             self.calculator = simulation_params.get("Calculator")
-            self.calc_params = simulation_params.get("CalculatorParams")
+            self.calc_params = simulation_params.get("CalculatorParams",{})
             self.create_trajectory = simulation_params.get("Create_traj", False)
 
         except Exception as e:
@@ -203,7 +203,7 @@ class SimulationManager:
         self.crystal.calc = self._check_calculator()
         self.crystal.info["dt"] = self.timestep
         self.result = [self.crystal.copy()]
-        self.result[0].calc = self.crystal.calc
+        self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
 
         logger.debug("Init done")
 
@@ -301,9 +301,9 @@ class SimulationManager:
 
         return calculator
 
-    def _attach_calc(self):
+    def _attach_frame(self):
         self.result.append(self.crystal.copy())
-        # self.result[-1].calc = self._check_calculator()
+        self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
 
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""
@@ -315,7 +315,7 @@ class SimulationManager:
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-        dyn.attach(self._attach_calc, self.traj_interval)
+        dyn.attach(self._attach_frame, self.traj_interval)
 
     def simulate(
         self,
@@ -523,9 +523,4 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
-        logger.debug("CALC!")
-        logger.debug(self.result[0].calc)
-        calc = self._check_calculator()
-        for result in self.result:
-            result.calc = calc
         return ResultMD(self.result)
