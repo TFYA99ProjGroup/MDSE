@@ -11,7 +11,7 @@ import webbrowser
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
-from mdse.rm.dbwriter import DBWriter
+from mdse.rm.dbmanager import DBManager
 from mdse.logging.logging_config import setup_logging
 from mdse.md.resultMD import ResultMD
 
@@ -110,6 +110,7 @@ def simulate_mpi(args):
 
     try:
         import mpi4py.MPI as MPI
+
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
     except Exception as e:
@@ -121,7 +122,7 @@ def simulate_mpi(args):
     if rank == 0:
         logger.info(
             f"MPI run: {len(sim_list)} simulations using {comm.Get_size()} ranks."
-            )
+        )
 
     rm = RunManager(sim_list)
     if args.ensamble is not None:
@@ -132,6 +133,7 @@ def simulate_mpi(args):
 
     if rank == 0:
         logger.info("MPI simulations done")
+
 
 def simulate(args):
     """
@@ -285,9 +287,10 @@ def view_website_browser(args):
 
 
 def write_to_database(args):
-    writer = DBWriter(args.filepath[0], args.adress)
-    logger.info(f"Writing data from {args.filepath[0]} to {args.adress}")
-    writer.write_jsonfiles_to_db()
+    writer = DBManager(args.adress)
+    for path in args.filepath:
+        logger.info(f"Writing data from {path} to {args.adress}")
+        writer.write_jsonfiles_to_db(path)
 
 
 def main():
@@ -333,14 +336,14 @@ def main():
         help="Which ensamble to be used: NVT, NVE or NPT",
     )
     parser_simulate.add_argument(
-    "--mpi",
-    required=False,
-    action="store_true",
-    help=(
-        "Run in MPI-safe mode: only the master process logs output. "
-        "Requires launching with an MPI command, e.g., "
-        "mpirun -n 4 mdse simulate [args]."
-        )
+        "--mpi",
+        required=False,
+        action="store_true",
+        help=(
+            "Run in MPI-safe mode: only the master process logs output. "
+            "Requires launching with an MPI command, e.g., "
+            "mpirun -n 4 mdse simulate [args]."
+        ),
     )
     parser_simulate.set_defaults(func=simulate)
 
