@@ -566,7 +566,10 @@ class ResultMD:
         equil_frame = self.check_equilibrium()
         if not self.reached_equilibrium:
             equil_frame = 7
-        return self.frames[0].info["E_single_atom"] - (np.mean(pots[equil_frame:]) / len(self.frames[0])*atoms_per_unit)
+        return (
+            self.frames[0].info["E_single_atom"] - 
+            (np.mean(pots[equil_frame:]) / len(self.frames[0])*atoms_per_unit)
+        )
 
     def get_temperatures(self):
         """Gets temperature for all frames

@@ -551,23 +551,24 @@ class SimulationManager:
 
         #Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
         matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
-        counts = {el: int(n) if n else 1 for el, n in matches} 
+        counts = {el: int(n) if n else 1 for el, n in matches}
 
         common_divider = reduce(math.gcd, counts.values())
-        formula_unit = {el: n//common_divider for el, n in counts.items()} 
+        formula_unit = {el: n//common_divider for el, n in counts.items()}
         logger.debug(f"Found following formula: {formula_unit}")
 
         if len(formula_unit) == 1:
             logger.debug("Found 1 type of element in crystal")
             calc = self._check_calculator()
 
-            atom = ase.Atoms(list(formula_unit.keys())[0], positions = [(0,0,0)], cell = [15,15,15], pbc = False)
+            atom = ase.Atoms(list(formula_unit.keys())[0], positions = [(0,0,0)],
+                             cell = [15,15,15], pbc = False)
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
 
             return E_atom, 1
-        
+
         if len(formula_unit) == 2:
             logger.debug("Found 2 unique elements in crystal")
             calc = self._check_calculator()
@@ -581,13 +582,14 @@ class SimulationManager:
                     positions.append((offset,0,0))
                     offset = offset+2
 
-            atom = ase.Atoms(symbols , positions = positions , cell = [15,15,15], pbc = False)
+            atom = ase.Atoms(symbols , positions = positions ,
+                             cell = [15,15,15], pbc = False)
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
 
             return E_atom, len(symbols)
-        
+
         logger.debug(f"Could not calc single_atom_energy for {formula_unit}."
                     "Not implemented for that many atoms, yet")
         return 0
