@@ -290,7 +290,8 @@ class SimulationManager:
         elif self.calculator == "LennardJones":
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
-            print(str(self.calc_params.get("model_paths")))
+            logger.debug("Trying to get MACE model weights from: ")
+            logger.debug(str(self.calc_params.get("model_paths")))
             calculator = MACECalculator(**self.calc_params)
         else:
             error_msg = (
