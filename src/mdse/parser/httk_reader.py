@@ -1,5 +1,6 @@
 from io import StringIO
 from httk.atomistic.atomisticio import struct_to_cif
+from mdse.parser.classes import DefectCell
 import httk.db
 import ase.io
 
@@ -65,7 +66,7 @@ def convert_to_atoms(structure):
         return None
 
 
-def load_defect_as_ase(key: str, search, dataType):
+def load_defect_as_ase(key: str, search):
     """
     Query a defect structure from the HTTK database and convert it to ASE.
 
@@ -75,8 +76,6 @@ def load_defect_as_ase(key: str, search, dataType):
         Unique identifier of the defect entry in the database.
     search : httk.db.search.Searcher
         The searcher used to run database queries.
-    dataType : HTTK data type
-        The data model class representing the defect structure schema.
 
     Returns
     -------
@@ -84,7 +83,7 @@ def load_defect_as_ase(key: str, search, dataType):
         The retrieved defect structure converted into an ASE Atoms object.
         If no matching entry is found or conversion fails, returns None.
     """
-    search_defect_cell = search.variable(dataType)
+    search_defect_cell = search.variable(DefectCell)
     search.add(search_defect_cell.key == key)
 
     search.output(search_defect_cell.defect_structure, "structure")
