@@ -31,3 +31,8 @@ exclude = ["httk-src"]
 
 [project.scripts]
 mdse = "mdse.cli.cli:main"
+
+[tool.pytest.ini_options]
+addopts = ""
+testpaths = ["tests"]
+norecursedirs = ["httk-src"]
