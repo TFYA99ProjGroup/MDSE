@@ -54,7 +54,7 @@ class DBWriter:
 
         self.path = resultpath
 
-    def write_jsonfiles_to_db(self):
+    def write_jsonfiles_to_db(self, db_str="materials_db", collection_str="structures"):
         """
         Upload all JSON files from `self.path` to the MongoDB collection
         `structures`.
@@ -69,16 +69,16 @@ class DBWriter:
         - Debug: Lists found files and their contents before insertion.
         - Info: Number of successfully inserted documents.
         """
-        db = self.client["materials_db"]
-        examples = db["structures"]
+        db = self.client[db_str]
+        examples = db[collection_str]
         logger.debug(self.path)
         json_files = glob.glob(f"{self.path}/*.json")
         logger.debug(json_files)
         all_docs = []
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                all_docs.append(data)
+                for data in json.load(f):
+                    all_docs.append(data)
         logger.debug(all_docs)
         if all_docs:
             result = examples.insert_many(all_docs)

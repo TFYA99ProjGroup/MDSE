@@ -157,12 +157,23 @@ class RunManager:
         logger.debug(len(docs))
         return docs
 
-    def write_json(self):
-        for index, doc in enumerate(self.docs):
-            path = Path(f"results/test_{index}.json")
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                json.dump(doc, f)
+    def write_json_append(self):
+        path = Path("results/all_results.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                try:
+                    existing_docs = json.load(f)
+                except json.JSONDecodeError:
+                    existing_docs = []
+        else:
+            existing_docs = []
+
+        all_docs = existing_docs + self.docs
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(all_docs, f, indent=2)
 
     def run_simulations(self, overwrite_ensamble=None):
         """
@@ -183,7 +194,7 @@ class RunManager:
                 config = self.simulation_config[index]
                 docs = self.run_results(res, config)
                 self.docs.append(docs)
-            self.write_json()
+            self.write_json_append()
             # Insert single core execution here if desired
             return
 
@@ -216,7 +227,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
-            self.write_json()
+            self.write_json_append()
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
