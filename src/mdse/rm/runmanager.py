@@ -130,10 +130,10 @@ class RunManager:
         logger.debug(result)
         property_values = {}
         property_functions = {
-            "Lindemann": result.calc_lindemann,
-            "Self-diffusion": result.calc_self_diff,
-            "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
-            "Debye": result.calc_debye_temperature,
+            "lindemann": result.calc_lindemann,
+            "self-diffusion": result.calc_self_diff,
+            "isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
+            "debye": result.calc_debye_temperature,
         }
         for name, func in property_functions.items():
             if (name in properties) or ("all" in properties):
@@ -141,7 +141,7 @@ class RunManager:
         crystal = config[next(iter(config))]["CRYSTAL"]
         ensamble = config[next(iter(config))]["ENSAMBLE"]
         docs = {}
-        docs["Structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+        docs["structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
         atoms = {}
         atoms["elements"] = result.frames[0].get_chemical_symbols()
         atoms["positions"] = result.frames[0].get_positions().tolist()
@@ -152,7 +152,7 @@ class RunManager:
         formula, _ = result.frames[0].symbols.formula.reduce()
         composition["chemical_formula_reduced"] = str(formula)
         docs["composition"] = composition
-        docs["Properties"] = property_values
+        docs["properties"] = property_values
         logger.debug(docs)
         logger.debug(len(docs))
         return docs

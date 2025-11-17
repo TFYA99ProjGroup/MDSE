@@ -1,0 +1,22 @@
+Copper:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 100
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 100
+    TrajInterval: 5
+    Calculator: MACE
+    CalculatorParams:
+      model_paths: /absolute/path/to/mace/mace-mpa-0-medium.model # insert path here
+      device: cpu #cuda or cpu 
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all

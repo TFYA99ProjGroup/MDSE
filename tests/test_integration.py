@@ -1,6 +1,6 @@
 from mdse.rm.runmanager import RunManager
 from mdse.parser.parse_yml import main_read
-from mdse.rm.dbwriter import DBWriter
+from mdse.rm.dbmanager import DBManager
 
 from pathlib import Path
 import json
@@ -8,14 +8,14 @@ import pymongo
 import os
 
 
-def test_regular_onecore():
+def test_regular_onecore(address):
     file_path = Path(__file__).resolve()
     path = file_path.parent / "test_result_sim.yaml"
     sim_list = main_read(path)
-    validate_rm(file_path, sim_list)
+    validate_rm(file_path, sim_list, address)
 
 
-def validate_rm(file_path, sim_list):
+def validate_rm(file_path, sim_list, address):
     rm = RunManager(sim_list)
     rm.run_simulations()
     jsonfiledir = file_path.parent.parent / "results"
@@ -29,19 +29,18 @@ def validate_rm(file_path, sim_list):
                 for data in json.load(f):
                     validate_db_document(data)
 
-    adress = "mongodb://localhost:27017"
     db_str = "test_db"
     collection_str = "test_collection"
 
-    client = pymongo.MongoClient(adress)
+    client = pymongo.MongoClient(address)
     db = client[db_str]
     collection = db[collection_str]
 
     collection.delete_many({})
     count_before = collection.count_documents({})
 
-    writer = DBWriter(jsonfiledir, adress)
-    writer.write_jsonfiles_to_db(db_str, collection_str)
+    writer = DBManager(address)
+    writer.write_jsonfiles_to_db(jsonfiledir, db_str, collection_str)
 
     count_after = collection.count_documents({})
 
@@ -68,8 +67,8 @@ def validate_rm(file_path, sim_list):
 
 def validate_db_document(data):
     # Top-level keys
-    assert data["Structure_id"] is not None
-    assert isinstance(data["Structure_id"], str)
+    assert data["structure_id"] is not None
+    assert isinstance(data["structure_id"], str)
 
     assert "atoms" in data
     assert isinstance(data["atoms"], dict)
@@ -77,8 +76,8 @@ def validate_db_document(data):
     assert "composition" in data
     assert isinstance(data["composition"], dict)
 
-    assert "Properties" in data
-    assert isinstance(data["Properties"], dict)
+    assert "properties" in data
+    assert isinstance(data["properties"], dict)
 
     # atoms dict
     atoms = data["atoms"]
@@ -110,13 +109,13 @@ def validate_db_document(data):
     assert isinstance(comp["chemical_formula_reduced"], str)
 
     # Properties dict
-    props = data["Properties"]
+    props = data["properties"]
 
     expected_props = [
-        "Lindemann",
-        "Self-diffusion",
-        "Isobaric specific heat",
-        "Debye",
+        "lindemann",
+        "self-diffusion",
+        "isobaric specific heat",
+        "debye",
     ]
 
     for key in expected_props:

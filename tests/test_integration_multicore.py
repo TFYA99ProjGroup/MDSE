@@ -1,6 +1,6 @@
 from mdse.rm.runmanager import RunManager
 from mdse.parser.parse_yml import main_read
-from mdse.rm.dbwriter import DBWriter
+from mdse.rm.dbmanager import DBManager
 from test_integration import validate_db_document
 
 from pathlib import Path
@@ -11,7 +11,7 @@ import pytest
 
 
 @pytest.mark.mpi
-def test_multicore():
+def test_multicore(address):
     file_path = Path(__file__).resolve()
     path = file_path.parent / "test_result_sim.yaml"
     sim_list = main_read(path)
@@ -32,10 +32,10 @@ def test_multicore():
 
     # Endast rank 0 validerar
     if rank == 0:
-        validate_rm_without_runmanager(file_path)
+        validate_rm_without_runmanager(file_path, address)
 
 
-def validate_rm_without_runmanager(file_path):
+def validate_rm_without_runmanager(file_path, address):
     jsonfiledir = file_path.parent.parent / "results"
     json_files = list(jsonfiledir.glob("*.json"))
     assert len(json_files) == 1, f"Expected 1 json files, found {len(json_files)}"
@@ -46,19 +46,18 @@ def validate_rm_without_runmanager(file_path):
             for data_point in data:
                 validate_db_document(data_point)
 
-    adress = "mongodb://localhost:27017"
     db_str = "test_db"
     collection_str = "test_collection"
 
-    client = pymongo.MongoClient(adress)
+    client = pymongo.MongoClient(address)
     db = client[db_str]
     collection = db[collection_str]
 
     collection.delete_many({})
     count_before = collection.count_documents({})
 
-    writer = DBWriter(jsonfiledir, adress)
-    writer.write_jsonfiles_to_db(db_str, collection_str)
+    writer = DBManager(address)
+    writer.write_jsonfiles_to_db(jsonfiledir, db_str, collection_str)
 
     count_after = collection.count_documents({})
 
