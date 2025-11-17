@@ -567,7 +567,7 @@ class ResultMD:
         if not self.reached_equilibrium:
             equil_frame = 7
         return (
-            self.frames[0].info["E_single_atom"] - 
+            self.frames[0].info["E_single_atom"] -
             (np.mean(pots[equil_frame:]) / len(self.frames[0])*atoms_per_unit)
         )
 
