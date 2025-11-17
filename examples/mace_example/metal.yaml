@@ -14,7 +14,7 @@ Copper:
     TrajInterval: 5
     Calculator: MACE
     CalculatorParams:
-      model_paths: /home/kpj/Courses/TFYA99/models/mace-mpa-0-medium.model # insert path here
+      model_paths: /absolute/path/to/mace/mace-mpa-0-medium.model # insert path here
       device: cpu #cuda or cpu 
     Create_traj: True
   RESULT:
