@@ -29,7 +29,7 @@ def validate_rm(file_path, sim_list):
                 for data in json.load(f):
                     validate_db_document(data)
 
-    adress = "mongodb://localhost:27017"
+    adress = "mongodb://admin:secret@localhost:27017/"
     db_str = "test_db"
     collection_str = "test_collection"
 
