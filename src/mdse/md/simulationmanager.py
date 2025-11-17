@@ -587,3 +587,7 @@ class SimulationManager:
             E_atom = atom.get_potential_energy()
 
             return E_atom, len(symbols)
+        
+        logger.debug(f"Could not calc single_atom_energy for {formula_unit}."
+                    "Not implemented for that many atoms, yet")
+        return 0
