@@ -320,19 +320,6 @@ class SimulationManager:
         if print:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
-
-        #dyn.attach(self.result.append, self.traj_interval, self.crystal.copy())
-        #def store_frame(atoms):
-        #    """Callable function we pass into dyn.attach.
-        #    Saves energies to the frames. Is not necessary when creating .traj
-        #    file, but when returning a ResultMD(self.result) we need this.
-        #    """
-        #    atoms_copy = atoms.copy()
-        #    epot = atoms.get_potential_energy()
-        #    atoms_copy.calc = SinglePointCalculator(atoms_copy, energy=epot)
-        #    self.result.append(atoms_copy)
-
-        #dyn.attach(store_frame, self.traj_interval, self.crystal)
         dyn.attach(self._attach_calc, self.traj_interval)
 
     def simulate(
@@ -431,9 +418,6 @@ class SimulationManager:
             logger.debug(f"Beggining simulation of {symbols}_{self.temperature}")
 
             self._add_distribution(distribution)
-            #self.crystal.info["dt"] = self.timestep
-            #self.crystal.info["E_single_atom"] = self.single_atom_energy()
-            #self.crystal.calc = self._check_calculator(calc_params)
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
