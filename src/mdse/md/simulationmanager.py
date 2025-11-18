@@ -592,4 +592,4 @@ class SimulationManager:
 
         logger.debug(f"Could not calc single_atom_energy for {formula_unit}."
                     "Not implemented for that many atoms, yet")
-        return 0
+        return 0, 0
