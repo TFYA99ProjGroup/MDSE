@@ -1,0 +1,10 @@
+[
+  {"id": 1, "temperature": 300, "energy": -3.41, "MSD": 1, "Lindeman": 20, "self_diff" : 0,
+    "doping": "H", "formation_energy": 3.5, "avg_a": 1},
+  {"id": 2, "temperature": 350, "energy": -3.35, "MSD": 3, "Lindeman": 19, "self_diff": 0.0005,
+    "doping": "H", "formation_energy": 3.2, "avg_a": 2},
+  {"id": 3, "temperature": 400, "energy": -3.30, "MSD": 2, "Lindeman": 18, "self_diff":0.00001,
+    "doping": "H", "formation_energy": 3, "avg_a": 3},
+  {"id": 4, "temperature": 450, "energy": -3.20, "MSD": 4, "Lindeman": 21, "self_diff": 0.00032,
+    "doping": "H", "formation_energy": 2, "avg_a": 4}
+]
