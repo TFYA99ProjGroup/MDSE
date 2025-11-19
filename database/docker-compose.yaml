@@ -7,7 +7,7 @@
 # Then follow instructions here to allow non-root usage (if you want to do that):
 #   https://docs.docker.com/engine/install/linux-postinstall/
 #
-# Run with "docker compose up -d" when standing in the "src/mdse/database" directory
+# Run with "docker compose up -d" when standing in the "/database" directory
 # Stop with "docker compose down"
 # If you have not given non-root access to docker, prefix those commands with "sudo".
 #

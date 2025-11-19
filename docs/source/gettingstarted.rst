@@ -8,19 +8,20 @@ Introduction
 Welcome to **Molecular Dynamics Simulation Environment (MDSE)**!  
 This software parses, runs and evaluates `ASE <https://ase-lib.org/>`_  simulations with help of `ASAP3 <https://asap3.readthedocs.io/en/latest/>`_. 
 
-This software is specified to solve problems regarding defect materials using excisting database from
-Linköping University, parsed via. `The High-Throughput Toolkit (httk) <https://github.com/httk/httk>`_.
+This software is specified to solve problems regarding defect materials using existing database from
+Linköping University, parsed via `The High-Throughput Toolkit (httk) <https://github.com/httk/httk>`_.
 It was used to explore the possibility to use the `MACE <https://github.com/ACEsuit/mace>`_ instead of 
 density functional theory (DFT) to calculate the defect formation energy. This was interesting because
-DFT calcuation are heavy and takes a lot of time and so doing it with MACE could be a lot faster. Is 
-MACE accurate is the question which was researched using this software.
+DFT calcuations are heavy and takes a lot of time and so doing it with MACE could be a lot faster. 
+The question investigated was whether MACE is accurate enough.
 
-Features
-========
+Physical properties:
+====================
 
-- Feature 1
-- Feature 2
-- Feature 3
+- Mean square displacement
+- Lindemann index
+- Self diffusion coefficient
+- Isobaric specific heat per atom
 
 Installation
 ============
@@ -28,63 +29,91 @@ Installation
 Requirements
 ------------
 
-List system requirements, Python version, optional dependencies, etc.
-
-Example:
+Dependencies:
     - Python 3.10+
-    - NumPy, SciPy
+    - `httk <https://github.com/httk/httk>`_
 
-Installation via pip
+Optional (Highly recommended):
+    - Message Passing Interface (MPI), e.g. `Open MPI <https://www.open-mpi.org/>`_ 
 
-    Feature 1
-
-    Feature 2
-
-    Feature 3
-
---------------------
-
-.. code-block:: bash
-
-   pip install projectname
 
 Installation from source
 ------------------------
 
+Using a `conda <https://anaconda.org/anaconda/conda>`_ environment is highly recommended:
+
 .. code-block:: bash
 
-   git clone https://github.com/username/projectname.git
-   cd projectname
+    conda create -n mdseenv python=3
+    conda activate mdseenv
+
+
+.. code-block:: bash
+
+   git clone https://github.com/TFYA99ProjGroup/MDSE
+   cd MDSE
+   git clone https://github.com/httk/httk.git httk-src
+   cd httk-src
+   git checkout v1.2.0
+   cd ..
+   pip install -e ./httk-src
    pip install -e .
 
-Configuration
-=============
-
-Explain any configuration files, environment variables, or settings.
-
-Example:
-    The configuration file is located at ``~/.projectname/config.yaml``.
-
-    Example config:
-
-    .. code-block:: yaml
-
-       option1: true
-       path: /data/project
 
 Quick Start
 ===========
 
-Give the shortest possible example showing how to use the library.
+Run your first simulation:
 
-.. code-block:: python
+.. code-block:: bash
 
-   from projectname import Project
+    mdse simulate --filepath examples/test_result_sim.yaml
 
-   p = Project()
-   p.run()
+If you want to see the ASE GUI for the trajectory:
 
-CLI Usage (if applicable)
+.. code-block:: bash
+
+    mdse view
+
+If you want to clean up you directory from ``*.traj`` files:
+
+.. code-block:: bash
+
+    mdse clean
+
+Some interesting results are saved in the /results folder in ``*.json`` files. 
+
+
+Set up your own server
+======================
+
+This program is able to save the result data to a `MongoDB server <https://www.mongodb.com/>`_.
+In order to Set up the server docker is highly recommended and docker-compose file is in the project:
+
+.. code-block:: bash
+
+    cd database
+    docker compose up -d
+    cd ..
+
+In order to shut down the database:
+
+.. code-block:: bash
+
+    cd database
+    docker compose down
+
+Write your first simulation results to the database!
+
+.. code-block:: bash
+
+    mdse write_db -f results/ -a mongodb://admin:secret@localhost:27017/
+
+You can view the database in a web browser on the address http://localhost:8081/
+with the default username webadmin and the default password websecret.
+
+
+CLI Usage
 =========================
 
 Basic usage
@@ -92,7 +121,7 @@ Basic usage
 
 .. code-block:: bash
 
-   projectname --help
+   mdse --help
 
 Commands
 --------
@@ -100,36 +129,81 @@ Commands
 .. list-table::
    :header-rows: 1
 
+   * - Commands
+     - Description
+   * - ::
+        
+        mdse [-h] [--debug] {subcommand} ...
+     - The main CLI command
+
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
    * - Command
      - Description
-   * - ``run``
-     - Runs the main program
-   * - ``config``
-     - Prints config path
+   * - ::
+     
+         simulate [-h] -f FILEPATH [-e ENSAMBLE] [--mpi]
+     - Runs the main simulation from config-file.
 
-Library Usage (if applicable)
+   * - ::
+
+         view [-h] [-f FILEPATH [FILEPATH ...]]
+
+     - Triggers the ASE GUI from traj-files.
+
+   * - ::
+
+         clean [-h] [-f FILEPATH] [-r]
+     - Removes all the traj-files.
+
+   * - ::
+
+         write_db [-h] -f FILEPATH [FILEPATH ...] -a ADDRESS
+
+     - Writes data from json-file to MongoDB database.
+
+
+Library Usage
 =============================
 
-Explain important classes, functions, and workflows.
+MDSE can also be used as a Python library:
+
+.. code-block:: python
+
+   import mdse
 
 Example
 -------
 
 .. code-block:: python
+   
+   from mdse.parser.parse_yml import main_read
+   from mdse.rm.runmanager import RunManager
+   from mdse.rm.dbmanager import DBManager
+   
+   # Parse the yaml-file from your first simulation
+   sim_list = main_read("examples/test_result_sim.yaml")
 
-   from projectname import Simulator
+   # Simulate your first simulation again
+   rm = RunManager(sim_list)
+   rm.run_simulations()
 
-   sim = Simulator(param=42)
-   result = sim.compute()
+   # Write the data to the database
+   dbm = DBManager("mongodb://admin:secret@localhost:27017/")
+   dbm.write_jsonfiles_to_db("results")
 
 Workflows
 =========
 
 Describe recommended workflows or common tasks.
 
-1. Step 1  
-2. Step 2  
-3. Step 3  
+1. Write config files or a directory with config files (the parser takes both).
+2. Run simulation, this software is made to be run on a supercomputer, so that is recommended.
+3. Write results to the database.
+4. Evaluate the results locally.
 
 Troubleshooting
 ===============
@@ -137,50 +211,93 @@ Troubleshooting
 Common Issues
 -------------
 
-**Problem:** X doesn't work  
-**Solution:** Check that Y is installed.
+.. admonition:: Problem: NPT simulation doesn't work
+
+   **Solution:** Ensure your config contains:
+
+   - Temp
+   - Pressure
+   - ThermoTime
+   - BaroTime
 
 Logging / Debug Mode
 --------------------
 
-Explain how users can access debug output.
+Add the `--debug` flag to after the mdse cli command:
+
+.. code-block:: bash
+
+    mdse --debug simulate ...
+
+If using MDSE as a library:
+
+.. code-block:: python
+   
+   from mdse.parser.parse_yml import main_read
+   from mdse.rm.runmanager import RunManager
+   from mdse.rm.dbmanager import DBManager
+
+   from mdse.logging.logging_config import setup_logging
+   import logging
+   
+   logger = logging.getLogger(__name__)
+   # Use debug=False if you want less information
+   setup_logging(debug=True)
+
+   # ...
 
 FAQ
 ===
 
-Q: How do I do X?  
-A: Do Y.
+Q: What does calc stand for?  
+A: Calc is slang for calculator.
 
-Q: Why doesn’t Z work?  
-A: Because you need to enable option B.
+
 
 Version Compatibility
 =====================
 
-Describe compatible versions of Python, dependencies, and OS.
+This software is based around working with Python 3.10 (3.10.12 to be precise)
 
 Changelog
 =========
 
-Provide a summary or link to a dedicated changelog file.
-
-.. note::
-   Full changelog is available in :doc:`changelog`.
+Full changelog is available in :doc:`changelog`.
 
 License
 =======
 
 Full license is available in :doc:`license`
 
+Credits:
+========
+
+This program used the high-throughput toolkit
+  httk v1.2.0 (2020-09-25), (c) 2012 - 2020
+
+Credits for httk modules used in this run:
+  - (httk) Rickard Armiento
+  - (imported spacegroup data) Computational Crystallography Toolbox, http://cctbx.sourceforge.net/
+  - (imported code from cif2cell) Torbjörn Björkman
+  - (httk_db) Rickard Armiento
+
+Credits for MDSE:
+  - Emil Alakulju  
+  - Oskar Bollner  
+  - Petter Johansson  
+  - Axel Kemppe  
+  - Patrik Modorato  
+  - Lukas Smith
+
 Contact / Support
 =================
 
 It is possible to open an issue in GitHub: `<https://github.com/TFYA99ProjGroup/MDSE/issues>`_. 
 
-Note however that this software will not be supported continually after the 16th January 2026 due to :math:`\mathcal{L}\mathcal{I}\mathcal{F}\mathcal{E}`.  
+Note however that this software will not be supported continually after the 16th January 2026.  
 
 Until then, you can contact our Product owner:
     - oskbo133@student.liu.se
-    - Hertz, F-house, Linköping University
+    - H305b, Hertz, F-house, Linköping University
 
 
