@@ -8,7 +8,7 @@ structures = db["structures"]
 
 # Small OPTIMADE-compliant structure
 doc = {
-  "id": "descriptive_name", #must
+  "id": "descriptive_unique_name", #must
   # "immutable_id": None, #optional (handled by alias of MongoDB's _id)
   "type": "structures", #must
   "structure_features": [], #must, but can be empty list
