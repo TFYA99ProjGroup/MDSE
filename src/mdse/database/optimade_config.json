@@ -1,6 +1,6 @@
 {
   "database_backend": "mongodb",
-  "mongo_uri": "mongodb://admin:secret@localhost:27017/?authSource=admin",
+  "mongo_uri": "mongodb://admin:secret@mongodb:27017/?authSource=admin",
   "mongo_database": "materials_db",
   "mongo_collection_prefix": "",
   "log_dir": "./logs",
