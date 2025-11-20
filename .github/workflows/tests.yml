@@ -76,13 +76,9 @@ jobs:
           done
 
       - name: Run regular tests
-        env:
-          MONGO_URI: "mongodb://localhost:27017"
         run: pytest -m "not mpi"
 
       - name: Run MPI tests
-        env:
-          MONGO_URI: "mongodb://localhost:27017"
         run: |
           CORES=$(nproc --all)
           N=$(( CORES < 2 ? 1 : 2 ))
