@@ -14,6 +14,7 @@ from mdse.rm.runmanager import RunManager
 from mdse.rm.dbmanager import DBManager
 from mdse.logging.logging_config import setup_logging
 from mdse.md.resultMD import ResultMD
+from mdse.visualizeDB.run_visDB import run_visualize_db
 
 
 logger = logging.getLogger(__name__)
@@ -292,6 +293,11 @@ def write_to_database(args):
         logger.info(f"Writing data from {path} to {args.adress}")
         writer.write_jsonfiles_to_db(path)
 
+def visualize_DB(args):
+    path = args.filepath
+
+    run_visualize_db(path)
+
 
 def main():
     """
@@ -455,6 +461,20 @@ def main():
     )
 
     write_to_db.set_defaults(func=write_to_database)
+
+    visualize_db = subparsers.add_parser(
+        "visualize" , help="Visualizes data from database. Uses config file to."
+    )
+
+    visualize_db.add_argument(
+        "-f",
+        "--filepath",
+        required = True,
+        metavar = "FILEPATH",
+        help = "Filepath to config file, that has info about what data and what plots."
+    )
+
+    visualize_db.set_defaults(func=visualize_DB)
 
     # ----------Other----------
     args = parser.parse_args()
