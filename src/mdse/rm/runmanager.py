@@ -4,6 +4,8 @@ from mpi4py import MPI as _TrueMPI
 import json
 from pathlib import Path
 import math
+from mace.calculators import MACECalculator
+
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,13 @@ class RunManager:
         self.simulation_config = simulation_config
         self.docs = []
 
+        if any(conf.get("SIMULATION").get("Calculator") == "MACE"
+                for conf in self.simulation_config):
+
+            logger.debug("At least one of the configs use MACE")
+            # For perfomance only create one instance of a MACE calculator per Runmanager
+            # and pass this by reference to each simulation.
+            self.mace_calculator = MACECalculator(**self.calc_params)
         if simulation_config is not None:
             for config in simulation_config:
                 item = list(config.values())[0]
