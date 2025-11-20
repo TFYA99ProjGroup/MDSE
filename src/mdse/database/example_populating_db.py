@@ -17,6 +17,7 @@ doc = {
   "custom_example_int": 1, #optional
   "custom_example_str": "example", #optional
   "custom_example_list": [1, 2, 3], #optional
+  "custom_example_dict": {"key": "value"}, #optional
 
   # Should fields, very good ideas to have
   "last_modified": datetime.now(), #should

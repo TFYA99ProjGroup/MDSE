@@ -15,7 +15,8 @@
     "structures": [
       "custom_example_int", 
       "custom_example_str", 
-      "custom_example_list"
+      "custom_example_list",
+      "custom_example_dict"
     ]
   },
   "aliases": {
