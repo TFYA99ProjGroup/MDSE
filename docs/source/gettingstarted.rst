@@ -6,17 +6,20 @@ Introduction
 ============
 
 Welcome to **Molecular Dynamics Simulation Environment (MDSE)**!  
-This software parses, runs and evaluates `ASE <https://ase-lib.org/>`_  simulations with help of `ASAP3 <https://asap3.readthedocs.io/en/latest/>`_. 
+This software parses, runs and evaluates `ASE <https://ase-lib.org/>`_  simulations with the help of `ASAP3 <https://asap3.readthedocs.io/en/latest/>`_. 
 
-This software is specified to solve problems regarding defect materials using existing database from
+This software is developed towards solving problems regarding defect materials using existing data from a database at
 Linköping University, parsed via `The High-Throughput Toolkit (httk) <https://github.com/httk/httk>`_.
-It was used to explore the possibility to use the `MACE <https://github.com/ACEsuit/mace>`_ instead of 
+It is used to explore the possibility of running MD simulations with the help of MLIPs such as the 
+`MACE <https://github.com/ACEsuit/mace>`_ calculator instead of 
 density functional theory (DFT) to calculate the defect formation energy. This was interesting because
 DFT calcuations are heavy and takes a lot of time and so doing it with MACE could be a lot faster. 
 The question investigated was whether MACE is accurate enough.
 
 Physical properties:
 ====================
+
+The following material properties can be calculated with mdse:
 
 - Mean square displacement
 - Lindemann index
@@ -52,11 +55,6 @@ Using a `conda <https://anaconda.org/anaconda/conda>`_ environment is highly rec
 
    git clone https://github.com/TFYA99ProjGroup/MDSE
    cd MDSE
-   git clone https://github.com/httk/httk.git httk-src
-   cd httk-src
-   git checkout v1.2.0
-   cd ..
-   pip install -e ./httk-src
    pip install -e .
 
 
@@ -75,7 +73,7 @@ If you want to see the ASE GUI for the trajectory:
 
     mdse view
 
-If you want to clean up you directory from ``*.traj`` files:
+If you want to clean up your directory from ``*.traj`` files:
 
 .. code-block:: bash
 
@@ -88,7 +86,7 @@ Set up your own server
 ======================
 
 This program is able to save the result data to a `MongoDB server <https://www.mongodb.com/>`_.
-In order to Set up the server docker is highly recommended and docker-compose file is in the project:
+In order to Set up the server docker is highly recommended and a docker-compose file is available in the project:
 
 .. code-block:: bash
 
@@ -110,7 +108,7 @@ Write your first simulation results to the database!
     mdse write_db -f results/ -a mongodb://admin:secret@localhost:27017/
 
 You can view the database in a web browser on the address http://localhost:8081/
-with the default username webadmin and the default password websecret.
+with the default username *webadmin* and the default password *websecret*.
 
 
 CLI Usage
@@ -198,7 +196,7 @@ Example
 Workflows
 =========
 
-Describe recommended workflows or common tasks.
+Description of recommended workflows or common tasks.
 
 1. Write config files or a directory with config files (the parser takes both).
 2. Run simulation, this software is made to be run on a supercomputer, so that is recommended.
