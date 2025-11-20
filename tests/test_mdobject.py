@@ -245,13 +245,18 @@ def test_calculators():
             "Length": 20000,
             "TrajInterval": 5,
             "Calculator": "LennardJones",
+            "CalculatorParams": {
+                "elements": numbers,
+                "sigma": sigma,
+                "epsilon": epsilon,
+            },
             "Create_traj": True,
         },
     }
     sim1 = SimulationManager(config)
-    calc_params = {"elements": numbers, "sigma": sigma, "epsilon": epsilon}
+    # calc_params = {"elements": numbers, "sigma": sigma, "epsilon": epsilon}
 
-    result = sim1.simulate_nve(calc_params=calc_params)
+    result = sim1.simulate_nve()
 
     assert len(result.frames) > 0
 

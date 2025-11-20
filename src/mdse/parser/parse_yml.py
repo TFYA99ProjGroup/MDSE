@@ -158,9 +158,9 @@ def main_read(filename):
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
     logger.debug("Format OK")
-    return get_files(unnest_simulation_parameters(all_simulations))
+    return get_files(unnest_simulation_parameters(all_simulations), filename)
 
-def get_files(simulations):
+def get_files(simulations, config_file_path):
     """
     Expand simulations: if CRYSTAL.TYPE == 'FILE' and Filepath is a directory,
     create separate simulations for all files in that folder.
@@ -169,6 +169,7 @@ def get_files(simulations):
     in the uppermost level of the specified directory
     """
     expanded_parameters = []
+    config_dir = Path(config_file_path).parent
     for sim in simulations:
         (name,val), = sim.items()
         crystal_params = val.get("CRYSTAL")
@@ -178,7 +179,7 @@ def get_files(simulations):
             expanded_parameters.append(sim)
             continue
 
-        dir_path  = Path(crystal_params.get("Filepath"))
+        dir_path = (config_dir / crystal_params.get("Filepath")).resolve()
         if not dir_path.is_dir():
             logger.debug("CRYSTAL input is direct path to config file")
             expanded_parameters.append(sim)

@@ -5,6 +5,7 @@ on:
     branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main", "develop" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,9 +20,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name : Checkout httk
+        uses: actions/checkout@v4
+        with:
+          repository: httk/httk
+          ref: v1.2.0
+          path: httk-src
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -e ./httk-src
           pip install -e .
           pip install ruff
 
@@ -37,15 +46,41 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name : Checkout httk
+        uses: actions/checkout@v4
+        with:
+          repository: httk/httk
+          ref: v1.2.0
+          path: httk-src
+
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libopenmpi-dev openmpi-bin
           python -m pip install --upgrade pip
+          pip install -e ./httk-src
           pip install -e .
           pip install pytest
 
-      - name: Create mongoDB Docker container      
-        run: sudo docker run -d -p 27017:27017 mongo:latest
-      - name: Run pytest
-        run: pytest
+      - name: Start MongoDB container
+        run: |
+          docker run -d --name mongo-test -p 27017:27017 mongo:latest
+          # Wait until port 27017 is ready
+          for i in {1..30}; do
+            if nc -z localhost 27017; then
+              echo "MongoDB ready"
+              break
+            fi
+            echo "Waiting for MongoDB..."
+            sleep 1
+          done
+
+      - name: Run regular tests
+        run: pytest -m "not mpi"
+
+      - name: Run MPI tests
+        run: |
+          CORES=$(nproc --all)
+          N=$(( CORES < 2 ? 1 : 2 ))
+          echo "Running MPI tests with $N processes"
+          mpirun --oversubscribe -n $N pytest -m mpi

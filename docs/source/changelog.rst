@@ -4,6 +4,25 @@ Changelog
 
 All notable changes to this project are documented here.
 
+Version 0.2.0 (2025-11-12)
+===========================
+
+**Added**
+----------
+- More robust config-files
+- Ability to save simulation results to `MongoDB <https://www.mongodb.com/docs/>`_ database.
+- Parallelisme for running on a supercomputer.
+- Plotting functions
+
+
+**Changed**
+------------
+- New format of the config-files.
+- New dependency: MPI, e.g. `Open MPI <https://www.open-mpi.org/>`_ in order to run parallel on many cores. 
+
+----
+
+
 Version 0.1.0 (2025-10-20)
 ===========================
 

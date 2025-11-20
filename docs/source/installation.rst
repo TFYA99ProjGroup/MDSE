@@ -1,6 +1,11 @@
 Installation
 ============
 
+**Open MPI**
+
+In order to run the program parallel on multiple cores, install your favorite MPI. 
+For example: Open MPI, follow the installation guide here: https://www.open-mpi.org/software/ompi/v5.0/ 
+
 **Python venv**
 
 Activate a python virtual enviroment either with python venv
