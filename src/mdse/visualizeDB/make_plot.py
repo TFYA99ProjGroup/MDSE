@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 def make_plot(plot_name, plot_info, sim_data):
     """Takes information about a plot, and makes it.
     If unsuccesfull, i.e bad information etc, should simply continue with next plot.
-    
+    The 'main' plotting function.
+
     args:
         plot_name(str): The name of the plot
         plot_info(dict): Contains what type of plot, parameters etc.
@@ -17,7 +18,6 @@ def make_plot(plot_name, plot_info, sim_data):
     
     """
 
-    #Check if type is available/correct
 
     try:
         plot_func = valid_plot(plot_info.get("type"))

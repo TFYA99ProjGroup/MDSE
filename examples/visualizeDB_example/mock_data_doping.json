@@ -4,7 +4,6 @@
   {"doping": "H", "avg_a": 1.05, "formation_energy": 1.02},
   {"doping": "H", "avg_a": 1.04, "formation_energy": 1.06},
   {"doping": "H", "avg_a": 1.02, "formation_energy": 1.05},
-  {"doping": "He", "avg_a": 0.99, "formation_energy": 1.8},
 
   {"doping": "Li", "avg_a": 0.92, "formation_energy": 1.11},
   {"doping": "Li", "avg_a": 0.95, "formation_energy": 1.12},
