@@ -82,6 +82,7 @@ def doping_plot(plot_name, plot_data,sim_data):
     sorted_data = {}
 
     avg = plot_data.get("average")
+    fix_y = plot_data.get("fix_y")
 
     #Sort data after doping type. {"H" : {...}, "Li" : {...}}
     for sim in sim_data:
@@ -116,6 +117,10 @@ def doping_plot(plot_name, plot_data,sim_data):
     ax1.axhline(y=0, color='gray', linestyle='--', linewidth=1)
     avg_x=[]
     avg_y=[]
+
+    if fix_y:
+        ax1.set_ylim(-1,11)
+        ax1.set_yticks([0,10])
     
     sc1 = None
 
@@ -164,6 +169,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     first_label = True
     avg_x = []
     avg_y = []
+    
+    if fix_y:
+        ax2.set_ylim(-1,11)
+        ax2.set_yticks([0,10])
+    
 
     elements = {"Li" : 1, "Be" : 2, "dummy": 3, "B" : 13, "C" : 14, "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
     for key,value in elements.items():
@@ -207,6 +217,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     first_label = True
     avg_x = []
     avg_y = []
+    
+    if fix_y:
+        ax3.set_ylim(-1,11)
+        ax3.set_yticks([0,10])
+    
 
     elements = {"Na" : 1, "Mg" : 2, "dummy" : 3, "Al" : 13, "Si" : 14, "P" : 15, "S" : 16, "Cl" : 17, "Ar" : 18}
     for key,value in elements.items():
@@ -251,6 +266,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     first_label = True
     avg_x = []
     avg_y = []
+    
+    if fix_y:
+        ax4.set_ylim(-1,11)
+        ax4.set_yticks([0,10])
+    
 
     elements = {"K" : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V" : 5, "Cr" : 6, "Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12, "Ga" : 13
              ,"Ge" : 14, "As" : 15, "Se" : 16, "Br" : 17, "Kr" : 19, }
