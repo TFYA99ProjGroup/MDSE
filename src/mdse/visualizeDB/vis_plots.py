@@ -102,7 +102,20 @@ def doping_plot(plot_name, plot_data,sim_data):
         sorted_data[element]["formation_energy"].append(sim["formation_energy"])
         sorted_data[element]["avg_a"].append(sim["avg_a"])
     
-    fig, axs = plt.subplots(nrows = 4, figsize = (10,12), sharex = False)
+    fig, axs = plt.subplots(nrows = 5, figsize = (10,12), sharex = False)
+
+    #Fix axis of all subplots.
+
+    for axel in axs:
+        axel.set_xlim(0,19)
+        axel.set_xlabel("Element of doping")
+        axel.set_ylabel("ΔE (eV)")
+        axel.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+        if fix_y:
+            axel.set_ylim(-1,11)
+            axel.set_yticks([0,10])
+    
+
 
     #First subplot. H and He
     first_label = True
@@ -111,17 +124,10 @@ def doping_plot(plot_name, plot_data,sim_data):
     x_pos = range(0,20)
     labels =  [""] + ["H"] + [""]*16 + ["He"] + [""]
     ax1.set_xticks(x_pos,labels)
-    ax1.set_xlim(0,19)
-    ax1.set_xlabel("Element of doping")
-    ax1.set_ylabel("ΔE (eV)")
-    ax1.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
     avg_x=[]
     avg_y=[]
 
-    if fix_y:
-        ax1.set_ylim(-1,11)
-        ax1.set_yticks([0,10])
-    
     sc1 = None
 
     if "H" in sorted_data:
@@ -161,19 +167,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     x_pos = range(0,20)
     labels =  [""] + ["Li"] + ["Be"] + [""]*10 + ["B"] +  ["C"] +  ["N"] +  ["O"] +  ["F"] + ["Ne"] + [""]
     ax2.set_xticks(x_pos,labels)
-    ax2.set_xlim(0,19)
-    ax2.set_xlabel("Element of doping")
-    ax2.set_ylabel("ΔE (eV)")
-    ax2.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
     sc2 = None
     first_label = True
     avg_x = []
     avg_y = []
-    
-    if fix_y:
-        ax2.set_ylim(-1,11)
-        ax2.set_yticks([0,10])
-    
 
     elements = {"Li" : 1, "Be" : 2, "dummy": 3, "B" : 13, "C" : 14, "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
     for key,value in elements.items():
@@ -209,19 +207,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     x_pos = range(0,20)
     labels =  [""] + ["Na"] + ["Mg"] + [""]*10 + ["Al"] +  ["Si"] +  ["P"] +  ["S"] +  ["Cl"] + ["Ar"] + [""]
     ax3.set_xticks(x_pos,labels)
-    ax3.set_xlim(0,19)
-    ax3.set_xlabel("Element of doping")
-    ax3.set_ylabel("ΔE (eV)")
-    ax3.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
     sc3 = None
     first_label = True
     avg_x = []
     avg_y = []
-    
-    if fix_y:
-        ax3.set_ylim(-1,11)
-        ax3.set_yticks([0,10])
-    
 
     elements = {"Na" : 1, "Mg" : 2, "dummy" : 3, "Al" : 13, "Si" : 14, "P" : 15, "S" : 16, "Cl" : 17, "Ar" : 18}
     for key,value in elements.items():
@@ -258,22 +248,14 @@ def doping_plot(plot_name, plot_data,sim_data):
     labels =["", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga"
              ,"Ge", "As", "Sc", "Br", "Kr", ""]
     ax4.set_xticks(x_pos,labels)
-    ax4.set_xlim(0,19)
-    ax4.set_xlabel("Element of doping")
-    ax4.set_ylabel("ΔE (eV)")
-    ax4.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+
     sc4 = None
     first_label = True
     avg_x = []
     avg_y = []
-    
-    if fix_y:
-        ax4.set_ylim(-1,11)
-        ax4.set_yticks([0,10])
-    
 
     elements = {"K" : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V" : 5, "Cr" : 6, "Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12, "Ga" : 13
-             ,"Ge" : 14, "As" : 15, "Se" : 16, "Br" : 17, "Kr" : 19, }
+             ,"Ge" : 14, "As" : 15, "Se" : 16, "Br" : 17, "Kr" : 18, }
     for key,value in elements.items():
         if key not in sorted_data:
             if avg_x:
@@ -301,6 +283,47 @@ def doping_plot(plot_name, plot_data,sim_data):
         ax4.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug(f"Sucessfully created forth defect-subplot in {plot_name}")
 
+    #Fifth subplot.
+    logger.debug(f"Creating fifth defect-subplot in {plot_name}")
+    ax5 = axs[4]
+    x_pos = range(0,20)
+    labels =["", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In"
+             ,"Sn", "Sb", "Te", "I", "Xe", ""]
+    ax5.set_xticks(x_pos,labels)
+
+    sc5 = None
+    first_label = True
+    avg_x = []
+    avg_y = []
+
+    elements = {"Rb" : 1, "Sr" : 2, "Y" : 3, "Zr" : 4, "Nb" : 5, "Mo" : 6, "Tc" : 7, "Ru" : 8, "Rh" : 9, "Pd" : 10, "Ag" : 11, "Cd" : 12, "In" : 13
+             ,"Sn" : 14, "Sb" : 15, "Te" : 16, "I" : 17, "Xe" : 18, }
+    for key,value in elements.items():
+        if key not in sorted_data:
+            if avg_x:
+                ax5.plot(avg_x,avg_y, linestyle = "--", color="orange")
+                avg_x = []
+                avg_y = []
+            continue
+        lenght = len(sorted_data[key]["formation_energy"])
+        energy = sorted_data[key]["formation_energy"]
+        avg_a = sorted_data[key]["avg_a"]
+
+        sc5 = ax5.scatter([value]*lenght, energy, c = avg_a)
+
+        if avg:
+            avg_temp = plot_avg(ax5,value,energy)
+            avg_y.append(avg_temp)
+            avg_x.append(value)
+            if first_label:
+                ax5.legend(loc="upper right")
+                first_label = False
+
+    if sc5 is not None:
+        fig.colorbar(sc5,ax=ax5, label = "Mean a")
+    if avg and avg_x:
+        ax5.plot(avg_x,avg_y, linestyle = "--", color="orange")
+    logger.debug(f"Sucessfully created fifth defect-subplot in {plot_name}")
 
 
 

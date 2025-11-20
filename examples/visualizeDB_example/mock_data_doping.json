@@ -54,5 +54,27 @@
   {"doping": "Ge", "avg_a": 1.35, "formation_energy": 1.72},
   {"doping": "As", "avg_a": 1.38, "formation_energy": 1.74},
   {"doping": "Br", "avg_a": 1.4, "formation_energy": 1.76},
-  {"doping": "Kr", "avg_a": 1.42, "formation_energy": 1.78}
+  {"doping": "Kr", "avg_a": 1.42, "formation_energy": 1.78},
+
+  {"doping": "Rb", "avg_a": 1.12, "formation_energy": 0.95},
+  {"doping": "Sr", "avg_a": 1.08, "formation_energy": 1.02},
+  {"doping": "Y", "avg_a": 1.15, "formation_energy": 1.10},
+  {"doping": "Zr", "avg_a": 1.22, "formation_energy": 1.18},
+  {"doping": "Nb", "avg_a": 1.30, "formation_energy": 1.25},
+  {"doping": "Mo", "avg_a": 1.28, "formation_energy": 1.32},
+  {"doping": "Ru", "avg_a": 1.40, "formation_energy": 1.38},
+  {"doping": "Rh", "avg_a": 1.35, "formation_energy": 1.42},
+  {"doping": "Pd", "avg_a": 1.37, "formation_energy": 1.39},
+  {"doping": "Ag", "avg_a": 1.44, "formation_energy": 1.45},
+  {"doping": "Cd", "avg_a": 1.50, "formation_energy": 1.48},
+  {"doping": "In", "avg_a": 1.52, "formation_energy": 1.55},
+  {"doping": "Sn", "avg_a": 1.55, "formation_energy": 1.58},
+  {"doping": "Sb", "avg_a": 1.60, "formation_energy": 1.62},
+  {"doping": "Te", "avg_a": 1.62, "formation_energy": 1.65},
+  {"doping": "I", "avg_a": 1.65, "formation_energy": 1.68},
+  {"doping": "Xe", "avg_a": 1.70, "formation_energy": 1.72},
+  {"doping": "Zr", "avg_a": 1.24, "formation_energy": 1.20},
+  {"doping": "Nb", "avg_a": 1.32, "formation_energy": 1.28},
+  {"doping": "Mo", "avg_a": 1.29, "formation_energy": 1.31}
+
 ]
