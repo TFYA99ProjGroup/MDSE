@@ -4,3 +4,4 @@ data:
 plots:
   plot_1_doping:
     type: "doping"
+    average: True

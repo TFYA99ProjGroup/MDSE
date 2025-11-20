@@ -7,7 +7,7 @@
 
   {"doping": "Li", "avg_a": 0.92, "formation_energy": 1.11},
   {"doping": "Li", "avg_a": 0.95, "formation_energy": 1.12},
-  {"doping": "Li", "avg_a": 0.93, "formation_energy": 1.14},
+  {"doping": "Li", "avg_a": 0.93, "formation_energy": -0.01},
   {"doping": "Li", "avg_a": 0.91, "formation_energy": 1.15},
   {"doping": "Li", "avg_a": 0.94, "formation_energy": 1.13},
   {"doping": "Be", "avg_a": 1.05, "formation_energy": 1.12},
@@ -35,7 +35,6 @@
   {"doping": "Ca", "avg_a": 1.08, "formation_energy": 1.5},
   {"doping": "Sc", "avg_a": 1.1, "formation_energy": 1.52},
   {"doping": "Ti", "avg_a": 1.12, "formation_energy": 1.54},
-  {"doping": "V", "avg_a": 1.15, "formation_energy": 1.56},
   {"doping": "Cr", "avg_a": 1.18, "formation_energy": 1.58},
   {"doping": "Mn", "avg_a": 1.2, "formation_energy": 1.6},
   {"doping": "Fe", "avg_a": 3.0, "formation_energy": 1.62},

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,8 @@ def doping_plot(plot_name, plot_data,sim_data):
         y-axis is energy difference (formation energy?).
         z-axis is "mean a" (use avg_a here).
 
+        If config containts "average" field, will plot the average for each element also.
+
     args:
         plot_name(str): Name of the plot, from config file. Used as naming when plot is saved.
         plot_data(dic): Info about the plot. Empty when doping plot, and not used.
@@ -77,6 +80,10 @@ def doping_plot(plot_name, plot_data,sim_data):
     """
     logger.debug(f"Starting to create doping plot for {plot_name}")
     sorted_data = {}
+
+    avg = plot_data.get("average")
+
+    #Sort data after doping type. {"H" : {...}, "Li" : {...}}
     for sim in sim_data:
         element = sim.get("doping")
         if not element:
@@ -97,6 +104,7 @@ def doping_plot(plot_name, plot_data,sim_data):
     fig, axs = plt.subplots(nrows = 4, figsize = (10,12), sharex = False)
 
     #First subplot. H and He
+    first_label = True
     logger.debug(f"Creating first defect-subplot in {plot_name}")
     ax1 = axs[0]
     x_pos = range(0,20)
@@ -105,6 +113,9 @@ def doping_plot(plot_name, plot_data,sim_data):
     ax1.set_xlim(0,19)
     ax1.set_xlabel("Element of doping")
     ax1.set_ylabel("ΔE (eV)")
+    ax1.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+    avg_x=[]
+    avg_y=[]
     
     sc1 = None
 
@@ -112,13 +123,31 @@ def doping_plot(plot_name, plot_data,sim_data):
         sc1 = ax1.scatter([1]*len(sorted_data["H"]["formation_energy"]),
                     sorted_data["H"]["formation_energy"],
                     c = sorted_data["H"]["avg_a"])
+        if avg:
+            avg_temp = plot_avg(ax1,1,sorted_data["H"]["formation_energy"])
+            avg_y.append(avg_temp)
+            avg_x.append(1)
+            if first_label:
+                ax1.legend(loc="upper right")
+                first_label = False
+
+            
     if "He" in sorted_data:
         sc1 = ax1.scatter([18]*len(sorted_data["He"]["formation_energy"]),
                     sorted_data["He"]["formation_energy"],
                     c = sorted_data["He"]["avg_a"])
-    
+        if avg:
+            plot_avg(ax1,18,sorted_data["He"]["formation_energy"])
+            avg_y.append(avg_temp)
+            avg_x.append(18)
+            if first_label:
+                ax1.legend(loc="upper right")
+                first_label = False
+            
     if sc1 is not None:
         fig.colorbar(sc1,ax=ax1, label = "Mean a")
+    if avg:
+        ax1.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug(f"Sucessfully created first defect-subplot in {plot_name}")
 
     #Second subplot. Li, Be, B, C, N, O, F, Ne
@@ -130,11 +159,19 @@ def doping_plot(plot_name, plot_data,sim_data):
     ax2.set_xlim(0,19)
     ax2.set_xlabel("Element of doping")
     ax2.set_ylabel("ΔE (eV)")
+    ax2.axhline(y=0, color='gray', linestyle='--', linewidth=1)
     sc2 = None
+    first_label = True
+    avg_x = []
+    avg_y = []
 
-    elements = {"Li" : 1, "Be" : 2, "B" : 13, "C" : 14, "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
+    elements = {"Li" : 1, "Be" : 2, "dummy": 3, "B" : 13, "C" : 14, "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
     for key,value in elements.items():
         if key not in sorted_data:
+            if avg_x:
+                ax2.plot(avg_x,avg_y, linestyle = "--", color="orange")
+                avg_x = []
+                avg_y = []
             continue
         lenght = len(sorted_data[key]["formation_energy"])
         energy = sorted_data[key]["formation_energy"]
@@ -142,8 +179,18 @@ def doping_plot(plot_name, plot_data,sim_data):
 
         sc2 = ax2.scatter([value]*lenght, energy, c = avg_a)
 
+        if avg:
+            avg_temp = plot_avg(ax2,value,energy)
+            avg_y.append(avg_temp)
+            avg_x.append(value)
+            if first_label:
+                ax2.legend(loc="upper right")
+                first_label = False
+
     if sc2 is not None:
         fig.colorbar(sc2,ax=ax2, label = "Mean a")
+    if avg and avg_x:
+        ax2.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug(f"Sucessfully created second defect-subplot in {plot_name}")
 
     #Third subplot. Li, Be, B, C, N, O, F, Ne
@@ -155,11 +202,19 @@ def doping_plot(plot_name, plot_data,sim_data):
     ax3.set_xlim(0,19)
     ax3.set_xlabel("Element of doping")
     ax3.set_ylabel("ΔE (eV)")
+    ax3.axhline(y=0, color='gray', linestyle='--', linewidth=1)
     sc3 = None
+    first_label = True
+    avg_x = []
+    avg_y = []
 
-    elements = {"Na" : 1, "Mg" : 2, "Al" : 13, "Si" : 14, "P" : 15, "S" : 16, "Cl" : 17, "Ar" : 18}
+    elements = {"Na" : 1, "Mg" : 2, "dummy" : 3, "Al" : 13, "Si" : 14, "P" : 15, "S" : 16, "Cl" : 17, "Ar" : 18}
     for key,value in elements.items():
         if key not in sorted_data:
+            if avg_x:
+                ax3.plot(avg_x,avg_y, linestyle = "--", color="orange")
+                avg_x = []
+                avg_y = []
             continue
         lenght = len(sorted_data[key]["formation_energy"])
         energy = sorted_data[key]["formation_energy"]
@@ -167,8 +222,18 @@ def doping_plot(plot_name, plot_data,sim_data):
 
         sc3 = ax3.scatter([value]*lenght, energy, c = avg_a)
 
+        if avg:
+            avg_temp = plot_avg(ax3,value,energy)
+            avg_y.append(avg_temp)
+            avg_x.append(value)
+            if first_label:
+                ax3.legend(loc="upper right")
+                first_label = False
+
     if sc3 is not None:
         fig.colorbar(sc3,ax=ax3, label = "Mean a")
+    if avg and avg_x:
+        ax3.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug(f"Sucessfully created third defect-subplot in {plot_name}")
 
     #Forth subplot.
@@ -181,12 +246,20 @@ def doping_plot(plot_name, plot_data,sim_data):
     ax4.set_xlim(0,19)
     ax4.set_xlabel("Element of doping")
     ax4.set_ylabel("ΔE (eV)")
+    ax4.axhline(y=0, color='gray', linestyle='--', linewidth=1)
     sc4 = None
+    first_label = True
+    avg_x = []
+    avg_y = []
 
     elements = {"K" : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V" : 5, "Cr" : 6, "Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12, "Ga" : 13
-             ,"Ge" : 14, "As" : 15, "Sc" : 16, "Br" : 17, "Kr" : 19, }
+             ,"Ge" : 14, "As" : 15, "Se" : 16, "Br" : 17, "Kr" : 19, }
     for key,value in elements.items():
         if key not in sorted_data:
+            if avg_x:
+                ax4.plot(avg_x,avg_y, linestyle = "--", color="orange")
+                avg_x = []
+                avg_y = []
             continue
         lenght = len(sorted_data[key]["formation_energy"])
         energy = sorted_data[key]["formation_energy"]
@@ -194,8 +267,18 @@ def doping_plot(plot_name, plot_data,sim_data):
 
         sc4 = ax4.scatter([value]*lenght, energy, c = avg_a)
 
+        if avg:
+            avg_temp = plot_avg(ax4,value,energy)
+            avg_y.append(avg_temp)
+            avg_x.append(value)
+            if first_label:
+                ax4.legend(loc="upper right")
+                first_label = False
+
     if sc4 is not None:
         fig.colorbar(sc4,ax=ax4, label = "Mean a")
+    if avg and avg_x:
+        ax4.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug(f"Sucessfully created forth defect-subplot in {plot_name}")
 
 
@@ -206,3 +289,21 @@ def doping_plot(plot_name, plot_data,sim_data):
     plt.close()
     logger.debug(f"Saved doping plot for {plot_name}")
     
+
+def plot_avg(axial, x_pos, y_values):
+    """Plots a orange square to mark average of the y values.
+    Returns the average value, so can draw line between them all laters
+
+    args:
+        axial: The axis (ax1,ax2) returned from when we created the subplot. Axial
+               is the subplot we whant to attach this average.
+        x_pos(int): What x position to place the average on.
+        y_values(list): The values we calc. average of and mark.
+
+    returns:
+        average(float): The average of y_values
+    """
+    average = np.mean(y_values)
+    axial.scatter([x_pos], average, color = "orange", 
+                marker = "s", label="average", facecolors = "none", s = 80)
+    return average
