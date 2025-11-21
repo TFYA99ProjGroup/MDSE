@@ -287,9 +287,9 @@ def view_website_browser(args):
 
 
 def write_to_database(args):
-    writer = DBManager(args.adress)
+    writer = DBManager(args.address)
     for path in args.filepath:
-        logger.info(f"Writing data from {path} to {args.adress}")
+        logger.info(f"Writing data from {path} to {args.address}")
         writer.write_jsonfiles_to_db(path)
 
 
@@ -317,7 +317,7 @@ def main():
 
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
-    subparsers = parser.add_subparsers(title="subcommands", dest="command")
+    subparsers = parser.add_subparsers(title="commands", metavar="{subcommand}")
     # ----------Subparsers----------
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
@@ -421,16 +421,11 @@ def main():
     )
     parser_calc_isobaric_specific_heat.set_defaults(func=calc_isobaric_specific_heat)
 
-    build_website = subparsers.add_parser(
-        "build_docs",
-        help="Build the website locally and open it in default web-browser",
-    )
+    build_website = subparsers.add_parser("build_docs", description="hidden")
 
     build_website.set_defaults(func=build_website_locally)
 
-    view_website = subparsers.add_parser(
-        "view_docs", help="View the website with default web-browser"
-    )
+    view_website = subparsers.add_parser("view_docs", description="hidden")
 
     view_website.set_defaults(func=view_website_browser)
 
@@ -448,9 +443,9 @@ def main():
 
     write_to_db.add_argument(
         "-a",
-        "--adress",
-        metavar="ADRESS",
-        help="The adress to be writing to",
+        "--address",
+        metavar="ADDRESS",
+        help="The address to be writing to",
         required=True,
     )
 
