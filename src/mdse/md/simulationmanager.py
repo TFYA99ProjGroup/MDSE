@@ -12,7 +12,6 @@ from asap3 import EMTMetalGlassParameters
 import re
 from functools import reduce
 import math
-from mace.calculators import MACECalculator
 
 import logging
 import numpy as np
@@ -307,6 +306,7 @@ class SimulationManager:
                 print(self.calc_params)
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
+            from mace.calculators import MACECalculator
             logger.debug("Trying to get MACE model weights from: ")
             logger.debug(str(self.calc_params.get("model_paths")))
             calculator = MACECalculator(**self.calc_params)
