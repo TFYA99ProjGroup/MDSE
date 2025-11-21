@@ -13,9 +13,11 @@ Subpackages
 - mdse.logging   : Logging configuration and utilities
 - mdse.md        : Core molecular dynamics simulations
 - mdse.parser    : YAML parsing and parameter handling
+- mdse.rm        : Runmanagers
 
 For detailed documentation, see the submodules below.
 """
+
 from . import cli as cli
 from . import logging as logging
 from . import md as md

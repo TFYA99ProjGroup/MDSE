@@ -9,7 +9,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../../src"))
+sys.path.insert(0, os.path.abspath("../../src/mdse"))
 
 project = "MDSE"
 copyright = "2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas"
@@ -45,7 +45,4 @@ autodoc_default_options = {
 }
 
 # Mock external dependencies
-autodoc_mock_imports = [
-    "mpi4py",
-    "mpi4py.MPI",
-]
+autodoc_mock_imports = ["mpi4py", "mpi4py.MPI", "e3nn"]
