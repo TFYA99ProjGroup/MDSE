@@ -174,12 +174,15 @@ def get_files(simulations, config_file_path):
         (name,val), = sim.items()
         crystal_params = val.get("CRYSTAL")
 
+        dir_path = (config_dir / crystal_params.get("Filepath")).resolve()
+        if crystal_params.get("TYPE") == "DATABASE":
+            crystal_params["Filepath"] = dir_path
+
         if crystal_params.get("TYPE") != "FILE":
             logger.debug("Specified crystal input is not")
             expanded_parameters.append(sim)
             continue
 
-        dir_path = (config_dir / crystal_params.get("Filepath")).resolve()
         if not dir_path.is_dir():
             logger.debug("CRYSTAL input is direct path to config file")
             expanded_parameters.append(sim)
