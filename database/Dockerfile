@@ -8,7 +8,7 @@ RUN python -m pip install --upgrade pip
 # Install OPTIMADE server and dependencies
 RUN pip install "optimade[server]" --upgrade
 
-# Copy your config and server files
+# Copy this directory into WORKDIR
 COPY . .
 
 # Expose OPTIMADE server port
