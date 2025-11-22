@@ -4,6 +4,8 @@ import numpy as np
 from asap3 import Trajectory
 from ase import units
 
+from asap3 import EMT
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -517,50 +519,34 @@ class ResultMD:
 
         return Cv / n_atoms
 
-    def calc_shear_stress(self):
-        sigma_xy_samples = []
+    def energy_with_shear(self, crystal, gamma):
+            cell = crystal.cell.copy()
+            shear = np.array([[0, gamma/2, 0],
+                              [gamma/2, 0, 0],
+                              [0,       0, 0]])
+            shear_cell = (np.eye(3) + shear) @ cell
+            crystal.set_cell(shear_cell, scale_atoms=True)
+            return crystal.get_potential_energy() * constants.eV
 
-        for frame in self.frames:
-            stress = frame.get_stress()
-            sigma_xy = stress[5]
-            sigma_xy_samples.append(sigma_xy)
+    def calc_shear_modulus(self, gamma=0.01):
+        ## Maybe fix mean over serveral equil frames
+        equil_frame = self.check_equilibrium()
+        crystal_equil = self.frames[equil_frame].copy()
 
-        return sigma_xy_samples
+        crystal_equil.calc = EMT()
 
-    def calc_shear_modulus(self):
-        ## Start by checking for equilibrium after Lucas PR is approved   
-        ## Remove non equil and then sample 50-200 snapshots spaced by >= 10*autoorrelation_time
-        ## Compute C11, c12, c44 for all and the average it
+        volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
-        ## Following is temp until check equil
-        pot_energies = []
-        for frame in self.frames:
-            pot_energies.append(frame.get_potential_energy())
-        
-        crystal_equil = self.frames[-1].copy()
+        E0  = crystal_equil.get_potential_energy() * constants.eV
+        E_plus  = self.energy_with_shear(crystal_equil, gamma)
+        E_minus  = self.energy_with_shear(crystal_equil, -gamma)
 
-        gamma = 1e-3
-        strain_plus = np.array([[0, gamma/2, 0],
-                                [gamma/2, 0, 0],
-                                [0,       0, 0]])
+        deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
 
-        strain_minus = -strain_plus
+        C = deriv / volume
 
-        crystal_plus = self.apply_strain(crystal_equil, strain_plus)
-        crystal_minus = self.apply_strain(crystal_equil, strain_minus)
+        return C
 
-        U0 = crystal_equil.get_potential_energy()
-        U_plus = crystal_plus.get_potential_energy()
-        U_minus = crystal_minus.get_potential_energy()
-        print(U0)
-        print(U_plus)
-        print(U_minus)
-        
-    def apply_strain(self, crystal, strain):
-        strained_crystal = crystal.copy()
-        cell = strained_crystal.get_cell()
-        strained_crystal.set_cell((np.eye(3) + strain) @ cell, scale_atoms=True)
-        return strained_crystal
 
     def get_pot_energies(self):
         """Gets the potential energis at each frame.
