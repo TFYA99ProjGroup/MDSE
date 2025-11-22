@@ -5,11 +5,14 @@ Copper:
     Structure: fcc
     Lattice_a: 3.6149
     Cubic: True
+    Supercell:
+      - 3
+      - 3
+      - 3
   ENSAMBLE:
-    Ensamble: NVE
+    Ensamble: NVT
+    ThermoTime: 100
     Temp_list: 
-      - 100
-      - 200
       - 300
   SIMULATION:
     Timestep: 2 #fs

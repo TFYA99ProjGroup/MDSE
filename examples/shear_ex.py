@@ -8,6 +8,8 @@ config = main_read(config_path)
 
 rm = RunManager(config)
 
-rm.md_simulations[0]._attach_shear()
+#rm.md_simulations[0]._attach_shear()
 
-nve = rm.md_simulations[0].simulate()
+nvt = rm.md_simulations[0].simulate()
+
+G = nvt.calc_shear_modulus()
