@@ -5,43 +5,43 @@ Copper:
     Structure: fcc
     Lattice_a: 3.6149
     Cubic: True
-    Supercell: 
-      - 5 
-      - 5
-      - 5
   ENSAMBLE:
-    Ensamble: NVE
+    Ensamble: NPT
     Temp_list: 
       - 100
       - 200
-      - 300
+    Pressure: 3.85e-2
+    ThermoTime: 100
+    BaroTime: 1000
   SIMULATION:
     Timestep: 2 #fs
     Length: 2000
     TrajInterval: 5
     Calculator: EMT
+    CalcParams: 
     Create_traj: True
-
-Nickel:
+  RESULT:
+    Properties:
+      - all
+Iron:
   CRYSTAL:
     TYPE: BULK
-    Name: Ni
-    Structure: fcc
-    Lattice_a: 3.524
+    Name: Fe
+    Structure: bcc
+    Lattice_a: 2.8665
     Cubic: True
-    Supercell:
-      - 5
-      - 5
-      - 5
   ENSAMBLE:
     Ensamble: NVE
-    Temp_list:
+    Temp_list: 
       - 100
       - 200
-      - 300
   SIMULATION:
-    Timestep: 2
-    Length: 600
+    Timestep: 2 #fs
+    Length: 2000
     TrajInterval: 5
-    Calculator: EMT
+    Calculator: LennardJones
+    CalculatorParams: {"elements": [0], "epsilon": [[0.226738]], "sigma": [[0.70641]], "rCut": [[1.3]]}
     Create_traj: True
+  RESULT:
+    Properties:
+      - all

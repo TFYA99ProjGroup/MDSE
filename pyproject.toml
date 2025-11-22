@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mdse"
 version = "0.2.0"
-requires-python = ">=3.10.12"
+requires-python = ">=3.10.12, <3.13"
 dependencies = [
     "Cython==3.1.4",
     "ase==3.26.0",
@@ -19,13 +19,26 @@ dependencies = [
     "asap3==3.13.9",
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
-    "mace-torch"
+    "mace-torch",
+    "httk @ git+https://github.com/httk/httk.git@v1.2.0",
 ]
 
 [tool.ruff]
 line-length = 88
 lint.select = ["E", "F", "W"]
 lint.ignore = ["E203"]
+exclude = ["httk-src"]
 
 [project.scripts]
 mdse = "mdse.cli.cli:main"
+
+[tool.pytest.ini_options]
+addopts = ""
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+norecursedirs = [
+    "httk-src",
+    "database/mongo_data",
+    "*/mongo_data/*",
+    "*.data",
+]

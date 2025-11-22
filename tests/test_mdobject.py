@@ -245,7 +245,11 @@ def test_calculators():
             "Length": 20000,
             "TrajInterval": 5,
             "Calculator": "LennardJones",
-            "Calc_params": {"elements": numbers, "sigma": sigma, "epsilon": epsilon},
+            "CalculatorParams": {
+                "elements": numbers,
+                "sigma": sigma,
+                "epsilon": epsilon,
+            },
             "Create_traj": True,
         },
     }

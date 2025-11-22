@@ -130,10 +130,10 @@ class RunManager:
         logger.debug(result)
         property_values = {}
         property_functions = {
-            "Lindemann": result.calc_lindemann,
-            "Self-diffusion": result.calc_self_diff,
-            "Isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
-            "Debye": result.calc_debye_temperature,
+            "lindemann": result.calc_lindemann,
+            "self-diffusion": result.calc_self_diff,
+            "isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
+            "debye": result.calc_debye_temperature,
         }
         for name, func in property_functions.items():
             if (name in properties) or ("all" in properties):
@@ -141,7 +141,7 @@ class RunManager:
         crystal = config[next(iter(config))]["CRYSTAL"]
         ensamble = config[next(iter(config))]["ENSAMBLE"]
         docs = {}
-        docs["Structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+        docs["structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
         atoms = {}
         atoms["elements"] = result.frames[0].get_chemical_symbols()
         atoms["positions"] = result.frames[0].get_positions().tolist()
@@ -152,17 +152,28 @@ class RunManager:
         formula, _ = result.frames[0].symbols.formula.reduce()
         composition["chemical_formula_reduced"] = str(formula)
         docs["composition"] = composition
-        docs["Properties"] = property_values
+        docs["properties"] = property_values
         logger.debug(docs)
         logger.debug(len(docs))
         return docs
 
-    def write_json(self):
-        for index, doc in enumerate(self.docs):
-            path = Path(f"results/test_{index}.json")
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                json.dump(doc, f)
+    def write_json_append(self):
+        path = Path("results/all_results.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                try:
+                    existing_docs = json.load(f)
+                except json.JSONDecodeError:
+                    existing_docs = []
+        else:
+            existing_docs = []
+
+        all_docs = existing_docs + self.docs
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(all_docs, f, indent=2)
 
     def run_simulations(self, overwrite_ensamble=None):
         """
@@ -183,7 +194,7 @@ class RunManager:
                 config = self.simulation_config[index]
                 docs = self.run_results(res, config)
                 self.docs.append(docs)
-            self.write_json()
+            self.write_json_append()
             # Insert single core execution here if desired
             return
 
@@ -216,7 +227,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
-            self.write_json()
+            self.write_json_append()
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)

@@ -11,7 +11,7 @@ import webbrowser
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
-from mdse.rm.dbwriter import DBWriter
+from mdse.rm.dbmanager import DBManager
 from mdse.logging.logging_config import setup_logging
 from mdse.md.resultMD import ResultMD
 
@@ -110,6 +110,7 @@ def simulate_mpi(args):
 
     try:
         import mpi4py.MPI as MPI
+
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
     except Exception as e:
@@ -121,7 +122,7 @@ def simulate_mpi(args):
     if rank == 0:
         logger.info(
             f"MPI run: {len(sim_list)} simulations using {comm.Get_size()} ranks."
-            )
+        )
 
     rm = RunManager(sim_list)
     if args.ensamble is not None:
@@ -132,6 +133,7 @@ def simulate_mpi(args):
 
     if rank == 0:
         logger.info("MPI simulations done")
+
 
 def simulate(args):
     """
@@ -285,9 +287,10 @@ def view_website_browser(args):
 
 
 def write_to_database(args):
-    writer = DBWriter(args.filepath[0], args.adress)
-    logger.info(f"Writing data from {args.filepath[0]} to {args.adress}")
-    writer.write_jsonfiles_to_db()
+    writer = DBManager(args.address)
+    for path in args.filepath:
+        logger.info(f"Writing data from {path} to {args.address}")
+        writer.write_jsonfiles_to_db(path)
 
 
 def main():
@@ -314,7 +317,7 @@ def main():
 
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
-    subparsers = parser.add_subparsers(title="subcommands", dest="command")
+    subparsers = parser.add_subparsers(title="commands", metavar="{subcommand}")
     # ----------Subparsers----------
 
     parser_simulate = subparsers.add_parser("simulate", help="simulate once")
@@ -333,14 +336,14 @@ def main():
         help="Which ensamble to be used: NVT, NVE or NPT",
     )
     parser_simulate.add_argument(
-    "--mpi",
-    required=False,
-    action="store_true",
-    help=(
-        "Run in MPI-safe mode: only the master process logs output. "
-        "Requires launching with an MPI command, e.g., "
-        "mpirun -n 4 mdse simulate [args]."
-        )
+        "--mpi",
+        required=False,
+        action="store_true",
+        help=(
+            "Run in MPI-safe mode: only the master process logs output. "
+            "Requires launching with an MPI command, e.g., "
+            "mpirun -n 4 mdse simulate [args]."
+        ),
     )
     parser_simulate.set_defaults(func=simulate)
 
@@ -418,16 +421,11 @@ def main():
     )
     parser_calc_isobaric_specific_heat.set_defaults(func=calc_isobaric_specific_heat)
 
-    build_website = subparsers.add_parser(
-        "build_docs",
-        help="Build the website locally and open it in default web-browser",
-    )
+    build_website = subparsers.add_parser("build_docs", description="hidden")
 
     build_website.set_defaults(func=build_website_locally)
 
-    view_website = subparsers.add_parser(
-        "view_docs", help="View the website with default web-browser"
-    )
+    view_website = subparsers.add_parser("view_docs", description="hidden")
 
     view_website.set_defaults(func=view_website_browser)
 
@@ -445,9 +443,9 @@ def main():
 
     write_to_db.add_argument(
         "-a",
-        "--adress",
-        metavar="ADRESS",
-        help="The adress to be writing to",
+        "--address",
+        metavar="ADDRESS",
+        help="The address to be writing to",
         required=True,
     )
 
