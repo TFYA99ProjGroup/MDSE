@@ -8,14 +8,13 @@ from ase.md.nose_hoover_chain import IsotropicMTKNPT
 from asap3.md.nose_hoover_chain import NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
-
 from asap3 import EMTMetalGlassParameters
 import re
 from functools import reduce
 import math
-import numpy as np
 
 import logging
+import numpy as np
 from mdse.md.resultMD import ResultMD
 
 logger = logging.getLogger(__name__)
