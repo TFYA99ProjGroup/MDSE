@@ -16,7 +16,6 @@ import math
 import numpy as np
 
 import logging
-import numpy as np
 from mdse.md.resultMD import ResultMD
 
 logger = logging.getLogger(__name__)
@@ -320,22 +319,6 @@ class SimulationManager:
             raise NotImplementedError(error_msg)
 
         return calculator
-
-
-    """def _attach_shear(self):
-        gamma = 0.2
-        matrix = np.array([[1.0, gamma, 0.0],
-                           [0.0, 1.0,   0.0],
-                           [0.0, 0.0,   1.0]])
-        cell = self.crystal.get_cell().array 
-        shear_cell = matrix.dot(cell)
-        pos = self.crystal.get_positions()
-        new_pos = pos.dot(matrix.T)
-        self.crystal.set_cell(shear_cell, scale_atoms=False)
-        self.crystal.set_positions(new_pos)
-        print(pos)
-        print(new_pos)
-        return self.crystal"""
 
     def _attach_frame(self):
         self.result.append(self.crystal.copy())
