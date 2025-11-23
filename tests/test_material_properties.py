@@ -115,3 +115,11 @@ def test_cohesive_energy(nve_result):
     Table value for Cu is 3.49
     """
     assert(abs(nve_result.get_cohesive_energy() - 3.49)/3.49 < 0.005)
+
+def test_shear_modulus(nvt_result):
+    '''Check for a reasonable value for the shear modulus. Shear modulus for Cu
+    should be 44.7 GPa at room temp.
+    '''
+    shear_modulus = nvt_result.calc_shear_modulus()
+    assert shear_modulus > 20e+9 # GPa
+    assert shear_modulus < 80e+9 # GPa

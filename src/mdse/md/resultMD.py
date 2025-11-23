@@ -520,6 +520,20 @@ class ResultMD:
         return Cv / n_atoms
 
     def calc_C11(self, crystal_equil, epsilon=0.01):
+        '''Calculate the C11 elastic constant. Found by applying axial compression on
+        one axis of the cell.
+
+        parameters :
+            crystal_equil : ase.Atoms object
+                A relaxed equilibrium structure, calculator will be attached inside
+                the function.
+            gamma : float
+                Magnitude of the applied compression.
+
+        returns:
+            float: C11
+        '''
+        logger.debug("Calculating C11")
         crystal_equil.calc = EMT()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
@@ -541,10 +555,25 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
         C11 = deriv / volume
+        logger.debug(f"C11: {C11}")
 
         return C11
 
     def calc_C12(self, crystal_equil, epsilon=0.01):
+        '''Calculate the C12 elastic constant. Found by applying compression
+        on one axis and viewing the dilation of the cell in another.
+
+        parameters :
+            crystal_equil : ase.Atoms object
+                A relaxed equilibrium structure, calculator will be attached inside
+                the function.
+            gamma : float
+                Magnitude of the applied compression.
+
+        returns:
+            float: C12
+        '''
+        logger.debug("Caluculating C12")
         crystal_equil.calc = EMT()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
         
@@ -552,8 +581,8 @@ class ResultMD:
             crystal.calc = EMT()
             cell = crystal.cell.copy()
             compression = np.array([[epsilon, 0,  0],
-                              [0, -epsilon, 0],
-                              [0,       0,  0]])
+                                    [0, -epsilon, 0],
+                                    [0,       0,  0]])
             shear_cell = (np.eye(3) + compression) @ cell
             crystal.set_cell(shear_cell, scale_atoms=True)
             return crystal.get_potential_energy() * constants.eV
@@ -566,10 +595,25 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
         C12 = deriv / volume
+        logger.debug(f"C12: {C12}")
 
         return C12
 
-    def calc_C44(self, crystal_equil, gamma=0.01):
+    def calc_C44(self, crystal_equil, gamma):
+        ''' Calculate the C44 elastic constant. Found by applying shear strain 
+        to a relaxed cell.
+
+        parameters:
+            crystal_equil : ase.Atoms object
+                A relaxed equilibrium structure, calculator will be attached inside
+                the function.
+            gamma : float
+                Magnitude of the applied shear strain.
+
+        returns:
+            float: C44
+        '''
+        logger.debug("C44")
         crystal_equil.calc = EMT()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
         
@@ -591,12 +635,25 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
 
         C44 = deriv / volume
+        logger.debug(f"C44: {C44}")
 
         return C44
         
 
     def calc_shear_modulus(self, strain=0.01):
+        '''Calculates the shear modulus at an equilibrium frame.
+        Shear moudus, G = (3*C44 + C11 - C12) / 5  
+
+        parameters:
+            strain : float
+                Magnitude of the applied strain. Applies to both the shear strain and
+                compression. Default is 0.01 (i.e., 1% shear or compress)
+
+        returns:
+            float: shear_modulus
+        '''
         ## Maybe fix mean over serveral equil frames
+        logger.debug("Calculating shear moudulus")
         equil_frame = self.check_equilibrium()
         crystal_equil = self.frames[equil_frame].copy()
 
@@ -605,7 +662,7 @@ class ResultMD:
         C12 = self.calc_C12(crystal_equil, strain)
         
         shear_modulus = (3*C44 + C11 - C12) / 5
-
+        logger.debug(f"shear modulus: {shear_modulus}")
         return shear_modulus
     
 
