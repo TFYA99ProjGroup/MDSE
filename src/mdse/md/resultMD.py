@@ -519,7 +519,62 @@ class ResultMD:
 
         return Cv / n_atoms
 
-    def energy_with_shear(self, crystal, gamma):
+    def calc_C11(self, crystal_equil, epsilon=0.01):
+        crystal_equil.calc = EMT()
+        volume = crystal_equil.get_volume() * (constants.angstrom**3)
+
+        def energy_with_axial_compression(crystal, epsilon):
+            crystal.calc = EMT()
+            cell =  crystal.cell.copy()
+            compression = np.array([[epsilon, 0, 0],
+                                    [0,     0, 0],
+                                    [0,     0, 0]])
+
+            compressed_cell = (np.eye(3) + compression) @ cell
+            crystal.set_cell(compressed_cell, scale_atoms=True)
+            return crystal.get_potential_energy() * constants.eV
+
+        E0  = crystal_equil.get_potential_energy() * constants.eV
+        E_plus  = energy_with_axial_compression(crystal_equil.copy(), epsilon)
+        E_minus  = energy_with_axial_compression(crystal_equil.copy(), -epsilon)
+
+        deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
+
+        C11 = deriv / volume
+
+        return C11
+
+    def calc_C12(self, crystal_equil, epsilon=0.01):
+        crystal_equil.calc = EMT()
+        volume = crystal_equil.get_volume() * (constants.angstrom**3)
+        
+        def energy_with_compression_dilation(crystal, epsilon):
+            crystal.calc = EMT()
+            cell = crystal.cell.copy()
+            compression = np.array([[epsilon, 0,  0],
+                              [0, -epsilon, 0],
+                              [0,       0,  0]])
+            shear_cell = (np.eye(3) + compression) @ cell
+            crystal.set_cell(shear_cell, scale_atoms=True)
+            return crystal.get_potential_energy() * constants.eV
+
+
+        E0  = crystal_equil.get_potential_energy() * constants.eV
+        E_plus  = energy_with_compression_dilation(crystal_equil.copy(), epsilon)
+        E_minus  = energy_with_compression_dilation(crystal_equil.copy(), -epsilon)
+
+        deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
+
+        C12 = deriv / volume
+
+        return C12
+
+    def calc_C44(self, crystal_equil, gamma=0.01):
+        crystal_equil.calc = EMT()
+        volume = crystal_equil.get_volume() * (constants.angstrom**3)
+        
+        def energy_with_shear_strain(crystal, gamma):
+            crystal.calc = EMT()
             cell = crystal.cell.copy()
             shear = np.array([[0, gamma/2, 0],
                               [gamma/2, 0, 0],
@@ -528,25 +583,31 @@ class ResultMD:
             crystal.set_cell(shear_cell, scale_atoms=True)
             return crystal.get_potential_energy() * constants.eV
 
-    def calc_shear_modulus(self, gamma=0.01):
+
+        E0  = crystal_equil.get_potential_energy() * constants.eV
+        E_plus  = energy_with_shear_strain(crystal_equil.copy(), gamma)
+        E_minus  = energy_with_shear_strain(crystal_equil.copy(), -gamma)
+
+        deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
+
+        C44 = deriv / volume
+
+        return C44
+        
+
+    def calc_shear_modulus(self, strain=0.01):
         ## Maybe fix mean over serveral equil frames
         equil_frame = self.check_equilibrium()
         crystal_equil = self.frames[equil_frame].copy()
 
-        crystal_equil.calc = EMT()
+        C44 = self.calc_C44(crystal_equil, strain)
+        C11 = self.calc_C11(crystal_equil, strain)
+        C12 = self.calc_C12(crystal_equil, strain)
+        
+        shear_modulus = (3*C44 + C11 - C12) / 5
 
-        volume = crystal_equil.get_volume() * (constants.angstrom**3)
-
-        E0  = crystal_equil.get_potential_energy() * constants.eV
-        E_plus  = self.energy_with_shear(crystal_equil, gamma)
-        E_minus  = self.energy_with_shear(crystal_equil, -gamma)
-
-        deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
-
-        C = deriv / volume
-
-        return C
-
+        return shear_modulus
+    
 
     def get_pot_energies(self):
         """Gets the potential energis at each frame.

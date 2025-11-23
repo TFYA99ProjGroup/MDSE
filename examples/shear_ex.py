@@ -13,3 +13,4 @@ rm = RunManager(config)
 nvt = rm.md_simulations[0].simulate()
 
 G = nvt.calc_shear_modulus()
+print(G)
