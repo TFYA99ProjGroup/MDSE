@@ -670,7 +670,7 @@ class ResultMD:
         # Hill average of the Voight and Reuss shear modulus
         shear_modulus = (shear_modulus_reuss + shear_modulus_voight) / 2
         logger.debug(f"shear modulus: {shear_modulus}")
-        return shear_modulus_average
+        return shear_modulus
 
 
     def get_pot_energies(self):
