@@ -67,8 +67,8 @@ def validate_rm(file_path, sim_list, address):
 
 def validate_db_document(data):
     # Top-level keys
-    assert data["structure_id"] is not None
-    assert isinstance(data["structure_id"], str)
+    assert data["simulation_id"] is not None
+    assert isinstance(data["simulation_id"], int)
 
     assert "atoms" in data
     assert isinstance(data["atoms"], dict)

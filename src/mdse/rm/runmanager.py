@@ -86,10 +86,8 @@ class RunManager:
         self.docs = []
         self.simulation_config = simulation_config
 
-        # Check if crystal structures should be read from database and reads
-        self._read_from_sqlite()
-
         if self.simulation_config is not None:
+            self._read_from_sqlite()
             for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
@@ -99,7 +97,7 @@ class RunManager:
 
     def _read_from_sqlite(self):
         crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
-        if crystal_config.get("TYPE") == "DATABASE":
+        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
             database_path = crystal_config.get("Filepath")
             logger.debug(f"Load from database at {database_path}")
             self.database = setup_db(database_path)
@@ -212,7 +210,7 @@ class RunManager:
         docs["properties"] = {
             **property_values,
             "total_energy": final_frame.info["pot_energy"]
-                + final_frame.get_kinetic_energy(),
+            + final_frame.get_kinetic_energy(),
         }
 
         logger.debug(len(docs))
