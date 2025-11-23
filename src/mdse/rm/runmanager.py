@@ -174,7 +174,7 @@ class RunManager:
 
         docs = {}
 
-        docs["simulation_id"] = secrets.randbits(128)
+        docs["simulation_id"] = str(secrets.randbits(128))
         docs["simulation"] = {
             **simulation,
             **ensamble,
