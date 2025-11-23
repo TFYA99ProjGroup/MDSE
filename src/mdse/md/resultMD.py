@@ -576,7 +576,7 @@ class ResultMD:
         logger.debug("Caluculating C12")
         crystal_equil.calc = EMT()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
-        
+
         def energy_with_compression_dilation(crystal, epsilon):
             crystal.calc = EMT()
             cell = crystal.cell.copy()
@@ -600,7 +600,7 @@ class ResultMD:
         return C12
 
     def calc_C44(self, crystal_equil, gamma):
-        ''' Calculate the C44 elastic constant. Found by applying shear strain 
+        ''' Calculate the C44 elastic constant. Found by applying shear strain
         to a relaxed cell.
 
         parameters:
@@ -616,7 +616,7 @@ class ResultMD:
         logger.debug("C44")
         crystal_equil.calc = EMT()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
-        
+
         def energy_with_shear_strain(crystal, gamma):
             crystal.calc = EMT()
             cell = crystal.cell.copy()
@@ -638,11 +638,11 @@ class ResultMD:
         logger.debug(f"C44: {C44}")
 
         return C44
-        
+
 
     def calc_shear_modulus(self, strain=0.01):
         '''Calculates the shear modulus at an equilibrium frame.
-        Shear moudus, G = (3*C44 + C11 - C12) / 5  
+        Shear modulus, G = (3*C44 + C11 - C12) / 5
 
         parameters:
             strain : float
@@ -660,11 +660,18 @@ class ResultMD:
         C44 = self.calc_C44(crystal_equil, strain)
         C11 = self.calc_C11(crystal_equil, strain)
         C12 = self.calc_C12(crystal_equil, strain)
-        
-        shear_modulus = (3*C44 + C11 - C12) / 5
+
+        # Voight gives an upper bound of the shear modulus
+        shear_modulus_voight = (3*C44 + C11 - C12) / 5
+
+        # Reuss gives a lower bound of the shear modulus
+        shear_modulus_reuss = 5*(C11 - C12)*C44 / (4*C44 + 3*(C11 - C12))
+
+        # Hill average of the Voight and Reuss shear modulus
+        shear_modulus = (shear_modulus_reuss + shear_modulus_voight) / 2
         logger.debug(f"shear modulus: {shear_modulus}")
-        return shear_modulus
-    
+        return shear_modulus_average
+
 
     def get_pot_energies(self):
         """Gets the potential energis at each frame.

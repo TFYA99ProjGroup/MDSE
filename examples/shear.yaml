@@ -16,7 +16,7 @@ Copper:
       - 300
   SIMULATION:
     Timestep: 2 #fs
-    Length: 50000
+    Length: 5000
     TrajInterval: 5
     Calculator: EMT
     Create_traj: True
