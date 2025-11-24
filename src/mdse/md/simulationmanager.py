@@ -127,11 +127,16 @@ class SimulationManager:
         crystal_params = config.get("CRYSTAL")
 
         try:
-            crystal_type = crystal_params.get("TYPE")
+            crystal_type = crystal_params["TYPE"]
             logger.debug(f"Initialize the crystal from {crystal_type}")
 
             # We either create our crystal as a bulk crystal, ...
             if crystal_type == "BULK":
+                self._check_keys(
+                    "CRYSTAL",
+                    crystal_params,
+                    ["Name", "Structure", "Lattice_a", "Cubic"],
+                )
                 self.crystal = bulk(
                     crystal_params.get("Name"),
                     crystal_params.get("Structure"),
@@ -143,12 +148,16 @@ class SimulationManager:
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
+                self._check_keys("CRYSTAL", crystal_params, ["Filepath"])
                 self.crystal = ase.io.read(
                     crystal_params.get("Filepath")
                 ) * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
+                self._check_keys(
+                    "CRYSTAL", crystal_params, ["Symbols", "Positions", "Cell", "Pcb"]
+                )
                 self.crystal = Atoms(
                     symbols=crystal_params.get("Symbols"),
                     positions=crystal_params.get("Positions"),
@@ -163,9 +172,14 @@ class SimulationManager:
             logger.error(e)
             raise RuntimeError(e)
 
-        # Parameters related to the simulation
-        simulation_params = config.get("SIMULATION")
         try:
+            # Parameters related to the simulation
+            simulation_params = config["SIMULATION"]
+            self._check_keys(
+                "SIMULATION",
+                simulation_params,
+                ["Timestep", "Length", "TrajInterval", "Calculator"],
+            )
             self.timestep = simulation_params.get("Timestep") * units.fs
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
@@ -178,20 +192,27 @@ class SimulationManager:
             logger.error(e)
             raise RuntimeError(e)
 
-        # Ensamble parameters
-        ensamble_params = config.get("ENSAMBLE")
         try:
-            ensamble_type = ensamble_params.get("Ensamble")
+            # Ensamble parameters
+            ensamble_params = config["ENSAMBLE"]
+            ensamble_type = ensamble_params["Ensamble"]
             self.ensamble = ensamble_type
             logger.debug(f"Using ensamble: {ensamble_type}")
             if ensamble_type == "NVE":
+                self._check_keys("ENSAMBLE", ensamble_params, ["Temp"])
                 self.temperature = ensamble_params.get("Temp")
 
             elif ensamble_type == "NVT":
+                self._check_keys("ENSAMBLE", ensamble_params, ["Temp", "ThermoTime"])
                 self.temperature = ensamble_params.get("Temp")
                 self.thermo_time = ensamble_params.get("ThermoTime")
 
             elif ensamble_type == "NPT":
+                self._check_keys(
+                    "ENSAMBLE",
+                    ensamble_params,
+                    ["Temp", "Pressure", "ThermoTime", "BaroTime"],
+                )
                 self.temperature = ensamble_params.get("Temp")
                 self.pressure_au = ensamble_params.get("Pressure")
                 self.thermo_time = ensamble_params.get("ThermoTime")
@@ -202,8 +223,11 @@ class SimulationManager:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
-
-        self.crystal.calc = self._check_calculator()
+        try:
+            self.crystal.calc = self._check_calculator()
+        except Exception as e:
+            logger.error("Failed to check the calculator: {e}")
+            raise RuntimeError(e)
         self.crystal.info["dt"] = self.timestep
         logger.debug("Start saving single_atom_energy info to .info[]")
         E_atom, n_atoms = self.single_atom_energy()
@@ -249,6 +273,11 @@ class SimulationManager:
             raise RuntimeError(
                 "Energy calculation failed. Ensure calculator is attached."
             ) from e
+
+    def _check_keys(self, name, d, keys):
+        missing = [k for k in keys if k not in d]
+        if missing:
+            raise KeyError(f"Missing keys in {name}: {missing}")
 
     def _add_distribution(self, distribution):
         """
@@ -303,9 +332,13 @@ class SimulationManager:
                 if key == "elements":
                     continue
                 self.calc_params[key] = np.array(self.calc_params[key])
+            self._check_keys(
+                "CalcParams", self.calc_params, ["elements", "epsilon", "sigma", "rCut"]
+            )
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
+
             logger.debug("Trying to get MACE model weights from: ")
             logger.debug(str(self.calc_params.get("model_paths")))
             calculator = MACECalculator(**self.calc_params)
@@ -551,23 +584,27 @@ class SimulationManager:
         """
         logger.debug("Start calculating single_atom energies")
 
-        #Get chemical formula of the "super" crystal
+        # Get chemical formula of the "super" crystal
         formula_super = self.crystal.get_chemical_formula()
 
-        #Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
+        # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
         matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
         counts = {el: int(n) if n else 1 for el, n in matches}
 
         common_divider = reduce(math.gcd, counts.values())
-        formula_unit = {el: n//common_divider for el, n in counts.items()}
+        formula_unit = {el: n // common_divider for el, n in counts.items()}
         logger.debug(f"Found following formula: {formula_unit}")
 
         if len(formula_unit) == 1:
             logger.debug("Found 1 type of element in crystal")
             calc = self._check_calculator()
 
-            atom = ase.Atoms(list(formula_unit.keys())[0], positions = [(0,0,0)],
-                             cell = [15,15,15], pbc = False)
+            atom = ase.Atoms(
+                list(formula_unit.keys())[0],
+                positions=[(0, 0, 0)],
+                cell=[15, 15, 15],
+                pbc=False,
+            )
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
@@ -584,17 +621,18 @@ class SimulationManager:
             for element, amount in formula_unit.items():
                 for _ in range(amount):
                     symbols.append(element)
-                    positions.append((offset,0,0))
-                    offset = offset+2
+                    positions.append((offset, 0, 0))
+                    offset = offset + 2
 
-            atom = ase.Atoms(symbols , positions = positions ,
-                             cell = [15,15,15], pbc = False)
+            atom = ase.Atoms(symbols, positions=positions, cell=[15, 15, 15], pbc=False)
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
 
             return E_atom, len(symbols)
 
-        logger.debug(f"Could not calc single_atom_energy for {formula_unit}."
-                    "Not implemented for that many atoms, yet")
+        logger.debug(
+            f"Could not calc single_atom_energy for {formula_unit}."
+            "Not implemented for that many atoms, yet"
+        )
         return 0, 0

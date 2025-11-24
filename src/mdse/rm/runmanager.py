@@ -91,7 +91,14 @@ class RunManager:
             for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                self.md_simulations.append(SimulationManager(item))
+                try:
+                    self.md_simulations.append(SimulationManager(item))
+
+                except Exception as e:
+                    self.md_simulations.append(None)
+                    logger.error(
+                        f"Failed to add simulation {item} to md_simulations: {e}"
+                    )
 
         logger.debug("RunManager done innit bruv!")
 
@@ -163,7 +170,13 @@ class RunManager:
 
         # for index, config in enumerate(self.simulation_config):
         logger.debug(config)
-        properties = config[next(iter(config))]["RESULT"]["Properties"]
+        try:
+            properties = config[next(iter(config))]["RESULT"]["Properties"]
+        except Exception:
+            logger.error(
+                f"Did not find RESULT: Properties in {config[next(iter(config))]}"
+            )
+            properties = {}
         # result = self.result_objects[index]
         logger.debug(properties)
         logger.debug(result)
@@ -247,6 +260,9 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
+                if sim is None:
+                    logger.error("Simulation is None, skipping")
+                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
@@ -298,6 +314,9 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
+                    if sim is None:
+                        logger.error("Simulation is None, skipping")
+                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]
