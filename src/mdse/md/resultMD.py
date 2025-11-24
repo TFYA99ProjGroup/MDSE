@@ -673,6 +673,55 @@ class ResultMD:
         return shear_modulus
 
 
+    def calc_bulk_modulus(self, strain=0.01):
+        '''Calculates the shear modulus at an equilibrium frame.
+        Bulk modulus, B = (C11 + 2*C12) / 3
+
+        parameters:
+            strain : float
+                Magnitude of the applied strain. Applies to
+                compression in both elasticity constants. Default is 0.01(i.e.,
+                1% shear or compress)
+
+        returns:
+            float: bulk_modulus
+        '''
+        logger.debug("Calculating bulk modulus")
+        equil_frame = self.check_equilibrium()
+        crystal_equil = self.frames[equil_frame].copy()
+
+        C11 = self.calc_C11(crystal_equil, strain)
+        C12 = self.calc_C12(crystal_equil, strain)
+
+        bulk_modulus = (C11 + 2*C12) / 3
+
+        logger.debug(f"bulk_modulus: {bulk_modulus}")
+        return bulk_modulus 
+
+
+    def calc_youngs_modulus(self, strain=0.01):
+        '''Calculates Young's modulus at an equilibrium frame.
+        Young's modulus, E = 9*B*G / (3*B + G)
+
+        parameters:
+            strain : float
+                Magnitude of the applied strain. Applies uniformly to
+                tensile or compressive deformation when computing the
+                elastic response. Default is 0.01 (i.e., 1% strain).
+
+        returns:
+            float: youngs_modulus
+        '''
+        logger.debug("Calculating Young's modulus")
+
+        B = self.calc_bulk_modulus(strain)
+        G = self.calc_shear_modulus(strain)
+
+        youngs_modulus = 9*B*G / (3*B + G)
+
+        logger.debug(f"Young's modulus: {youngs_modulus}")
+        return youngs_modulus 
+
     def get_pot_energies(self):
         """Gets the potential energis at each frame.
 
