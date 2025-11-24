@@ -131,7 +131,13 @@ class RunManager:
 
         # for index, config in enumerate(self.simulation_config):
         logger.debug(config)
-        properties = config[next(iter(config))]["RESULT"]["Properties"]
+        try:
+            properties = config[next(iter(config))]["RESULT"]["Properties"]
+        except Exception:
+            logger.error(
+                f"Did not find RESULT: Properties in {config[next(iter(config))]}"
+            )
+            properties = {}
         # result = self.result_objects[index]
         logger.debug(properties)
         logger.debug(result)

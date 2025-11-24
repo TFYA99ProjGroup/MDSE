@@ -223,8 +223,11 @@ class SimulationManager:
             logger.error("Error ensamble values")
             logger.error(e)
             raise RuntimeError(e)
-
-        self.crystal.calc = self._check_calculator()
+        try:
+            self.crystal.calc = self._check_calculator()
+        except Exception as e:
+            logger.error("Failed to check the calculator: {e}")
+            raise RuntimeError(e)
         self.crystal.info["dt"] = self.timestep
         logger.debug("Start saving single_atom_energy info to .info[]")
         E_atom, n_atoms = self.single_atom_energy()
@@ -329,7 +332,9 @@ class SimulationManager:
                 if key == "elements":
                     continue
                 self.calc_params[key] = np.array(self.calc_params[key])
-                print(self.calc_params)
+            self._check_keys(
+                "CalcParams", self.calc_params, ["elements", "epsilon", "sigma", "rCut"]
+            )
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
