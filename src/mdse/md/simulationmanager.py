@@ -486,6 +486,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result)
 
     def simulate_npt(
@@ -536,6 +537,7 @@ class SimulationManager:
             logger.error(e)
             raise
         self.result[0].info["p_au"] = self.pressure_au
+        self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result)
 
     def simulate_nvt(
@@ -583,6 +585,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result)
 
     def single_atom_energy(self):
