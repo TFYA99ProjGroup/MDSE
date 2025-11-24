@@ -538,7 +538,7 @@ class ResultMD:
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_axial_compression(crystal, epsilon):
-            crystal.calc = EMT()
+            crystal = self._attach_calc(crystal)
             cell =  crystal.cell.copy()
             compression = np.array([[epsilon, 0, 0],
                                     [0,     0, 0],
@@ -578,7 +578,7 @@ class ResultMD:
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_compression_dilation(crystal, epsilon):
-            crystal.calc = EMT()
+            crystal = self._attach_calc(crystal)
             cell = crystal.cell.copy()
             compression = np.array([[epsilon, 0,  0],
                                     [0, -epsilon, 0],
@@ -618,7 +618,7 @@ class ResultMD:
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_shear_strain(crystal, gamma):
-            crystal.calc = EMT()
+            crystal = self._attach_calc(crystal)
             cell = crystal.cell.copy()
             shear = np.array([[0, gamma/2, 0],
                               [gamma/2, 0, 0],
