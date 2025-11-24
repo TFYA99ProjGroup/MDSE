@@ -534,7 +534,7 @@ class ResultMD:
             float: C11
         '''
         logger.debug("Calculating C11")
-        crystal_equil.calc = EMT()
+        crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_axial_compression(crystal, epsilon):
@@ -574,7 +574,7 @@ class ResultMD:
             float: C12
         '''
         logger.debug("Caluculating C12")
-        crystal_equil.calc = EMT()
+        crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_compression_dilation(crystal, epsilon):
@@ -614,7 +614,7 @@ class ResultMD:
             float: C44
         '''
         logger.debug("C44")
-        crystal_equil.calc = EMT()
+        crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_shear_strain(crystal, gamma):
@@ -888,3 +888,15 @@ class ResultMD:
                 pass
 
         return len(Tot_energy)-2
+
+    
+    def _attach_calc(self, crystal_equil):
+        calc = self.frames[0].info["calc"]
+        if calc == "EMT":
+            crystal_equil.calc = EMT()
+        elif calc == "LennardJones":
+            crystal_equil.calc = LennardJones()
+        elif calc == "MACE":
+            crystal_equil.calc = MACECalculator()
+
+        return crystal_equil
