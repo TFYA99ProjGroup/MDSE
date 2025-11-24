@@ -44,7 +44,7 @@ def get_defects(store, **query):
 
     Parameters
     ----------
-    search : httk.db.search.Searcher
+    search : httk.db.store.SqlStore
         The searcher used to run database queries.
     query : dict
         Query to filter the output from the database.
@@ -170,6 +170,36 @@ def save_defects(defects, defect_folder):
 
 
 def get_defect_formation_energy(store, **query):
+    """
+    Compute defect formation energies from a data store and write the results to MongoDB.
+
+    Parameters
+    ----------
+    store : httk.db.store.SqlStore
+        A httk datastore object.
+    **query : dict, optional
+        Optional filters for the query. Currently supports:
+        - key (str): Restrict results to a specific defect key.
+
+    Notes
+    -----
+    This function:
+      1. Queries all neutral (charge = 0) defect calculations.
+      2. Retrieves defect stoichiometry, total energies, spin, and defect type.
+      3. Computes chemical potentials using `get_chem_pot()`.
+      4. Calculates defect formation energies:
+
+        .. math::
+
+           E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} - \\sum_i n_i \\mu_i
+
+      5. Stores the resulting data in a MongoDB collection named "DFT data".
+
+    Returns
+    -------
+    None
+        Results are written directly to the database.
+    """
     search = store.searcher()
     search_defect_info = search.variable(DefectInfo)
     search_screen_result = search.variable(ScreenResult)
@@ -214,6 +244,30 @@ def get_defect_formation_energy(store, **query):
 
 
 def get_chem_pot(store, stoichiometry):
+    """
+    Compute the total chemical potential contribution for a given defect stoichiometry.
+
+    Parameters
+    ----------
+    store : httk.db.store.SqlStore
+        A httk datastore object.
+    stoichiometry : str
+        Stoichiometry string of the form "Elem1:-n1_Elem2:-n2 ...", where
+        negative integers indicate added atoms and positive integers removed atoms.
+
+    Returns
+    -------
+    float
+        The summed chemical potential: :math:`\\sum_i(n_i\\mu_i)`, using the database-stored
+        chemical potentials for each involved element.
+
+    Notes
+    -----
+    The function:
+      - Parses element counts from the stoichiometry string.
+      - Queries the datastore for the corresponding elemental chemical potentials.
+      - Computes the weighted sum of potentials according to the parsed stoichiometry.
+    """
     search = store.searcher()
     pattern = r"([A-Za-z]+):(-?\d+)"
     matches = {elem: -int(count) for elem, count in re.findall(pattern, stoichiometry)}
