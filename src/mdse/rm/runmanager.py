@@ -5,9 +5,6 @@ from mpi4py import MPI as _TrueMPI
 import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
-import secrets
-from mdse.parser.httk_reader import get_defects, save_defects, setup_db
-from mdse.parser.parse_yml import get_files
 
 logger = logging.getLogger(__name__)
 
@@ -84,60 +81,16 @@ class RunManager:
         self.md_simulations = []
         self.result_objects = []
         self.outputs = []
-        self.docs = []
         self.simulation_config = simulation_config
         self.MongoDBentriesAsJson = [] # List to store MongoDBEntry instances
 
-        if self.simulation_config is not None:
-            self._read_from_sqlite()
-            for config in self.simulation_config:
+        if simulation_config is not None:
+            for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                try:
-                    self.md_simulations.append(SimulationManager(item))
-
-                except Exception as e:
-                    self.md_simulations.append(None)
-                    logger.error(
-                        f"Failed to add simulation {item} to md_simulations: {e}"
-                    )
+                self.md_simulations.append(SimulationManager(item))
 
         logger.debug("RunManager done innit bruv!")
-
-    def _read_from_sqlite(self):
-        crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
-        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
-            database_path = crystal_config.get("Filepath")
-            logger.debug(f"Load from database at {database_path}")
-            self.database = setup_db(database_path)
-
-            query = crystal_config.get("Query")
-
-            defect_folder = Path("./defects")
-            defects = get_defects(self.database, **query)
-            save_defects(defects, defect_folder)
-
-            for config in self.simulation_config:
-                item = list(config.values())[0]
-
-                crystal_config = {
-                    "TYPE": "FILE",
-                    "Filepath": str(defect_folder),
-                }
-
-                item["CRYSTAL"] = crystal_config
-
-            self.simulation_config = get_files(
-                self.simulation_config, str(defect_folder)
-            )
-            for i, config in enumerate(self.simulation_config):
-                item = list(config.values())[0]
-                item["CRYSTAL"]["Defect"] = {
-                    "key": defects[i][0],
-                    "stoichiometry": defects[i][1],
-                    "configuration": defects[i][2],
-                }
-            logger.debug(f"simulations after database read: {self.simulation_config}")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
@@ -188,46 +141,10 @@ class RunManager:
         return entry
         # for index, config in enumerate(self.simulation_config):
         logger.debug(config)
-        try:
-            properties = config[next(iter(config))]["RESULT"]["Properties"]
-        except Exception:
-            logger.error(
-                f"Did not find RESULT: Properties in {config[next(iter(config))]}"
-            )
-            properties = {}
+        properties = config[next(iter(config))]["RESULT"]["Properties"]
         # result = self.result_objects[index]
         logger.debug(properties)
         logger.debug(result)
-
-        crystal = config[next(iter(config))]["CRYSTAL"]
-        ensamble = config[next(iter(config))]["ENSAMBLE"]
-        simulation = config[next(iter(config))]["SIMULATION"]
-
-        docs = {}
-
-        docs["simulation_id"] = str(secrets.randbits(128))
-        docs["simulation"] = {
-            **simulation,
-            **ensamble,
-        }
-
-        if crystal.get("Defect") is not None:
-            docs["defect"] = crystal["Defect"]
-
-        final_frame = result.frames[-1]
-
-        atoms = {}
-        atoms["elements"] = final_frame.get_chemical_symbols()
-        atoms["positions"] = final_frame.get_positions().tolist()
-        atoms["lattice_vectors"] = final_frame.get_scaled_positions().tolist()
-        docs["atoms"] = atoms
-
-        composition = {}
-        composition["elements"] = list(set(final_frame.get_chemical_symbols()))
-        formula, _ = final_frame.symbols.formula.reduce()
-        composition["chemical_formula_reduced"] = str(formula)
-        docs["composition"] = composition
-
         property_values = {}
         property_functions = {
             "lindemann": result.calc_lindemann,
@@ -238,12 +155,22 @@ class RunManager:
         for name, func in property_functions.items():
             if (name in properties) or ("all" in properties):
                 self._add_property(name, property_values, func)
-        docs["properties"] = {
-            **property_values,
-            "total_energy": final_frame.info["pot_energy"]
-            + final_frame.get_kinetic_energy(),
-        }
-
+        crystal = config[next(iter(config))]["CRYSTAL"]
+        ensamble = config[next(iter(config))]["ENSAMBLE"]
+        docs = {}
+        docs["structure_id"] = str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K"
+        atoms = {}
+        atoms["elements"] = result.frames[0].get_chemical_symbols()
+        atoms["positions"] = result.frames[0].get_positions().tolist()
+        atoms["lattice_vectors"] = result.frames[0].get_scaled_positions().tolist()
+        docs["atoms"] = atoms
+        composition = {}
+        composition["elements"] = list(set(result.frames[0].get_chemical_symbols()))
+        formula, _ = result.frames[0].symbols.formula.reduce()
+        composition["chemical_formula_reduced"] = str(formula)
+        docs["composition"] = composition
+        docs["properties"] = property_values
+        logger.debug(docs)
         logger.debug(len(docs))
         return docs
 
@@ -260,9 +187,6 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
-                if sim is None:
-                    logger.error("Simulation is None, skipping")
-                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
@@ -315,9 +239,6 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    if sim is None:
-                        logger.error("Simulation is None, skipping")
-                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]
