@@ -10,6 +10,8 @@ class MockAtoms:
         self.velocities = velocities
         self.info = {
             "dt": 5,
+            "atoms_per_unit" : 1,
+            "E_single_atom" : 1,
             "pot_energy" : pot
         }
         self.kinetic_energy = kin
@@ -304,6 +306,13 @@ def test_time_axis(mock_frames):
     times = result.get_time_axis()
 
     assert(len(times) == len(mock_frames))
+
+def test_cohesive_energy(mock_frames):
+    """Check that cohesive energy runs, and returns a float"""
+    result = ResultMD(mock_frames)
+    coh_energy = result.get_cohesive_energy()
+
+    assert(isinstance(coh_energy,float))
 
 def test_equilibrium_check_non_equil(mock_frames_non_equil):
     """Use an random energy and temperature frames. Should give non-equilibrium

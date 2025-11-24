@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mdse"
 version = "0.2.0"
-requires-python = ">=3.10.12"
+requires-python = ">=3.10.12, <3.13"
 dependencies = [
     "Cython==3.1.4",
     "ase==3.26.0",
@@ -20,7 +20,7 @@ dependencies = [
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
     "mace-torch",
-    "httk"
+    "httk @ git+https://github.com/httk/httk.git@v1.2.0",
 ]
 
 [tool.ruff]

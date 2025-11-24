@@ -1,13 +1,17 @@
 import ase.io
 from ase import Atoms, units
-from ase.md.verlet import VelocityVerlet
+from asap3.md.verlet import VelocityVerlet
 from asap3 import LennardJones, Trajectory, EMT
 from ase.build import bulk
 from ase.visualize import view
-from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
+from ase.md.nose_hoover_chain import IsotropicMTKNPT
+from asap3.md.nose_hoover_chain import NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
-from mace.calculators import MACECalculator
+from asap3 import EMTMetalGlassParameters
+import re
+from functools import reduce
+import math
 
 import logging
 import numpy as np
@@ -169,7 +173,7 @@ class SimulationManager:
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
             self.calculator = simulation_params.get("Calculator")
-            self.calc_params = simulation_params.get("CalculatorParams", {})
+            self.calc_params = simulation_params.get("CalculatorParams", {}).copy()
             self.create_trajectory = simulation_params.get("Create_traj", False)
 
         except Exception as e:
@@ -204,6 +208,11 @@ class SimulationManager:
 
         self.crystal.calc = self._check_calculator()
         self.crystal.info["dt"] = self.timestep
+        logger.debug("Start saving single_atom_energy info to .info[]")
+        E_atom, n_atoms = self.single_atom_energy()
+        self.crystal.info["E_single_atom"] = E_atom
+        self.crystal.info["atoms_per_unit"] = n_atoms
+        logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
 
@@ -288,15 +297,18 @@ class SimulationManager:
           - ``LennardJones``
         """
         if self.calculator == "EMT":
-            calculator = EMT(**self.calc_params)
+            if self.calc_params.get("use_glass"):
+                calculator = EMT(EMTMetalGlassParameters())
+            else:
+                calculator = EMT(**self.calc_params)
         elif self.calculator == "LennardJones":
             for key in self.calc_params.keys():
                 if key == "elements":
                     continue
                 self.calc_params[key] = np.array(self.calc_params[key])
-                print(self.calc_params)
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
+            from mace.calculators import MACECalculator
             logger.debug("We want to use mace!")
             global the_mace_calculator
 
@@ -306,7 +318,7 @@ class SimulationManager:
                 logger.debug(str(self.calc_params.get("model_paths")))
                 the_mace_calculator = MACECalculator(**self.calc_params)
             else:
-                logger.debug("NOT firt time we create with mace")
+                logger.debug("NOT first time we create with mace")
 
             calculator = the_mace_calculator
         else:
@@ -434,7 +446,6 @@ class SimulationManager:
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
             self._attach_outputs(dyn, print)
-
             dyn.run(self.length)
             logger.debug("Simulation done")
         except IOError as e:
@@ -541,3 +552,61 @@ class SimulationManager:
             logger.error(e)
             raise
         return ResultMD(self.result)
+
+    def single_atom_energy(self):
+        """This function returns the energy of a single atom in the structure.
+        Used when calculating cohesive energy.
+
+        returns:
+            E_atom (float): The energy of one atom in the structure
+            int: How many atoms in formula. Ex MgCu2 gives 3
+        """
+        logger.debug("Start calculating single_atom energies")
+
+        #Get chemical formula of the "super" crystal
+        formula_super = self.crystal.get_chemical_formula()
+
+        #Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
+        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
+        counts = {el: int(n) if n else 1 for el, n in matches}
+
+        common_divider = reduce(math.gcd, counts.values())
+        formula_unit = {el: n//common_divider for el, n in counts.items()}
+        logger.debug(f"Found following formula: {formula_unit}")
+
+        if len(formula_unit) == 1:
+            logger.debug("Found 1 type of element in crystal")
+            calc = self._check_calculator()
+
+            atom = ase.Atoms(list(formula_unit.keys())[0], positions = [(0,0,0)],
+                             cell = [15,15,15], pbc = False)
+            atom.calc = calc
+
+            E_atom = atom.get_potential_energy()
+
+            return E_atom, 1
+
+        if len(formula_unit) == 2:
+            logger.debug("Found 2 unique elements in crystal")
+            calc = self._check_calculator()
+            positions = []
+            symbols = []
+            offset = 0
+
+            for element, amount in formula_unit.items():
+                for _ in range(amount):
+                    symbols.append(element)
+                    positions.append((offset,0,0))
+                    offset = offset+2
+
+            atom = ase.Atoms(symbols , positions = positions ,
+                             cell = [15,15,15], pbc = False)
+            atom.calc = calc
+
+            E_atom = atom.get_potential_energy()
+
+            return E_atom, len(symbols)
+
+        logger.debug(f"Could not calc single_atom_energy for {formula_unit}."
+                    "Not implemented for that many atoms, yet")
+        return 0, 0
