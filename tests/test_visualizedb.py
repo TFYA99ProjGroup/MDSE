@@ -1,24 +1,3 @@
-##Get errors from imports. Temporary remove them until can figure out.------------
-import sys
-from types import ModuleType
-
-# Fake heavy modules
-sys.modules['mace'] = ModuleType('mace')
-sys.modules['mace.calculators'] = ModuleType('calculators')
-sys.modules['mace.calculators'].MACECalculator = lambda *args, **kwargs: None
-
-sys.modules['bson'] = ModuleType('bson')
-
-# Fake pymongo and its submodules
-sys.modules['pymongo'] = ModuleType('pymongo')
-sys.modules['pymongo.errors'] = ModuleType('errors')
-sys.modules['pymongo'].MongoClient = lambda *args, **kwargs: None
-sys.modules['pymongo.errors'].ServerSelectionTimeoutError = type(
-    'ServerSelectionTimeoutError', (Exception,), {}
-)
-
-####Remove above---------------------------------------------------------------
-
 from mdse.visualizeDB.run_visDB import run_visualize_db
 import pytest
 from unittest.mock import MagicMock
