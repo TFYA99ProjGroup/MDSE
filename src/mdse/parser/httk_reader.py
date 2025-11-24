@@ -1,10 +1,19 @@
 from pathlib import Path
+import re
 from httk.atomistic.atomisticio import struct_to_cif
-from mdse.parser.classes import DefectCell, DefectInfo
+from mdse.parser.classes import (
+    DefectCell,
+    DefectInfo,
+    ChemicalPotential,
+    HostSuperCellResult,
+    ScreenResult,
+)
 import httk.db
 import time
 
 import logging
+
+from mdse.rm.dbmanager import DBManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +35,10 @@ def setup_db(db_path: str):
     backend = httk.db.backend.Sqlite(str(db_path))
     store = httk.db.store.SqlStore(backend)
 
-    search = store.searcher()
-
-    return search
+    return store
 
 
-def get_defects(search, **query):
+def get_defects(store, **query):
     """
     Query a defect structure from the HTTK database.
 
@@ -49,6 +56,8 @@ def get_defects(search, **query):
         If no matching entry is found returns None.
     """
     start = time.time()
+    search = store.searcher()
+
     search_defect_cell = search.variable(DefectCell)
     search_defect_info = search.variable(DefectInfo)
 
@@ -158,3 +167,75 @@ def save_defects(defects, defect_folder):
         )
     )
     return defect_paths
+
+
+def get_defect_formation_energy(store, **query):
+    search = store.searcher()
+    search_defect_info = search.variable(DefectInfo)
+    search_screen_result = search.variable(ScreenResult)
+    search_host = search.variable(HostSuperCellResult)
+
+    search.add(search_screen_result.charge == 0)
+    search.add(search_screen_result.defect_key == search_defect_info.key)
+
+    if query.get("key") is not None:
+        search.add(search_defect_info.key == query["key"])
+
+    search.output(search_defect_info.key, "key")
+    search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
+    search.output(search_screen_result.total_energy_coarse, "tot_energy_defect")
+    search.output(search_host.total_energy, "tot_energy")
+    search.output(search_screen_result.spin, "spin")
+    search.output(search_defect_info.defect_type, "defect_type")
+
+    matches = [defecttuple[0] for defecttuple in list(search)]
+
+    dft_data = {}
+    for match in matches:
+        stoichiometry = match[1]
+
+        chem_pot = get_chem_pot(store, stoichiometry)
+
+        defect_formation_energy = match[2] - match[3] - chem_pot
+
+        dft_data[str(match[0]) + "_" + str(match[4])] = {
+            "defect_key": match[0],
+            "stoichiometry": match[1],
+            "defect_type": match[5],
+            "tot_energy_defect": match[2],
+            "tot_energy_host": match[3],
+            "defect_formation_energy": defect_formation_energy,
+            "spin": match[4]
+        }
+
+    db_manager = DBManager("mongodb://admin:secret@localhost:27017/")
+
+    db_manager.write_dict_to_db(dft_data, collection_str="DFT data")
+
+def get_chem_pot(store, stoichiometry):
+    search = store.searcher()
+    pattern = r"([A-Za-z]+):(-?\d+)"
+    matches = {elem: -int(count) for elem, count in re.findall(pattern, stoichiometry)}
+
+    search_chem_pot = search.variable(ChemicalPotential)
+    search.add(search_chem_pot.material.is_in(*matches.keys()))
+
+    search.output(search_chem_pot.material, "material")
+    search.output(search_chem_pot.chemical_potential, "chem_pot")
+
+    query_result = [chempot[0] for chempot in list(search)]
+    query_result = {elem: int(count) for elem, count in query_result}
+
+
+
+    chemical_potential = 0
+    for elem, count in matches.items():
+        chemical_potential += query_result[elem] * count
+        
+    return chemical_potential
+
+if __name__ == "__main__":
+
+    store = setup_db("../defects.sqlite")
+
+    get_defect_formation_energy(store)
