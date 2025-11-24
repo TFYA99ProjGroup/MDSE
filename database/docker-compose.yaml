@@ -7,7 +7,7 @@
 # Then follow instructions here to allow non-root usage (if you want to do that):
 #   https://docs.docker.com/engine/install/linux-postinstall/
 #
-# Run with "docker compose up -d" when standing in the "src/mdse/database" directory
+# Run with "docker compose up -d --build" when standing in the "MDSE/database" directory
 # Stop with "docker compose down"
 # If you have not given non-root access to docker, prefix those commands with "sudo".
 #
@@ -47,3 +47,17 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: websecret
     depends_on:
       - mongodb
+
+  optimade-server: # OPTIMADE server service
+    build: .
+    container_name: optimade-server
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      OPTIMADE_CONFIG_FILE: /app/optimade_config.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./optimade_config.json:/app/optimade_config.json
+      - ./logs:/app/logs
