@@ -6,6 +6,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -86,12 +87,13 @@ class MongoDBEntry:
         base.update(self.mdse_fields)
         return base
 
-    def to_file(self, filepath: str):
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=4)
+    def to_file(self):
+        path = Path(f"results/{self.id}.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=2, default=lambda o: o.isoformat()
+                      if hasattr(o, 'isoformat') else o)
 
-    def concatenate_files(self, filepaths: list[str], output_filepath: str):
-        return
 
 class DBManager:
     """
@@ -135,6 +137,27 @@ class DBManager:
             self.client.admin.command("ping")
         except ServerSelectionTimeoutError as e:
             logger.error(f"MongoClient is not connected: {e}")
+
+    @staticmethod
+    def create_json_from_mongodbentries(entries: list[MongoDBEntry]):
+        path = Path("results/all_results_v2.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                try:
+                    existing_docs = json.load(f)
+                except json.JSONDecodeError:
+                    existing_docs = []
+        else:
+            existing_docs = []
+
+        all_docs = existing_docs + entries
+
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
+                      if hasattr(o, 'isoformat') else o)
+        return
 
     def write_jsonfiles_to_db(
         self, path, db_str="materials_db", collection_str="structures"

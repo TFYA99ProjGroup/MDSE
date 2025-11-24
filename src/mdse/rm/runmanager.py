@@ -1,10 +1,8 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
-import json
-from pathlib import Path
 import math
-from mdse.rm.dbmanager import MongoDBEntry
+from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -83,7 +81,7 @@ class RunManager:
         self.result_objects = []
         self.outputs = []
         self.simulation_config = simulation_config
-        self.docs = []
+        self.MongoDBentriesAsJson = [] # List to store MongoDBEntry instances
 
         if simulation_config is not None:
             for config in simulation_config:
@@ -139,7 +137,7 @@ class RunManager:
             },
             chemical_formula_reduced=str(result.frames[0].symbols.formula.reduce()[0]),
         )
-        return entry.to_dict()
+        return entry
         # for index, config in enumerate(self.simulation_config):
         logger.debug(config)
         properties = config[next(iter(config))]["RESULT"]["Properties"]
@@ -175,25 +173,6 @@ class RunManager:
         logger.debug(len(docs))
         return docs
 
-    def write_json_append(self):
-        path = Path("results/all_results.json")
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                try:
-                    existing_docs = json.load(f)
-                except json.JSONDecodeError:
-                    existing_docs = []
-        else:
-            existing_docs = []
-
-        all_docs = existing_docs + self.docs
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
-                      if hasattr(o, 'isoformat') else o)
-
     def run_simulations(self, overwrite_ensamble=None):
         """
         Distribute simulations across MPI ranks using a work queue.
@@ -211,9 +190,9 @@ class RunManager:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
                 config = self.simulation_config[index]
-                docs = self.run_results(res, config)
-                self.docs.append(docs)
-            self.write_json_append()
+                entry = self.run_results(res, config)
+                self.MongoDBentriesAsJson.append(entry.to_dict())
+            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
             # Insert single core execution here if desired
             return
 
@@ -234,9 +213,9 @@ class RunManager:
                 tag = status.Get_tag()
 
                 if tag == TAG_DONE:
-                    if msg != "":
+                    if type(msg) is MongoDBEntry:
                         logger.debug(f"[Master] Received {msg} from worker {src}")
-                        self.docs.append(msg)
+                        self.MongoDBentriesAsJson.append(msg.to_dict())
                     if jobs:
                         job = jobs.pop(0)
                         logger.debug(f"[Master] Sent new job {job} to worker {src}")
@@ -247,7 +226,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
-            self.write_json_append()
+            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
