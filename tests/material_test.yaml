@@ -24,7 +24,6 @@ Copper_nve:
     Length: 10000
     TrajInterval: 5
     Calculator: EMT
-    Create_traj: True
 Copper_nvt:
   CRYSTAL:
     TYPE: BULK
@@ -42,7 +41,6 @@ Copper_nvt:
     Length: 10000
     TrajInterval: 5
     Calculator: EMT
-    Create_traj: True
 Copper_npt:
   CRYSTAL:
     TYPE: BULK
@@ -62,4 +60,3 @@ Copper_npt:
     Length: 10000
     TrajInterval: 5
     Calculator: EMT
-    Create_traj: True
