@@ -1,3 +1,4 @@
+from pathlib import Path
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
