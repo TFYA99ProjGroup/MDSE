@@ -169,7 +169,7 @@ def save_defects(defects, defect_folder):
     return defect_paths
 
 
-def get_defect_formation_energy(store, **query):
+def get_defect_formation_energy(store, address, **query):
     """
     Compute defect formation energies from a data store and write the results to MongoDB.
 
@@ -238,7 +238,7 @@ def get_defect_formation_energy(store, **query):
             "spin": match[4],
         }
 
-    db_manager = DBManager("mongodb://admin:secret@localhost:27017/")
+    db_manager = DBManager(address)
 
     db_manager.write_dict_to_db(dft_data, collection_str="DFT data")
 
