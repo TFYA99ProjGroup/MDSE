@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import logging
 import numpy as np
-import re
 
 #pip install pandas matplotlib seaborn
 import pandas as pd
@@ -18,23 +17,24 @@ def get_label_name(property):
     returns:
         (str): The property in nice label format.
     """
-    labels = {"MSD": "Means square displacement", "temperature": "Temperapure (K)", "Lindeman":"Lindeman",
+    labels = {"MSD": "Means square displacement", "temperature": "Temperapure (K)",
+              "Lindeman":"Lindeman",
               "self_diff":"Self diffusion", "energy": "Energy"}
-    
+
     prop_label = labels.get(property)
 
     if not prop_label:
         raise ValueError(f"Could not find axis label/name for {property}")
-    
+
     return prop_label
 
 def get_defect_cat(defect_name):
     """Takes defect name, like "Int_Na" or "Na_C" and extracts what type(s)
     of defect it is, and what element(s)
-    
+
     args:
         defect_name(str): The defect name
-    
+
     returns:
         (str): Name of the defect
         (str): Name of the element
@@ -45,8 +45,8 @@ def get_defect_cat(defect_name):
         return "substitution", defect_name[:-len("_C")]
     if "Vac_C" in defect_name:
         return "vacancy", "C"
-    
-    return "BAD defect" #Error handeling needs to be done
+
+    return "BAD defect" 
 
 def single_defect_plot(plot_name, plot_data, sim_data):
     """
@@ -72,7 +72,8 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 "He","Ne","Ar","Kr","Xe","Rn","Og"]
     all_elements = sorted(s_elements+p_elements)
 
-    sorted_data = {"interstitial" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a": []},
+    sorted_data = {"interstitial" : {"element" : [], "energy" : [], "vacancy" : [],
+                                     "avg_a": []},
      "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a" : []}}
     logger.debug("Start to loop trough simulations")
     for sim in sim_data:
@@ -113,10 +114,11 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             defect["avg_a"].append(sim.get("avg_a"))
             defect["vacancy"].append(False)
             continue
-    
+
     logger.debug("Done looping over simulations.")
 
-    fig, axs = plt.subplots(nrows = 4, figsize = (10,10), sharex = False, constrained_layout = True)
+    fig, axs = plt.subplots(nrows = 4, figsize = (10,10),
+                            sharex = False, constrained_layout = True)
     #fig.tight_layout()
 
     #Fix axis of all subplots.
@@ -133,7 +135,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         if fix_y:
             axel.set_ylim(-1,11)
             axel.set_yticks([0,10])
-   
+
     s_elements = [""] + ["Li","Na","K","Rb","Cs","Fr",
                 "Be","Mg","Ca","Sr","Ba","Ra"]
 
@@ -143,7 +145,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 "O","S","Se","Te","Po","Lv",
                 "F","Cl","Br","I","At","Ts",
                 "He","Ne","Ar","Kr","Xe","Rn","Og"] + [""]
-    
+
     all_elements = s_elements+p_elements
 
     #----------------Single, interstitial
@@ -347,7 +349,8 @@ def symmetrize(df):
 
 def heatmap_plot(plot_name,plot_data,sim_data):
     """
-    Heatmap of substitution-interstition or substitution-substition + interstition-interstion defect.
+    Heatmap of substitution-interstition or
+    substitution-substition + interstition-interstion defect.
     """
     data_points = []
 
@@ -375,7 +378,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                 data_points.append({"interstitial1" : el_sorted[0],
                                     "interstitial2" : el_sorted[1],
                                     "Energy" : sim.get("formation_energy")})
-                
+
             if cat1 == "substitution" and cat2 == "substitution":
                 el_sorted = sorted([el1, el2])
                 data_points.append({"substitution1" : el_sorted[0],
@@ -403,20 +406,27 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     all_elements = sorted(s_elements+p_elements)
 
     dataframe = pd.DataFrame(data_points)
-    #heatmap_data = dataframe.pivot(index="interstitial", columns="substitution", values="Energy")
+    #heatmap_data = dataframe.pivot(index="interstitial",
+    #columns="substitution", values="Energy")
 
     if prop1 == prop2:
         #So a single heatmap, that combines inter-inter with sub-sub
 
-        df_sub = dataframe[[c for c in dataframe.columns if "substitution" in c or c=="Energy"]]
-        df_int = dataframe[[c for c in dataframe.columns if "interstitial" in c or c=="Energy"]]
+        df_sub = dataframe[[c for c in dataframe.columns
+                            if "substitution" in c or c=="Energy"]]
+        df_int = dataframe[[c for c in dataframe.columns
+                            if "interstitial" in c or c=="Energy"]]
 
-        heatmap_sub = df_sub.groupby(['substitution1','substitution2'])['Energy'].mean().unstack()
-        heatmap_int = df_int.groupby(['interstitial1','interstitial2'])['Energy'].mean().unstack()
+        heatmap_sub = df_sub.groupby(['substitution1',
+                                      'substitution2'])['Energy'].mean().unstack()
+        heatmap_int = df_int.groupby(['interstitial1',
+                                      'interstitial2'])['Energy'].mean().unstack()
 
         #Symmetrize so both halves are filled
-        heatmap_sub = symmetrize(heatmap_sub).reindex(index=all_elements, columns=all_elements)
-        heatmap_int = symmetrize(heatmap_int).reindex(index=all_elements, columns=all_elements)
+        heatmap_sub = symmetrize(heatmap_sub).reindex(index=all_elements,
+                                                      columns=all_elements)
+        heatmap_int = symmetrize(heatmap_int).reindex(index=all_elements,
+                                                      columns=all_elements)
 
         #Combine the two into 1
         n = len(all_elements)
@@ -433,18 +443,19 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
         #Save both diagonals separately into seperate plots
         diag_sub = pd.Series(
-            [heatmap_sub.loc[e, e] if (e in heatmap_sub.index and e in heatmap_sub.columns) else np.nan
-            for e in all_elements],
+            [heatmap_sub.loc[e, e] if (e in heatmap_sub.index and e in heatmap_sub.columns)
+             else np.nan for e in all_elements],
             index=all_elements
         )
         diag_int = pd.Series(
-            [heatmap_int.loc[e, e] if (e in heatmap_int.index and e in heatmap_int.columns) else np.nan
-            for e in all_elements],
+            [heatmap_int.loc[e, e] if (e in heatmap_int.index and e in heatmap_int.columns)
+             else np.nan for e in all_elements],
             index=all_elements
         )
 
         #Plot
-        fig, axes = plt.subplots(1, 3, figsize=(36,16), gridspec_kw={'width_ratios':[4,1,1]})
+        fig, axes = plt.subplots(1, 3, figsize=(36,16),
+                                 gridspec_kw={'width_ratios':[4,1,1]})
 
 
         sns.heatmap(heatmap_data, annot=False, cmap="viridis",
@@ -475,13 +486,16 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     else:
         #If inter-sub
 
-        heatmap_data = dataframe.groupby(["interstitial","substitution"])["Energy"].mean().unstack()
+        heatmap_data = dataframe.groupby(["interstitial",
+                                          "substitution"])["Energy"].mean().unstack()
         x_label = "interstitial"
         y_label = "substitution"
-        heatmap_data = heatmap_data.reindex(index=p_elements+s_elements, columns=s_elements+p_elements)
+        heatmap_data = heatmap_data.reindex(index=p_elements+s_elements,
+                                            columns=s_elements+p_elements)
 
         plt.figure(figsize=(20,16))
-        sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="viridis", cbar_kws={'label': 'Energy'})
+        sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="viridis",
+                    cbar_kws={'label': 'Energy'})
         plt.title("Double Defect Energy Heatmap")
         plt.xlabel(x_label)
         plt.ylabel(y_label)
@@ -501,7 +515,6 @@ def scatter_plot(plot_name, plot_data,sim_data):
         plot_name(str): Name of the plot
         plot_data(dic): Data about the plot. What axis etc.
         sim_data(dic): Where the data we plot is.
-    
     """
     logger.debug(f"Starting to create scatter plot for {plot_name}")
     #Check what we whant to plot on axis
@@ -522,10 +535,10 @@ def scatter_plot(plot_name, plot_data,sim_data):
 
     if None in x_values:
         raise ValueError(f"Some simulation is missing {x_prop}")
-    
+
     if None in y_values:
         raise ValueError(f"Some simulation is missing {y_prop}")
-    
+
     if z_prop:
         plt.scatter(x_values, y_values, c= z_values)
         plt.colorbar(label = get_label_name(z_prop))
@@ -537,17 +550,19 @@ def scatter_plot(plot_name, plot_data,sim_data):
     logger.debug(f"Saving {plot_name} to .png file")
     plt.gcf().savefig(f"{plot_name}.png")
     plt.close()
-    
+
 def doping_plot(plot_name, plot_data,sim_data):
     """Does a plot where:
         x-axis is what element we are doping with.
         y-axis is energy difference (formation energy?).
         z-axis is "mean a" (use avg_a here).
 
-        If config containts "average" field, will plot the average for each element also.
+        If config containts "average" field, will
+        plot the average for each element also.
 
     args:
-        plot_name(str): Name of the plot, from config file. Used as naming when plot is saved.
+        plot_name(str): Name of the plot, from config file.
+        Used as naming when plot is saved.
         plot_data(dic): Info about the plot. Empty when doping plot, and not used.
         sim_data(dic): Data about the simulations.
     """
@@ -562,19 +577,19 @@ def doping_plot(plot_name, plot_data,sim_data):
         element = sim.get("doping")
         if not element:
             raise ValueError("Some simulation doesnt have doping field")
-        
+
         if element not in sorted_data:
             sorted_data[element] = {"formation_energy" : [], "avg_a" : [ ]}
-        
+
         if "formation_energy" not in sim:
             raise ValueError("Some simulation doesnt have formation_energy field")
-        
+
         if "avg_a" not in sim:
             raise ValueError("Some simulation doesnt have avg_a field")
 
         sorted_data[element]["formation_energy"].append(sim["formation_energy"])
         sorted_data[element]["avg_a"].append(sim["avg_a"])
-    
+
     fig, axs = plt.subplots(nrows = 5, figsize = (10,12), sharex = False)
 
     #Fix axis of all subplots.
@@ -587,7 +602,7 @@ def doping_plot(plot_name, plot_data,sim_data):
         if fix_y:
             axel.set_ylim(-1,11)
             axel.set_yticks([0,10])
-    
+
 
 
     #First subplot. H and He
@@ -615,7 +630,7 @@ def doping_plot(plot_name, plot_data,sim_data):
                 ax1.legend(loc="upper right")
                 first_label = False
 
-            
+
     if "He" in sorted_data:
         sc1 = ax1.scatter([18]*len(sorted_data["He"]["formation_energy"]),
                     sorted_data["He"]["formation_energy"],
@@ -627,7 +642,7 @@ def doping_plot(plot_name, plot_data,sim_data):
             if first_label:
                 ax1.legend(loc="upper right")
                 first_label = False
-            
+
     if sc1 is not None:
         fig.colorbar(sc1,ax=ax1, label = "Mean a")
     if avg:
@@ -638,7 +653,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     logger.debug(f"Creating second defect-subplot in {plot_name}")
     ax2 = axs[1]
     x_pos = range(0,20)
-    labels =  [""] + ["Li"] + ["Be"] + [""]*10 + ["B"] +  ["C"] +  ["N"] +  ["O"] +  ["F"] + ["Ne"] + [""]
+    labels =  [""] + ["Li"] + ["Be"] + [""]*10 + ["B"] +  ["C",
+                "N"] +  ["O"] +  ["F"] + ["Ne"] + [""]
     ax2.set_xticks(x_pos,labels)
 
     sc2 = None
@@ -646,7 +662,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     avg_x = []
     avg_y = []
 
-    elements = {"Li" : 1, "Be" : 2, "dummy": 3, "B" : 13, "C" : 14, "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
+    elements = {"Li" : 1, "Be" : 2, "dummy": 3, "B" : 13, "C" : 14,
+                "N" : 15, "O" : 16, "F" : 17, "Ne" : 18}
     for key,value in elements.items():
         if key not in sorted_data:
             if avg_x:
@@ -678,7 +695,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     logger.debug(f"Creating third defect-subplot in {plot_name}")
     ax3 = axs[2]
     x_pos = range(0,20)
-    labels =  [""] + ["Na"] + ["Mg"] + [""]*10 + ["Al"] +  ["Si"] +  ["P"] +  ["S"] +  ["Cl"] + ["Ar"] + [""]
+    labels =  [""] + ["Na"] + ["Mg"] + [""]*10 + ["Al"] +  ["Si"] +  ["P"] +  ["S",
+                "Cl"] + ["Ar"] + [""]
     ax3.set_xticks(x_pos,labels)
 
     sc3 = None
@@ -686,7 +704,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     avg_x = []
     avg_y = []
 
-    elements = {"Na" : 1, "Mg" : 2, "dummy" : 3, "Al" : 13, "Si" : 14, "P" : 15, "S" : 16, "Cl" : 17, "Ar" : 18}
+    elements = {"Na" : 1, "Mg" : 2, "dummy" : 3, "Al" : 13, "Si" : 14, "P" : 15,
+                "S" : 16, "Cl" : 17, "Ar" : 18}
     for key,value in elements.items():
         if key not in sorted_data:
             if avg_x:
@@ -718,7 +737,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     logger.debug(f"Creating forth defect-subplot in {plot_name}")
     ax4 = axs[3]
     x_pos = range(0,20)
-    labels =["", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga"
+    labels =["", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co",
+             "Ni", "Cu", "Zn", "Ga"
              ,"Ge", "As", "Sc", "Br", "Kr", ""]
     ax4.set_xticks(x_pos,labels)
 
@@ -727,7 +747,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     avg_x = []
     avg_y = []
 
-    elements = {"K" : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V" : 5, "Cr" : 6, "Mn" : 7, "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12, "Ga" : 13
+    elements = {"K" : 1, "Ca" : 2, "Sc" : 3, "Ti" : 4, "V" : 5, "Cr" : 6, "Mn" : 7,
+                "Fe" : 8, "Co" : 9, "Ni" : 10, "Cu" : 11, "Zn" : 12, "Ga" : 13
              ,"Ge" : 14, "As" : 15, "Se" : 16, "Br" : 17, "Kr" : 18, }
     for key,value in elements.items():
         if key not in sorted_data:
@@ -760,7 +781,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     logger.debug(f"Creating fifth defect-subplot in {plot_name}")
     ax5 = axs[4]
     x_pos = range(0,20)
-    labels =["", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In"
+    labels =["", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd",
+             "Ag", "Cd", "In"
              ,"Sn", "Sb", "Te", "I", "Xe", ""]
     ax5.set_xticks(x_pos,labels)
 
@@ -769,7 +791,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     avg_x = []
     avg_y = []
 
-    elements = {"Rb" : 1, "Sr" : 2, "Y" : 3, "Zr" : 4, "Nb" : 5, "Mo" : 6, "Tc" : 7, "Ru" : 8, "Rh" : 9, "Pd" : 10, "Ag" : 11, "Cd" : 12, "In" : 13
+    elements = {"Rb" : 1, "Sr" : 2, "Y" : 3, "Zr" : 4, "Nb" : 5, "Mo" : 6, "Tc" : 7, "Ru" : 8,
+                "Rh" : 9, "Pd" : 10, "Ag" : 11, "Cd" : 12, "In" : 13
              ,"Sn" : 14, "Sb" : 15, "Te" : 16, "I" : 17, "Xe" : 18, }
     for key,value in elements.items():
         if key not in sorted_data:
@@ -804,7 +827,7 @@ def doping_plot(plot_name, plot_data,sim_data):
     plt.gcf().savefig(f"{plot_name}.png")
     plt.close()
     logger.debug(f"Saved doping plot for {plot_name}")
-    
+
 
 def plot_avg(axial, x_pos, y_values):
     """Plots a orange square to mark average of the y values.
@@ -820,6 +843,6 @@ def plot_avg(axial, x_pos, y_values):
         average(float): The average of y_values
     """
     average = np.mean(y_values)
-    axial.scatter([x_pos], average, color = "orange", 
+    axial.scatter([x_pos], average, color = "orange",
                 marker = "s", label="average", facecolors = "none", s = 80)
     return average

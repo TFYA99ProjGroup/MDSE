@@ -1,5 +1,5 @@
 import logging
-from mdse.visualizeDB.vis_plots import *
+from mdse.visualizeDB.vis_plots import scatter_plot, doping_plot, heatmap_plot, single_defect_plot
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,6 @@ def make_plot(plot_name, plot_info, sim_data):
         plot_name(str): The name of the plot
         plot_info(dict): Contains what type of plot, parameters etc.
         sim_data(dict): The data from simulations. What is getting plotted
-    
     """
 
 
@@ -24,7 +23,7 @@ def make_plot(plot_name, plot_info, sim_data):
 
         plot_func(plot_name, plot_info,sim_data)
 
-        
+
 
     except Exception as e:
         print(f"Could not plot {plot_name} due to: {str(e)}")
@@ -43,11 +42,12 @@ def valid_plot(plot_type):
         ?: The name of the function that plots this type
     """
 
-    available_types = {"scatter" : scatter_plot, "doping" : doping_plot, "heatmap" : heatmap_plot,
+    available_types = {"scatter" : scatter_plot, "doping" : doping_plot,
+                       "heatmap" : heatmap_plot,
                        "single" : single_defect_plot}
 
     if plot_type not in available_types:
         raise ValueError("The plot is not supported")
-    
+
     return available_types[plot_type]
 
