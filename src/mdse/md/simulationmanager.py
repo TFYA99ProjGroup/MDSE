@@ -443,6 +443,7 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
+        self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result)
 
     def simulate_npt(
