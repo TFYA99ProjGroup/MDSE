@@ -230,6 +230,7 @@ def test_calculators():
     n = len(numbers)
     sigma = np.random.rand(n)
     epsilon = np.random.rand(n)
+    rCut = 3 * sigma
 
     config = {
         "CRYSTAL": {
@@ -249,6 +250,7 @@ def test_calculators():
                 "elements": numbers,
                 "sigma": sigma,
                 "epsilon": epsilon,
+                "rCut": rCut,
             },
             "Create_traj": True,
         },
