@@ -4,7 +4,7 @@ import numpy as np
 from asap3 import Trajectory
 from ase import units
 
-from asap3 import EMT
+from asap3 import EMT, LennardJones
 
 import logging
 
@@ -696,7 +696,7 @@ class ResultMD:
         bulk_modulus = (C11 + 2*C12) / 3
 
         logger.debug(f"bulk_modulus: {bulk_modulus}")
-        return bulk_modulus 
+        return bulk_modulus
 
 
     def calc_youngs_modulus(self, strain=0.01):
@@ -720,7 +720,7 @@ class ResultMD:
         youngs_modulus = 9*B*G / (3*B + G)
 
         logger.debug(f"Young's modulus: {youngs_modulus}")
-        return youngs_modulus 
+        return youngs_modulus
 
     def get_pot_energies(self):
         """Gets the potential energis at each frame.
@@ -889,7 +889,7 @@ class ResultMD:
 
         return len(Tot_energy)-2
 
-    
+
     def _attach_calc(self, crystal_equil):
         calc = self.frames[0].info["calc"]
         if calc == "EMT":
@@ -897,6 +897,7 @@ class ResultMD:
         elif calc == "LennardJones":
             crystal_equil.calc = LennardJones()
         elif calc == "MACE":
+            from mace.calculators import MACECalculator
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil

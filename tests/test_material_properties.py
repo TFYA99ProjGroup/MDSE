@@ -143,3 +143,4 @@ def test_youngs_modulus(nvt_result):
     youngs_modulus = nvt_result.calc_bulk_modulus()
     assert youngs_modulus > 80e+9 # GPa
     assert youngs_modulus < 160e+9 # GPa
+    
