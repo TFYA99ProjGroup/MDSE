@@ -519,6 +519,16 @@ class ResultMD:
 
         return Cv / n_atoms
 
+    def _energy_with_strain(self, crystal, strain_matrix):
+        logger.debug("calc strained energy")
+        crystal = self._attach_calc(crystal)
+        cell =  crystal.cell.copy()
+
+        strained_cell = (np.eye(3) + strain_matrix) @ cell
+        crystal.set_cell(strained_cell, scale_atoms=True)
+        logger.debug("calc strained energy complete!")
+        return crystal.get_potential_energy() * constants.eV
+
     def calc_C11(self, crystal_equil, epsilon=0.01):
         '''Calculate the C11 elastic constant. Found by applying axial compression on
         one axis of the cell.
@@ -537,20 +547,13 @@ class ResultMD:
         crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
-        def energy_with_axial_compression(crystal, epsilon):
-            crystal = self._attach_calc(crystal)
-            cell =  crystal.cell.copy()
-            compression = np.array([[epsilon, 0, 0],
-                                    [0,     0, 0],
-                                    [0,     0, 0]])
+        compression = np.array([[epsilon, 0,    0],
+                                [0,     0,      0],
+                                [0,     0,      0]])
 
-            compressed_cell = (np.eye(3) + compression) @ cell
-            crystal.set_cell(compressed_cell, scale_atoms=True)
-            return crystal.get_potential_energy() * constants.eV
-
-        E0  = crystal_equil.get_potential_energy() * constants.eV
-        E_plus  = energy_with_axial_compression(crystal_equil.copy(), epsilon)
-        E_minus  = energy_with_axial_compression(crystal_equil.copy(), -epsilon)
+        E0 = crystal_equil.get_potential_energy() * constants.eV
+        E_plus = self._energy_with_strain(crystal_equil.copy(), compression)
+        E_minus = self._energy_with_strain(crystal_equil.copy(), -compression)
 
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
@@ -577,20 +580,14 @@ class ResultMD:
         crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
-        def energy_with_compression_dilation(crystal, epsilon):
-            crystal = self._attach_calc(crystal)
-            cell = crystal.cell.copy()
-            compression = np.array([[epsilon, 0,  0],
-                                    [0, -epsilon, 0],
-                                    [0,       0,  0]])
-            shear_cell = (np.eye(3) + compression) @ cell
-            crystal.set_cell(shear_cell, scale_atoms=True)
-            return crystal.get_potential_energy() * constants.eV
+        compression = np.array([[epsilon, 0,  0],
+                                [0, -epsilon, 0],
+                                [0,       0,  0]])
 
 
-        E0  = crystal_equil.get_potential_energy() * constants.eV
-        E_plus  = energy_with_compression_dilation(crystal_equil.copy(), epsilon)
-        E_minus  = energy_with_compression_dilation(crystal_equil.copy(), -epsilon)
+        E0 = crystal_equil.get_potential_energy() * constants.eV
+        E_plus = self._energy_with_strain(crystal_equil.copy(), compression)
+        E_minus = self._energy_with_strain(crystal_equil.copy(), -compression)
 
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
@@ -627,10 +624,13 @@ class ResultMD:
             crystal.set_cell(shear_cell, scale_atoms=True)
             return crystal.get_potential_energy() * constants.eV
 
+        shear = np.array([[0, gamma/2, 0],
+                          [gamma/2, 0, 0],
+                          [0,       0, 0]])
 
         E0  = crystal_equil.get_potential_energy() * constants.eV
-        E_plus  = energy_with_shear_strain(crystal_equil.copy(), gamma)
-        E_minus  = energy_with_shear_strain(crystal_equil.copy(), -gamma)
+        E_plus  = self._energy_with_strain(crystal_equil.copy(), shear)
+        E_minus  = self._energy_with_strain(crystal_equil.copy(), -shear)
 
         deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
 
