@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import logging
+from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
@@ -48,4 +49,19 @@ def read_data(config_data):
         
 
     elif (source == "mongo"):
+
+        uri = config_data.get("uri")
+        db_name = config_data.get("database")
+        table_name = config_data.get("table")
+
+        if not uri or not db_name or not table_name:
+            raise RuntimeError("Config for mongo lacks uri or database or table field")
+        
+        client = MongoClient(uri)
+        db = client[db_name]
+        table = db[table_name]
+
+        #Needs to return [ {sim_id : 1, energy : 2},  {sim_id : 2, energy : 4}] so list of dictionaries.
+        #Each dictionary is information about one result/simulation.
+
         raise RuntimeError("Not implemented for mongoDB yet")
