@@ -11,8 +11,12 @@ import seaborn as sns
 logger = logging.getLogger(__name__)
 
 def get_label_name(property):
-    """For a property, like "MSD", get the correct label we can use in plot axis.
-    
+    """For a property, like "MSD", get the correct label we can use in scatter plot.
+
+    args:
+        propery(str): The property, in config format.
+    returns:
+        (str): The property in nice label format.
     """
     labels = {"MSD": "Means square displacement", "temperature": "Temperapure (K)", "Lindeman":"Lindeman",
               "self_diff":"Self diffusion", "energy": "Energy"}
@@ -25,8 +29,8 @@ def get_label_name(property):
     return prop_label
 
 def get_defect_cat(defect_name):
-    """Takes defect name, like "Int_Na" or "Na_C" and extracts what type
-    of defect it is, and what element.
+    """Takes defect name, like "Int_Na" or "Na_C" and extracts what type(s)
+    of defect it is, and what element(s)
     
     args:
         defect_name(str): The defect name
@@ -49,8 +53,14 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     Plots 4 subplots, one for each defect.
     Each subplot should contain all the elements.
     Will get multiple points per element, because of starting positioning differs.
-    4 plots because inter and sub, then these 2 but with vacancy added
+    4 plots because inter and sub, then these 2 but with vacancy added.
+
+    args:
+        plot_name(str): Name of the plot
+        plot_data(dic): Data about the plot. What axis etc.
+        sim_data(dic): Where the data we plot is.
     """
+    logger.debug(f"Start to make single_defect_plot for {plot_name}")
     s_elements = ["Li","Na","K","Rb","Cs","Fr",
                 "Be","Mg","Ca","Sr","Ba","Ra"]
 
@@ -64,7 +74,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
 
     sorted_data = {"interstitial" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a": []},
      "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a" : []}}
-
+    logger.debug("Start to loop trough simulations")
     for sim in sim_data:
         #Pick out single defect
         amount = sim.get("DefectInfo")["defect_size"]
@@ -103,15 +113,18 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             defect["avg_a"].append(sim.get("avg_a"))
             defect["vacancy"].append(False)
             continue
+    
+    logger.debug("Done looping over simulations.")
 
-    fig, axs = plt.subplots(nrows = 4, figsize = (10,12), sharex = False)
+    fig, axs = plt.subplots(nrows = 4, figsize = (10,10), sharex = False, constrained_layout = True)
+    #fig.tight_layout()
 
     #Fix axis of all subplots.
 
     avg = plot_data.get("average")
     fix_y = plot_data.get("fix_y")
 
-
+    logger.debug("Fix axis for the 4 subplots")
     for axel in axs:
         axel.set_xlim(0,19)
         axel.set_xlabel("Element")
@@ -134,10 +147,11 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     all_elements = s_elements+p_elements
 
     #----------------Single, interstitial
-    logger.debug("")
+    logger.debug("Start generating first subplot")
     ax1 = axs[0]
     x_pos = range(0,51)
     ax1.set_xticks(x_pos,all_elements)
+    ax1.set_title("Interstitial")
 
     sc1 = None
     first_label = True
@@ -177,13 +191,14 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         fig.colorbar(sc1,ax=ax1, label = "Mean a")
     if avg and avg_x:
         ax1.plot(avg_x,avg_y, linestyle = "--", color="orange")
-    logger.debug("")
+    logger.debug("Done generarating first subplot")
 
     #----------------Interstitial + vacancy
-    logger.debug("")
+    logger.debug("Generate second subplot")
     ax2 = axs[1]
     x_pos = range(0,51)
     ax2.set_xticks(x_pos,all_elements)
+    ax2.set_title("Interstitial + vacancy")
 
     sc2 = None
     first_label = True
@@ -223,13 +238,14 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         fig.colorbar(sc2,ax=ax2, label = "Mean a")
     if avg and avg_x:
         ax2.plot(avg_x,avg_y, linestyle = "--", color="orange")
-    logger.debug("")
+    logger.debug("Done generating second subplot")
 
     #----------------Substitution
-    logger.debug("")
+    logger.debug("Start generating third subplot")
     ax3 = axs[2]
     x_pos = range(0,51)
     ax3.set_xticks(x_pos,all_elements)
+    ax3.set_title("Substitution")
 
     sc3 = None
     first_label = True
@@ -269,13 +285,14 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         fig.colorbar(sc3,ax=ax3, label = "Mean a")
     if avg and avg_x:
         ax3.plot(avg_x,avg_y, linestyle = "--", color="orange")
-    logger.debug("")
+    logger.debug("Done generating third subplot")
 
     #----------------Substitution + vacancy
-    logger.debug("")
+    logger.debug("Start generating forth subplot")
     ax4 = axs[3]
     x_pos = range(0,51)
     ax4.set_xticks(x_pos,all_elements)
+    ax4.set_title("Substitution + vacancy")
 
     sc4 = None
     first_label = True
@@ -315,7 +332,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         fig.colorbar(sc4,ax=ax4, label = "Mean a")
     if avg and avg_x:
         ax4.plot(avg_x,avg_y, linestyle = "--", color="orange")
-    logger.debug("")
+    logger.debug("Done generating forth subplot")
 
     logger.debug(f"Sucesfully created all subplots for {plot_name}")
     plt.gcf().savefig(f"{plot_name}.png")
@@ -397,11 +414,11 @@ def heatmap_plot(plot_name,plot_data,sim_data):
         heatmap_sub = df_sub.groupby(['substitution1','substitution2'])['Energy'].mean().unstack()
         heatmap_int = df_int.groupby(['interstitial1','interstitial2'])['Energy'].mean().unstack()
 
-        # Symmetrize so both halves are filled
+        #Symmetrize so both halves are filled
         heatmap_sub = symmetrize(heatmap_sub).reindex(index=all_elements, columns=all_elements)
         heatmap_int = symmetrize(heatmap_int).reindex(index=all_elements, columns=all_elements)
 
-        # Build combined matrix
+        #Combine the two into 1
         n = len(all_elements)
         upper_mask = np.triu(np.ones((n, n), dtype=bool), k=1)
         lower_mask = np.tril(np.ones((n, n), dtype=bool), k=-1)
@@ -410,11 +427,11 @@ def heatmap_plot(plot_name,plot_data,sim_data):
         lower = heatmap_int.where(lower_mask)
         heatmap_data = upper.combine_first(lower)
 
-        # Blank diagonal
+        #Blank diagonal
         np.fill_diagonal(heatmap_data.values, np.nan)
 
 
-        # --- extract both diagonals separately ---
+        #Save both diagonals separately into seperate plots
         diag_sub = pd.Series(
             [heatmap_sub.loc[e, e] if (e in heatmap_sub.index and e in heatmap_sub.columns) else np.nan
             for e in all_elements],
@@ -426,10 +443,10 @@ def heatmap_plot(plot_name,plot_data,sim_data):
             index=all_elements
         )
 
-        # --- plot main heatmap + two diagonal charts ---
+        #Plot
         fig, axes = plt.subplots(1, 3, figsize=(36,16), gridspec_kw={'width_ratios':[4,1,1]})
 
-        # Main heatmap
+
         sns.heatmap(heatmap_data, annot=False, cmap="viridis",
                     cbar_kws={'label': 'Energy'}, ax=axes[0])
         axes[0].plot(np.arange(n)+0.5, np.arange(n)+0.5, color='black', linewidth=2)
@@ -437,13 +454,13 @@ def heatmap_plot(plot_name,plot_data,sim_data):
         axes[0].set_xlabel("Element 2")
         axes[0].set_ylabel("Element 1")
 
-        # Sub–Sub diagonal
+        #Sub-Sub
         diag_sub.plot(kind="bar", ax=axes[1], color="steelblue")
         axes[1].set_title("Diagonal (Sub-Sub)")
         axes[1].set_ylabel("Energy")
         axes[1].tick_params(axis='x', rotation=90)
 
-        # Int–Int diagonal
+        #Int-Int
         diag_int.plot(kind="bar", ax=axes[2], color="darkorange")
         axes[2].set_title("Diagonal (Int-Int)")
         axes[2].set_ylabel("Energy")
@@ -453,7 +470,11 @@ def heatmap_plot(plot_name,plot_data,sim_data):
         plt.savefig(f"{plot_name}.png")
         plt.close()
 
+        logger.debug(f"Created combined heatmap for {plot_name}")
+
     else:
+        #If inter-sub
+
         heatmap_data = dataframe.groupby(["interstitial","substitution"])["Energy"].mean().unstack()
         x_label = "interstitial"
         y_label = "substitution"
@@ -467,6 +488,8 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
         plt.gcf().savefig(f"{plot_name}.png")
         plt.close()
+
+        logger.debug(f"Created inter-sub heatmap for {plot_name}")
 
 
 def scatter_plot(plot_name, plot_data,sim_data):
@@ -800,10 +823,3 @@ def plot_avg(axial, x_pos, y_values):
     axial.scatter([x_pos], average, color = "orange", 
                 marker = "s", label="average", facecolors = "none", s = 80)
     return average
-
-if __name__ == "__main__":
-    parse_description("0_Int_Se_v:p_w:li_(1/4, 1/4, 1/4)_1_Int_Se_v:e_w:li_(9/16, 9/16, 9/16)")
-    parse_description("0_Vac_C(0)_0")
-    parse_description("0_Int_Si_v:p_w:po_(0, 0, 0)")
-    parse_description("0_Vac_C(0)_0_1_Int_O_v:p_w:li_(0, 5/8, -5/8)")
-    parse_description("0_Al_C(0)_0")

@@ -20,7 +20,9 @@ dependencies = [
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
     "mace-torch",
-    "httk"
+    "httk",
+    "pandas",
+    "seaborn"
 ]
 
 [tool.ruff]
