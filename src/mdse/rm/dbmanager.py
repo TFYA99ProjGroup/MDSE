@@ -85,6 +85,17 @@ class DBManager:
         else:
             logger.info("No documents to insert")
 
+    def write_dict_to_db(
+        self, data, db_str="materials_db", collection_str="structures"
+    ):
+        db = self.client[db_str]
+        collection = db[collection_str]
+        if data:
+            result = collection.insert_many(list(data.values()))
+            logger.info(f"{len(result.inserted_ids)} document inserted.")
+        else:
+            logger.info("No documents to insert")
+
     def _write_jsonfiles_to_db_bson(self, resultpath):
         """Bson variant, not in use right now."""
         db = self.client["materials_db"]

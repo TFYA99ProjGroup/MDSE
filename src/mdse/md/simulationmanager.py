@@ -184,7 +184,7 @@ class SimulationManager:
             self.length = simulation_params.get("Length")
             self.traj_interval = simulation_params.get("TrajInterval")
             self.calculator = simulation_params.get("Calculator")
-            self.calc_params = simulation_params.get("CalculatorParams", {})
+            self.calc_params = simulation_params.get("CalculatorParams", {}).copy()
             self.create_trajectory = simulation_params.get("Create_traj", False)
 
         except Exception as e:

@@ -1,0 +1,27 @@
+{
+  "database_backend": "mongodb",
+  "mongo_uri": "mongodb://admin:secret@mongodb:27017/?authSource=admin",
+  "mongo_database": "materials_db",
+  "mongo_collection_prefix": "",
+  "log_dir": "./logs",
+  "insert_test_data": false,
+  "provider": {
+    "name": "MDSE group",
+    "description": "A custom materials database provided by the MDSE group.",
+    "prefix": "mdse",
+    "homepage": "https://tfya99projgroup.github.io/MDSE/"
+  },
+  "provider_fields": {
+    "structures": [
+      "custom_example_int", 
+      "custom_example_str", 
+      "custom_example_list",
+      "custom_example_dict"
+    ]
+  },
+  "aliases": {
+    "structures": {
+      "immutable_id": "_id"
+    }
+  }
+}
