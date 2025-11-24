@@ -261,7 +261,7 @@ class RunManager:
             )
             for index, sim in enumerate(self.md_simulations):
                 if sim is None:
-                    logger.error("Simlation is None, skipping")
+                    logger.error("Simulation is None, skipping")
                     continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
