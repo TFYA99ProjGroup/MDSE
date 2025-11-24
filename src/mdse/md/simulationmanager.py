@@ -9,6 +9,7 @@ from asap3.md.nose_hoover_chain import NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
 from asap3 import EMTMetalGlassParameters
+from pathlib import Path
 import re
 from functools import reduce
 import math
@@ -347,7 +348,7 @@ class SimulationManager:
             if the_mace_calculator is None:
                 logger.debug("First time we set a MACE calculator")
                 logger.debug("Trying to get MACE model weights from: ")
-                logger.debug(str(self.calc_params.get("model_paths")))
+                logger.debug(Path(self.calc_params.get("model_paths")).resolve())
                 the_mace_calculator = MACECalculator(**self.calc_params)
             else:
                 logger.debug("NOT first time we create with mace")
@@ -632,17 +633,19 @@ class SimulationManager:
             symbols = []
             offset = 0
 
+            # TODO: This should be looked at!
             for element, amount in formula_unit.items():
-                for _ in range(amount):
-                    symbols.append(element)
-                    positions.append((offset, 0, 0))
-                    offset = offset + 2
+                # for _ in range(amount):
+                symbols.append(element)
+                positions.append((offset, 0, 0))
+                offset = offset + 2
 
             atom = ase.Atoms(symbols, positions=positions, cell=[15, 15, 15], pbc=False)
             atom.calc = calc
 
             E_atom = atom.get_potential_energy()
 
+            logger.debug(f"Single atom energy: {E_atom}")
             return E_atom, len(symbols)
 
         logger.debug(
