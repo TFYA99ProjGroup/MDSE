@@ -256,7 +256,7 @@ class RunManager:
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
                     if sim is None:
-                        logger.error("Simlation is None, skipping")
+                        logger.error("Simulation is None, skipping")
                         continue
                     res = sim.simulate()
                     #############################################
