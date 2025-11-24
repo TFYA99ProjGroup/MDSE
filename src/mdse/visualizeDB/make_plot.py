@@ -43,7 +43,8 @@ def valid_plot(plot_type):
         ?: The name of the function that plots this type
     """
 
-    available_types = {"scatter" : scatter_plot, "doping" : doping_plot}
+    available_types = {"scatter" : scatter_plot, "doping" : doping_plot, "heatmap" : heatmap_plot,
+                       "single" : single_defect_plot}
 
     if plot_type not in available_types:
         raise ValueError("The plot is not supported")
