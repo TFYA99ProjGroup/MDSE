@@ -4,6 +4,8 @@ from mpi4py import MPI as _TrueMPI
 import json
 from pathlib import Path
 import math
+from mdse.rm.dbmanager import MongoDBEntry
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +123,23 @@ class RunManager:
 
     def run_results(self, result, config):
         logger.debug(f"Results: {result}")
-
+        crystal = config[next(iter(config))]["CRYSTAL"]
+        ensamble = config[next(iter(config))]["ENSAMBLE"]
+        entry = MongoDBEntry(
+            id=str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K",
+            last_modified=datetime.now(),
+            elements=result.frames[0].get_chemical_symbols(),
+            nelements=len(result.frames[0].get_chemical_symbols()),
+            mdse_fields={
+                "lindemann": result.calc_lindemann(),
+                "self_diffusion": result.calc_self_diff(),
+                "isobaric_specific_heat":
+                    result.calc_isochoric_heat_capacity_per_atom(),
+                "debye": result.calc_debye_temperature(),
+            },
+            chemical_formula_reduced=str(result.frames[0].symbols.formula.reduce()[0]),
+        )
+        return entry.to_dict()
         # for index, config in enumerate(self.simulation_config):
         logger.debug(config)
         properties = config[next(iter(config))]["RESULT"]["Properties"]
@@ -173,7 +191,8 @@ class RunManager:
         all_docs = existing_docs + self.docs
 
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(all_docs, f, indent=2)
+            json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
+                      if hasattr(o, 'isoformat') else o)
 
     def run_simulations(self, overwrite_ensamble=None):
         """
@@ -216,6 +235,7 @@ class RunManager:
 
                 if tag == TAG_DONE:
                     if msg != "":
+                        logger.debug(f"[Master] Received {msg} from worker {src}")
                         self.docs.append(msg)
                     if jobs:
                         job = jobs.pop(0)
@@ -243,9 +263,9 @@ class RunManager:
                     #############################################
                     config = self.simulation_config[job]
                     logger.debug(f"config::: {config}")
-                    docs = self.run_results(res, config)
+                    database_entry = self.run_results(res, config)
                     logger.debug(f"[Worker {rank}] Completed job {job}")
-                    comm.send(docs, dest=0, tag=TAG_DONE)
+                    comm.send(database_entry, dest=0, tag=TAG_DONE)
                 elif tag == TAG_STOP:
                     logger.debug(f"[Worker {rank}] Received stop signal from master.")
                     break
