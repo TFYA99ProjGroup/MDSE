@@ -1,3 +1,0 @@
-"""
-Informative text
-"""
