@@ -199,18 +199,19 @@ def get_defect_formation_energy(store, **query):
         defect_formation_energy = match[2] - match[3] - chem_pot
 
         dft_data[str(match[0]) + "_" + str(match[4])] = {
-            "defect_key": match[0],
+            "defect_key": str(match[0]),
             "stoichiometry": match[1],
             "defect_type": match[5],
             "tot_energy_defect": match[2],
             "tot_energy_host": match[3],
             "defect_formation_energy": defect_formation_energy,
-            "spin": match[4]
+            "spin": match[4],
         }
 
     db_manager = DBManager("mongodb://admin:secret@localhost:27017/")
 
     db_manager.write_dict_to_db(dft_data, collection_str="DFT data")
+
 
 def get_chem_pot(store, stoichiometry):
     search = store.searcher()
@@ -226,16 +227,8 @@ def get_chem_pot(store, stoichiometry):
     query_result = [chempot[0] for chempot in list(search)]
     query_result = {elem: int(count) for elem, count in query_result}
 
-
-
     chemical_potential = 0
     for elem, count in matches.items():
         chemical_potential += query_result[elem] * count
-        
+
     return chemical_potential
-
-if __name__ == "__main__":
-
-    store = setup_db("../defects.sqlite")
-
-    get_defect_formation_energy(store)
