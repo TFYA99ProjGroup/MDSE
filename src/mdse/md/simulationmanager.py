@@ -19,6 +19,9 @@ from mdse.md.resultMD import ResultMD
 
 logger = logging.getLogger(__name__)
 
+# This global variable should store the instance of MACECalculator,
+# since the constructor of this is SLOW we only want to do it once
+the_mace_calculator = None
 
 class SimulationManager:
     """
@@ -338,10 +341,18 @@ class SimulationManager:
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
+            logger.debug("We want to use mace!")
+            global the_mace_calculator
 
-            logger.debug("Trying to get MACE model weights from: ")
-            logger.debug(str(self.calc_params.get("model_paths")))
-            calculator = MACECalculator(**self.calc_params)
+            if the_mace_calculator is None:
+                logger.debug("First time we set a MACE calculator")
+                logger.debug("Trying to get MACE model weights from: ")
+                logger.debug(str(self.calc_params.get("model_paths")))
+                the_mace_calculator = MACECalculator(**self.calc_params)
+            else:
+                logger.debug("NOT first time we create with mace")
+
+            calculator = the_mace_calculator
         else:
             error_msg = (
                 f"Calculator {self.calculator} not implemented, "
