@@ -4,9 +4,94 @@ import json
 import logging
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
+from dataclasses import dataclass, field
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class MongoDBEntry:
+    """
+    Minimal dataclass representing a MongoDB structure entry
+    complient with the OPTIMADE schema.
+    """
+    # Must fields
+    id: str
+    type: str = "structures"
+    structure_features: list = field(default_factory=list)
+
+    # In here will be everything custom by us.
+    mdse_fields: dict = field(default_factory=dict)
+
+    # SHould fields
+    last_modified: datetime = None
+    elements: list[str] = None
+    nelements: int = None
+    elements_ratios: list[float] = None
+    chemical_formula_descriptive: str = None
+    chemical_formula_reduced: str = None
+    chemical_formula_anonymous: str = None
+    dimension_types: list[int] = None
+    nperiodic_dimensions: int = None
+    lattice_vectors: list[list[float]] = None
+    cartesian_site_positions: list[list[float]] = None
+    nsites: int = None
+    species_at_sites: list[str] = None
+    species: list = None
+
+    # Optional fields
+    chemical_formula_hill: str = None
+    space_group_symmetry_operations_xyz: list[str] = None
+    space_group_symbol_hall: str = None
+    space_group_symbol_hermann_mauguin: str = None
+    space_group_symbol_hermann_mauguin_extended: str = None
+    space_group_it_number: int = None
+    assemblies: list[dict] = None
+
+    def to_dict(self) -> dict:
+        base = {
+            "id": self.id, #must
+            # "immutable_id": None, #optional (handled by alias of MongoDB's _id)
+            "type": self.type, #must
+            "structure_features": self.structure_features, #must, but can be empty list
+
+            # Should fields, very good ideas to have
+            "last_modified": self.last_modified,
+            "elements": self.elements,
+            "nelements": self.nelements,
+            "elements_ratios": self.elements_ratios,
+            "chemical_formula_descriptive": self.chemical_formula_descriptive,
+            "chemical_formula_reduced": self.chemical_formula_reduced,
+            "chemical_formula_anonymous": self.chemical_formula_anonymous,
+            "dimension_types": self.dimension_types,
+            "nperiodic_dimensions": self.nperiodic_dimensions,
+            "lattice_vectors": self.lattice_vectors,
+            "cartesian_site_positions": self.cartesian_site_positions,
+            "nsites": self.nsites,
+            "species_at_sites": self.species_at_sites,
+            "species": self.species,
+
+            # Optional fields, but good if queryable
+            "chemical_formula_hill": self.chemical_formula_hill,
+            "space_group_symmetry_operations_xyz":
+                self.space_group_symmetry_operations_xyz,
+            "space_group_symbol_hall": self.space_group_symbol_hall,
+            "space_group_symbol_hermann_mauguin":
+                self.space_group_symbol_hermann_mauguin,
+            "space_group_symbol_hermann_mauguin_extended":
+                self.space_group_symbol_hermann_mauguin_extended,
+            "space_group_it_number": self.space_group_it_number,
+            "assemblies": self.assemblies,
+        }
+        base.update(self.mdse_fields)
+        return base
+
+    def to_file(self, filepath: str):
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=4)
+
+    def concatenate_files(self, filepaths: list[str], output_filepath: str):
+        return
 
 class DBManager:
     """
@@ -77,6 +162,9 @@ class DBManager:
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
                 for data in json.load(f):
+                    data["last_modified"] = datetime.fromisoformat(
+                        data["last_modified"]
+                    )
                     all_docs.append(data)
         logger.debug(all_docs)
         if all_docs:
