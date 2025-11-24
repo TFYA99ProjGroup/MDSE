@@ -171,7 +171,8 @@ def save_defects(defects, defect_folder):
 
 def get_defect_formation_energy(store, address, **query):
     """
-    Compute defect formation energies from a data store and write the results to MongoDB.
+    Compute defect formation energies from a data store and write the results to
+    MongoDB.
 
     Parameters
     ----------
@@ -258,8 +259,8 @@ def get_chem_pot(store, stoichiometry):
     Returns
     -------
     float
-        The summed chemical potential: :math:`\\sum_i(n_i\\mu_i)`, using the database-stored
-        chemical potentials for each involved element.
+        The summed chemical potential: :math:`\\sum_i(n_i\\mu_i)`, using the database-
+        stored chemical potentials for each involved element.
 
     Notes
     -----
