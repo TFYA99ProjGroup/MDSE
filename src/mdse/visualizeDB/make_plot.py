@@ -1,5 +1,6 @@
 import logging
-from mdse.visualizeDB.vis_plots import scatter_plot, doping_plot, heatmap_plot, single_defect_plot
+from mdse.visualizeDB.vis_plots import (scatter_plot, doping_plot,
+heatmap_plot, single_defect_plot)
 
 logger = logging.getLogger(__name__)
 

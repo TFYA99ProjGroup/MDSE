@@ -46,7 +46,7 @@ def get_defect_cat(defect_name):
     if "Vac_C" in defect_name:
         return "vacancy", "C"
 
-    return "BAD defect" 
+    return "BAD defect"
 
 def single_defect_plot(plot_name, plot_data, sim_data):
     """
@@ -443,12 +443,14 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
         #Save both diagonals separately into seperate plots
         diag_sub = pd.Series(
-            [heatmap_sub.loc[e, e] if (e in heatmap_sub.index and e in heatmap_sub.columns)
+            [heatmap_sub.loc[e, e] if (e in heatmap_sub.index and
+                                       e in heatmap_sub.columns)
              else np.nan for e in all_elements],
             index=all_elements
         )
         diag_int = pd.Series(
-            [heatmap_int.loc[e, e] if (e in heatmap_int.index and e in heatmap_int.columns)
+            [heatmap_int.loc[e, e] if (e in heatmap_int.index and
+                                       e in heatmap_int.columns)
              else np.nan for e in all_elements],
             index=all_elements
         )
@@ -791,7 +793,8 @@ def doping_plot(plot_name, plot_data,sim_data):
     avg_x = []
     avg_y = []
 
-    elements = {"Rb" : 1, "Sr" : 2, "Y" : 3, "Zr" : 4, "Nb" : 5, "Mo" : 6, "Tc" : 7, "Ru" : 8,
+    elements = {"Rb" : 1, "Sr" : 2, "Y" : 3, "Zr" : 4, "Nb" : 5, "Mo" : 6, "Tc" : 7,
+                "Ru" : 8,
                 "Rh" : 9, "Pd" : 10, "Ag" : 11, "Cd" : 12, "In" : 13
              ,"Sn" : 14, "Sb" : 15, "Te" : 16, "I" : 17, "Xe" : 18, }
     for key,value in elements.items():

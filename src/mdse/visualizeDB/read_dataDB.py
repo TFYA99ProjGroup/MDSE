@@ -66,6 +66,6 @@ def read_data(config_data):
         dum = False
         if dum:
             return table
-        
+
         raise RuntimeError("Not implemented for mongoDB yet")
 
