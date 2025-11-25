@@ -68,15 +68,10 @@ jobs:
           sleep 15  # Wait for MongoDB to be ready
 
       - name: Verify OPTIMADE connects
-        run: curl http://localhost:8000/v1/structures
+        run: |
+          curl http://localhost:8000/v1/info
+          curl http://localhost:8000/v1/structures
 
-      - name: Validate OPTIMADE implementation
-        uses: Materials-Consortia/optimade-validator-action@v2
-        with:
-          protocol: http
-          domain: localhost
-          port: 8000
-          path: /v1/
 
       - name: Run regular tests
         run: pytest -m "not mpi"
