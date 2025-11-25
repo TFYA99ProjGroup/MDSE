@@ -110,8 +110,36 @@ def test_isochoric_heat_capacity_per_atom(nvt_result):
     assert isochoric_heat_per_atom < 6e-23
     assert isochoric_heat_per_atom > 2e-23
 
+
 def test_cohesive_energy(nve_result):
     """Check that cohesive energy reasonable.
     Table value for Cu is 3.49
     """
     assert(abs(nve_result.get_cohesive_energy() - 3.49)/3.49 < 0.005)
+
+
+def test_shear_modulus(nvt_result):
+    '''Check for a reasonable value for the shear modulus. Shear modulus for Cu
+    should be 44.7 GPa at room temp.
+    '''
+    shear_modulus = nvt_result.calc_shear_modulus()
+    assert shear_modulus > 20e+9 # GPa
+    assert shear_modulus < 80e+9 # GPa
+
+
+def test_bulk_modulus(nvt_result):
+    '''Check for a reasonable value for the bulk modulus. Bulk modulus for Cu
+    should be around 130 GPa at room temp.
+    '''
+    bulk_modulus = nvt_result.calc_bulk_modulus()
+    assert bulk_modulus > 100e+9 # GPa
+    assert bulk_modulus < 160e+9 # GPa
+
+
+def test_youngs_modulus(nvt_result):
+    '''Check for a reasonable value for Young's modulus. Young's modulus for Cu
+    should be around 110 - 130 GPa at room temp.
+    '''
+    youngs_modulus = nvt_result.calc_bulk_modulus()
+    assert youngs_modulus > 80e+9 # GPa
+    assert youngs_modulus < 160e+9 # GPa
