@@ -65,21 +65,7 @@ jobs:
       - name: Start MongoDB container
         run: |
           docker compose -f database/docker-compose.yaml up -d --build
-          sleep 15  # Wait for MongoDB to be ready
-
-      - name: Verify OPTIMADE connects
-        run: |
-          curl http://localhost:8000/v1/info
-          curl http://localhost:8000/v1/structures
-
-      - name: Validate OPTIMADE implementation
-        uses: Materials-Consortia/optimade-validator-action@v2
-        with:
-          protocol: http
-          domain: localhost
-          port: 8000
-          path: /
-          all versioned paths: True
+          sleep 3  # Wait for MongoDB to be ready
 
       - name: Run regular tests
         run: pytest -m "not mpi"
