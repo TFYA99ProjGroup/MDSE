@@ -67,7 +67,10 @@ jobs:
           docker compose -f database/docker-compose.yaml up -d --build
           sleep 15  # Wait for MongoDB to be ready
 
-      - name: Verify OPTIMADE
+      - name: Verify OPTIMADE connects
+        run: curl http://localhost:8000/v1/
+
+      - name: Validate OPTIMADE implementation
         uses: Materials-Consortia/optimade-validator-action@v2
         with:
           protocol: http
