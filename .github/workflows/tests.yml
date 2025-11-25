@@ -67,6 +67,14 @@ jobs:
           docker compose -f database/docker-compose.yaml up -d --build
           sleep 15  # Wait for MongoDB to be ready
 
+      - name: Verify OPTIMADE
+        uses: Materials-Consortia/optimade-validator-action@v2
+        with:
+          protocol: http
+          domain: localhost
+          port: 8000
+          path: /
+
       - name: Run regular tests
         run: pytest -m "not mpi"
 
