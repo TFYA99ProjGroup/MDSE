@@ -79,6 +79,7 @@ jobs:
           domain: localhost
           port: 8000
           path: /
+          all versioned paths: True
 
       - name: Run regular tests
         run: pytest -m "not mpi"
