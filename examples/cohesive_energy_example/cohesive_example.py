@@ -4,13 +4,21 @@ from mdse.parser.parse_yml import main_read
 
 
 def main():
-    #A fcc metal
-    config = main_read("cohesive_data.yaml")
+    #A fcc metal. Cu with EMT
+    config = main_read("cohesive_data_Cu.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
     res = sm.simulate_nve()
 
     print(res.get_cohesive_energy())
+
+    #Cu with Mace (Must have model_path i the .yaml)
+    #config = main_read("cohesive_data_Cu_mace.yaml")
+    #sm = SimulationManager(list(config[0].values())[0])
+
+    #res = sm.simulate_nve()
+
+    #print(res.get_cohesive_energy())
 
     #A MgCu2 crystal, using EMT with parameter
     config = main_read("cohesive_data_cif_MgCu2.yaml")
@@ -21,9 +29,8 @@ def main():
     print(res.get_cohesive_energy())
 
 
-
     #NaCl with LJ
-    config = main_read("cohesive_data_cif.yaml")
+    config = main_read("cohesive_data_cif_NaCl.yaml")
 
     sm = SimulationManager(list(config[0].values())[0])
 
