@@ -6,6 +6,8 @@ from mdse.parser.classes import (
     DefectInfo,
     ChemicalPotential,
     HostSuperCellResult,
+    HullDistance,
+    ScreenCell,
     ScreenResult,
 )
 import httk.db
@@ -83,6 +85,9 @@ def get_defects(store, **query):
         return None
 
     return matches
+
+def get_host():
+    pass
 
 
 def save_to_cif(defect, defects_folder):
@@ -205,9 +210,18 @@ def get_defect_formation_energy(store, address, **query):
     search_defect_info = search.variable(DefectInfo)
     search_screen_result = search.variable(ScreenResult)
     search_host = search.variable(HostSuperCellResult)
+    search_screen_cell = search.variable(ScreenCell)
+    search_hull_distance = search.variable(HullDistance)
+
+    search.add(search_defect_info.key == search_screen_cell.defect_key)
+    search.add(search_defect_info.key == search_hull_distance.defect_key)
+    search.add(search_screen_result.defect_key == search_defect_info.key)
+
+    search.add(search_screen_cell.charge == search_hull_distance.defect_charge)
+    search.add(search_screen_cell.spin == search_hull_distance.defect_spin)
 
     search.add(search_screen_result.charge == 0)
-    search.add(search_screen_result.defect_key == search_defect_info.key)
+    search.add(search_hull_distance.min_distance < 1e-5)
 
     if query.get("key") is not None:
         search.add(search_defect_info.key == query["key"])
@@ -241,7 +255,7 @@ def get_defect_formation_energy(store, address, **query):
 
     db_manager = DBManager(address)
 
-    db_manager.write_dict_to_db(dft_data, collection_str="DFT data")
+    db_manager.write_dict_to_db(dft_data, collection_str="DFT_data")
 
 
 def get_chem_pot(store, stoichiometry):
@@ -279,11 +293,33 @@ def get_chem_pot(store, stoichiometry):
     search.output(search_chem_pot.material, "material")
     search.output(search_chem_pot.chemical_potential, "chem_pot")
 
-    query_result = [chempot[0] for chempot in list(search)]
-    query_result = {elem: int(count) for elem, count in query_result}
+    query_result = [item[0] for item in list(search)]
+    query_result = {
+        elem: chemical_potential for elem, chemical_potential in query_result
+    }
 
     chemical_potential = 0
     for elem, count in matches.items():
         chemical_potential += query_result[elem] * count
 
     return chemical_potential
+
+
+def transfer_chemical_potential(store, address):
+    search = store.searcher()
+    search_chem_pot = search.variable(ChemicalPotential)
+
+    search.output(search_chem_pot.material, "material")
+    search.output(search_chem_pot.chemical_potential, "chem_pot")
+
+    query_result = [chempot[0] for chempot in list(search)]
+    chem_pots = {}
+    for elem, chemical_potential in query_result:
+        chem_pots[elem] = {
+            "element": elem,
+            "chemical_potential": chemical_potential
+        }
+
+    db_manager = DBManager(address)
+
+    db_manager.write_dict_to_db(chem_pots, collection_str="Chemical_potential")
