@@ -617,9 +617,8 @@ class SimulationManager:
         # for each element  in the chemical formula, simulate it alone
         for element, n in formula_unit.items():
             calc = self._check_calculator()
-
             atom = ase.Atoms(
-                list(element),
+                [element], #list(element): Cu -> ['C','u']
                 positions=[(0, 0, 0)],
                 cell=[15, 15, 15],
                 pbc=False,
@@ -630,7 +629,8 @@ class SimulationManager:
             E_atom += atom.get_potential_energy()*n
 
         # normalize so we return average energy per atom
-        return E_atom / len(self.crystal)
+        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
+        return E_atom / tot_nr_of_atoms  #len(self.crystal)
 
         # if len(formula_unit) == 1:
         #     logger.debug("Found 1 type of element in crystal")
