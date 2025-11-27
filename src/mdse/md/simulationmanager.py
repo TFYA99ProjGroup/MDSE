@@ -150,7 +150,7 @@ class SimulationManager:
                 #    cubic=crystal_params.get("Cubic"),
                 #) * crystal_params.get("Supercell", (1, 1, 1))
 
-                self.crystal_prim = bulk(
+                self.crystal_conv = bulk(
                     crystal_params.get("Name"),
                     crystal_params.get("Structure"),
                     a=crystal_params.get("Lattice_a"),
@@ -159,14 +159,21 @@ class SimulationManager:
                     cubic=crystal_params.get("Cubic"),
                 ) 
                 
-                self.crystal = self.crystal_prim * crystal_params.get("Supercell", (1, 1, 1))
+                self.crystal = self.crystal_conv * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
                 self._check_keys("CRYSTAL", crystal_params, ["Filepath"])
-                self.crystal = ase.io.read(
+
+                self.crystal_conv = ase.io.read(
                     crystal_params.get("Filepath")
-                ) * crystal_params.get("Supercell", (1, 1, 1))
+                )
+
+                self.crystal = self.crystal_conv*crystal_params.get("Supercell", (1,1,1))
+
+                #self.crystal = ase.io.read(
+                #    crystal_params.get("Filepath")
+                #) * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
@@ -252,6 +259,7 @@ class SimulationManager:
         self.result = [self.crystal.copy()]
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
         self.result[0].info["lattice_frames"] = self.estimate_lattice()
+        self.result[0].info["Structure"] = self.crystal_struct
 
         logger.debug("Init done")
 
@@ -677,30 +685,69 @@ class SimulationManager:
         Since resultMD doesnt keep the calculator, do the simulations here.
 
         return volume, should work for non-cubic also.
+
+        Assumes the cell given from bulk and .cif is conventional.
         
         """
+        a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
 
-        #Scale the cell, to try different lattice constants
-        a0 = self.crystal_prim.get_cell()[0,0]
-        cell0 = self.crystal_prim.get_cell()
+        if (alfa == beta == gamma == 90):
+                 self.crystal_struct = "cubic"
+        elif (alfa == beta != gamma or alfa != beta == gamma or alfa==gamma != beta):
+            self.crystal_struct = "hexagonal"
+        else:
+            self.crystal_struct == None
 
-        prim_atoms = ase.Atoms(
-            symbols=self.crystal_prim.get_chemical_symbols(),
-            positions=self.crystal_prim.get_positions(),
-            cell=self.crystal_prim.get_cell(),
-            pbc=True,
-        )
+        cell0 = self.crystal_conv.get_cell()
+        conv_atoms = ase.Atoms(
+                symbols=self.crystal_conv.get_chemical_symbols(),
+                positions=self.crystal_conv.get_positions(),
+                cell=self.crystal_conv.get_cell(),
+                pbc=True,
+            )
 
-        energy_vs_vol = []
 
-        for scaling in np.linspace(0.95,1.05,10):
-            scaled = prim_atoms.copy()
-            scaled.set_cell(cell0*scaling, scale_atoms = True)
-            scaled.calc = self._check_calculator()
-            #energy_vs_lattice.append([scaled.get_potential_energy(),scaling*a0])
-            energy_vs_vol.append([scaled.get_potential_energy(),scaled.get_volume()])
+        if self.crystal_struct == "cubic":
+            #Conventional cell has same latice constant in all directions!
 
-        return energy_vs_vol
+            a0 = self.crystal_conv.get_cell()[0,0]
+
+            energy_vs_lat = []
+
+            for scaling in np.linspace(0.95,1.05,20):
+                scaled = conv_atoms.copy()
+                scaled.set_cell(cell0*scaling, scale_atoms = True)
+                scaled.calc = self._check_calculator()
+                energy_vs_lat.append([scaled.get_potential_energy(),a0*scaling])
+
+            return energy_vs_lat
+        
+
+        if self.crystal_struct == "hexagonal":
+            #Need to scale axis independant of eachoter
+            scaling_step = np.linspace(0.95,1.05,20)
+            a0 = cell0[0,0]
+            b0 = cell0[1,1]
+            c0 = cell0[2,2]
+            energy_vs_lat = []
+            for scale_a in scaling_step:
+                for scale_b in scaling_step:
+                    for scale_c in scaling_step:
+                        scaled = conv_atoms.copy()
+                        new_cell = (
+                            a0*scale_a,
+                            b0*scale_b,
+                            c0*scale_c,
+                            alfa,
+                            beta,
+                            gamma
+                        )
+                        scaled.set_cell(new_cell, scale_atoms = True)
+                        scaled.calc = self._check_calculator()
+                        energy_vs_lat.append([scaled.get_potential_energy(),
+                                              [a0*scale_a,b0*scale_b,c0*scale_c]])
+
+            return energy_vs_lat
 
 
 

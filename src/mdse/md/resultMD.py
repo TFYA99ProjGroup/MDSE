@@ -904,10 +904,19 @@ class ResultMD:
 
     def calc_lattice(self):
         prim = self.frames[0].info["lattice_frames"]
-        #energies = [e1 for e1, e2 in prim]
-        #volumes = [e2 for e1, e2 in prim]
+        prim_structure = self.frames[0].info["Structure"]
 
-        min_energy, min_volume = min(prim, key=lambda x: x[0])
+        #So dont crash. 
+        if not prim or not prim_structure:
+            return 0
+
+        min_energy, min_latt = min(prim, key=lambda x: x[0])
  
-        #FCC, conventional
-        print(min_volume**(1/3))
+        #Conventional cell, and if cubic
+        if (
+            prim_structure == "cubic"
+        ):
+            return min_latt
+        
+        if prim_structure == "hexagonal":
+            return min_latt
