@@ -85,60 +85,16 @@ class RunManager:
         self.md_simulations = []
         self.result_objects = []
         self.outputs = []
-        self.docs = []
         self.simulation_config = simulation_config
-        self.MongoDBentriesAsJson = [] # List to store MongoDBEntry instances
+        self.MongoDBentriesAsJson = []  # List to store MongoDBEntry instances
 
-        if self.simulation_config is not None:
-            self._read_from_sqlite()
-            for config in self.simulation_config:
+        if simulation_config is not None:
+            for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                try:
-                    self.md_simulations.append(SimulationManager(item))
-
-                except Exception as e:
-                    self.md_simulations.append(None)
-                    logger.error(
-                        f"Failed to add simulation {item} to md_simulations: {e}"
-                    )
+                self.md_simulations.append(SimulationManager(item))
 
         logger.debug("RunManager done innit bruv!")
-
-    def _read_from_sqlite(self):
-        crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
-        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
-            database_path = crystal_config.get("Filepath")
-            logger.debug(f"Load from database at {database_path}")
-            self.database = setup_db(database_path)
-
-            query = crystal_config.get("Query")
-
-            defect_folder = Path("./defects")
-            defects = get_defects(self.database, **query)
-            save_defects(defects, defect_folder)
-
-            for config in self.simulation_config:
-                item = list(config.values())[0]
-
-                crystal_config = {
-                    "TYPE": "FILE",
-                    "Filepath": str(defect_folder),
-                }
-
-                item["CRYSTAL"] = crystal_config
-
-            self.simulation_config = get_files(
-                self.simulation_config, str(defect_folder)
-            )
-            for i, config in enumerate(self.simulation_config):
-                item = list(config.values())[0]
-                item["CRYSTAL"]["Defect"] = {
-                    "key": defects[i][0],
-                    "stoichiometry": defects[i][1],
-                    "configuration": defects[i][2],
-                }
-            logger.debug(f"simulations after database read: {self.simulation_config}")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
@@ -184,11 +140,10 @@ class RunManager:
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat":
-                    result.calc_isochoric_heat_capacity_per_atom(),
+                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
-                    + final_frame.get_kinetic_energy(),
+                + final_frame.get_kinetic_energy(),
                 "defect": crystal.get("Defect", None),
                 "simulation_parameters": {**ensamble, **simulation},
             },
@@ -213,9 +168,6 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
-                if sim is None:
-                    logger.error("Simulation is None, skipping")
-                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
@@ -268,9 +220,6 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    if sim is None:
-                        logger.error("Simulation is None, skipping")
-                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]
