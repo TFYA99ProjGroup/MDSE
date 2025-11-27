@@ -1,7 +1,32 @@
+Host_sim:
+  CRYSTAL:
+    TYPE: DATABASE
+    Filepath: ../../../defects.sqlite
+    Structure_folder: "./host"
+    Query:
+      host: diamond
+  ENSAMBLE:
+    Ensamble: NVT
+    Temp: 1
+    ThermoTime: 5
+  SIMULATION:
+    Timestep: 1 #fs
+    Length: 10
+    TrajInterval: 1
+    Calculator: MACE
+    CalculatorParams: 
+      model_paths: ../2023-12-10-mace-128-L0_energy_epoch-249.model
+      device: cpu
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all
+
 Simulation:
   CRYSTAL:
     TYPE: DATABASE
     Filepath: ../../../defects.sqlite
+    Structure_folder: "./defect"
     Query:
       key: -4871140043124584231
   ENSAMBLE:
@@ -9,9 +34,9 @@ Simulation:
     Temp: 1
     ThermoTime: 5
   SIMULATION:
-    Timestep: 2 #fs
-    Length: 2000
-    TrajInterval: 10
+    Timestep: 1 #fs
+    Length: 10
+    TrajInterval: 1
     Calculator: MACE
     CalculatorParams: 
       model_paths: ../2023-12-10-mace-128-L0_energy_epoch-249.model

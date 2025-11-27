@@ -103,39 +103,52 @@ class RunManager:
         logger.debug("RunManager done innit bruv!")
 
     def _read_from_sqlite(self):
-        crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
-        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
-            database_path = crystal_config.get("Filepath")
-            logger.debug(f"Load from database at {database_path}")
-            self.database = setup_db(database_path)
+        elements_to_remove = []
+        for i, item in enumerate(self.simulation_config):
+            config = list(item.values())[0]
+            crystal_config = config.get("CRYSTAL")
+            if crystal_config and crystal_config.get("TYPE") == "DATABASE":
+                database_path = crystal_config.get("Filepath")
+                logger.debug(f"Load from database at {database_path}")
+                self.database = setup_db(database_path)
 
-            query = crystal_config.get("Query")
+                query = crystal_config.get("Query", {})
 
-            defect_folder = Path("./defects")
-            defects = get_defects(self.database, **query)
-            save_defects(defects, defect_folder)
+                defect_folder = Path(crystal_config.get("Structure_folder"))
+                defects = get_defects(self.database, **query)
+                save_defects(defects, defect_folder)
 
-            for config in self.simulation_config:
-                item = list(config.values())[0]
-
-                crystal_config = {
+                new_config = {
                     "TYPE": "FILE",
                     "Filepath": str(defect_folder),
                 }
 
-                item["CRYSTAL"] = crystal_config
+                config["CRYSTAL"] = new_config
 
-            self.simulation_config = get_files(
-                self.simulation_config, str(defect_folder)
-            )
-            for i, config in enumerate(self.simulation_config):
-                item = list(config.values())[0]
-                item["CRYSTAL"]["Defect"] = {
-                    "key": defects[i][0],
-                    "stoichiometry": defects[i][1],
-                    "configuration": defects[i][2],
-                }
-            logger.debug(f"simulations after database read: {self.simulation_config}")
+                elements_to_remove.append(i)
+                
+                new_sims = get_files([item], str(defect_folder))
+                
+                for i, item in enumerate(new_sims):
+                    config = list(item.values())[0]
+                    if query.get("host") is None:
+                        config["CRYSTAL"]["Defect"] = {
+                            "key": defects[i][0],
+                            "stoichiometry": defects[i][1],
+                            "configuration": defects[i][2],
+                            "host_material": defects[i][3],
+                        }
+
+                self.simulation_config.extend(new_sims)
+
+
+        for i in elements_to_remove:
+            self.simulation_config[i] = None
+
+        for i in elements_to_remove:
+            self.simulation_config.remove(None)
+
+        logger.debug(f"simulations after database read: {self.simulation_config}")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.

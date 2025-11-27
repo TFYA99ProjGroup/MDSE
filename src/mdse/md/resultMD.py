@@ -54,7 +54,7 @@ class ResultMD:
             raise
         return cls([atom for atom in traj])
 
-    def _calc_msd_list(self):
+    def _calc_msd_list(self, frame_skip = 0.5):
         """Calculate the mean squared displacement (MSD) for each direction.
 
         Returns:
@@ -65,17 +65,22 @@ class ResultMD:
                 - MSD_at_tau_z (list): MSD values in the z-direction.
         """
         logger.debug("Beginning calculations for MSD")
-        positions = np.array([frame.positions for frame in self.frames])
+
+        self.check_equilibrium()
+
+        if self.reached_equilibrium:
+            nskip = self.check_equilibrium()
+        else:
+            nskip = int(frame_skip * len(self.frames))
+        frames = self.frames[nskip:]
+        positions = np.array([frame.positions for frame in frames])
+
         # positions[t] gives positions ALL atoms at time t
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
-        #Check if equilibrium, filter out bad start
-        self.check_equilibrium()
-        if self.reached_equilibrium:
-            positions = positions[self.check_equilibrium() :]
-        #taus = range(7, len(self.frames) - 7)
-        taus = range(7, len(positions) - 7)
+        taus = range(nskip, len(positions) - nskip)
+
         #Comment: This removes very short taus. So short timesteps
         #But we still get the early frames. Nothing to-do with equilibrium
 
@@ -126,14 +131,14 @@ class ResultMD:
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
-    def calc_msd(self):
+    def calc_msd(self, frame_skip = 0.5):
         """Compute the overall mean squared displacement (MSD).
 
         Returns:
             float: The average MSD value across all directions.
         """
         logger.debug("Begginning calc_msd")
-        _, MSD_x, MSD_y, MSD_z = self._calc_msd_list()
+        _, MSD_x, MSD_y, MSD_z = self._calc_msd_list(frame_skip)
         return np.mean(MSD_x + MSD_y + MSD_z)
 
     def estimate_nearest_neighbor_distance(self, positions):
