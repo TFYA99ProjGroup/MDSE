@@ -901,3 +901,13 @@ class ResultMD:
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
+
+    def calc_lattice(self):
+        prim = self.frames[0].info["lattice_frames"]
+        #energies = [e1 for e1, e2 in prim]
+        #volumes = [e2 for e1, e2 in prim]
+
+        min_energy, min_volume = min(prim, key=lambda x: x[0])
+ 
+        #FCC, conventional
+        print(min_volume**(1/3))

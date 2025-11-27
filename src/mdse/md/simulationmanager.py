@@ -141,14 +141,25 @@ class SimulationManager:
                     crystal_params,
                     ["Name", "Structure", "Lattice_a", "Cubic"],
                 )
-                self.crystal = bulk(
+                #self.crystal = bulk(
+                #    crystal_params.get("Name"),
+                #    crystal_params.get("Structure"),
+                #    a=crystal_params.get("Lattice_a"),
+                #    b=crystal_params.get("Lattice_b", None),
+                #    c=crystal_params.get("Lattice_c", None),
+                #    cubic=crystal_params.get("Cubic"),
+                #) * crystal_params.get("Supercell", (1, 1, 1))
+
+                self.crystal_prim = bulk(
                     crystal_params.get("Name"),
                     crystal_params.get("Structure"),
                     a=crystal_params.get("Lattice_a"),
                     b=crystal_params.get("Lattice_b", None),
                     c=crystal_params.get("Lattice_c", None),
                     cubic=crystal_params.get("Cubic"),
-                ) * crystal_params.get("Supercell", (1, 1, 1))
+                ) 
+                
+                self.crystal = self.crystal_prim * crystal_params.get("Supercell", (1, 1, 1))
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
@@ -240,6 +251,7 @@ class SimulationManager:
         logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
+        self.result[0].info["lattice_frames"] = self.estimate_lattice()
 
         logger.debug("Init done")
 
@@ -653,3 +665,43 @@ class SimulationManager:
             "Not implemented for that many atoms, yet"
         )
         return 0, 0
+
+    def estimate_lattice(self):
+        """
+
+        This function runs the simulations necessary for estimating laticeconstant.
+        The line fitting is then done in result class
+
+        Use the small self.crystal_prim, and calculator from self.calculator
+
+        Since resultMD doesnt keep the calculator, do the simulations here.
+
+        return volume, should work for non-cubic also.
+        
+        """
+
+        #Scale the cell, to try different lattice constants
+        a0 = self.crystal_prim.get_cell()[0,0]
+        cell0 = self.crystal_prim.get_cell()
+
+        prim_atoms = ase.Atoms(
+            symbols=self.crystal_prim.get_chemical_symbols(),
+            positions=self.crystal_prim.get_positions(),
+            cell=self.crystal_prim.get_cell(),
+            pbc=True,
+        )
+
+        energy_vs_vol = []
+
+        for scaling in np.linspace(0.95,1.05,10):
+            scaled = prim_atoms.copy()
+            scaled.set_cell(cell0*scaling, scale_atoms = True)
+            scaled.calc = self._check_calculator()
+            #energy_vs_lattice.append([scaled.get_potential_energy(),scaling*a0])
+            energy_vs_vol.append([scaled.get_potential_energy(),scaled.get_volume()])
+
+        return energy_vs_vol
+
+
+
+
