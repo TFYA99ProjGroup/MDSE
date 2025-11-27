@@ -903,20 +903,27 @@ class ResultMD:
         return crystal_equil
 
     def calc_lattice(self):
-        prim = self.frames[0].info["lattice_frames"]
-        prim_structure = self.frames[0].info["Structure"]
+        """Uses .info["lattice_frames"] wich is energy vs latice_constant.
+        Find what/which lattice constant gives the lowest energy.
+        For conventional cell
 
-        #So dont crash. 
-        if not prim or not prim_structure:
-            return 0
-
-        min_energy, min_latt = min(prim, key=lambda x: x[0])
- 
-        #Conventional cell, and if cubic
-        if (
-            prim_structure == "cubic"
-        ):
-            return min_latt
+        returns:
+            cov_structure(str): Name of the conventional cell structure
+            min_latt(list): The lattice constant in 1D (cubic) or list for 3D (other)
         
-        if prim_structure == "hexagonal":
-            return min_latt
+        """
+        energy_v_lattice = self.frames[0].info["lattice_frames"]
+        cov_structure = self.frames[0].info["Structure"]
+
+
+        if not energy_v_lattice:
+            raise RuntimeError("Calc_lattice is missing .info[lattice_frames]")
+        if not cov_structure:
+            raise RuntimeError("Calc_lattice is missing .info[Structure]")
+        
+        if cov_structure == "cubic" or cov_structure == "hexagonal":
+            _, min_latt = min(energy_v_lattice, key=lambda x: x[0])
+            return cov_structure ,min_latt
+        
+        return cov_structure, energy_v_lattice
+ 

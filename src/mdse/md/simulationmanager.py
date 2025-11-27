@@ -691,30 +691,42 @@ class SimulationManager:
         """
         a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
 
-        if (alfa == beta == gamma == 90):
+        if (alfa == beta == gamma == 90 and a0==b0==c0):
                  self.crystal_struct = "cubic"
-        elif (alfa == beta != gamma or alfa != beta == gamma or alfa==gamma != beta):
+        elif (alfa == beta != gamma and a0 == b0 == c0):
+            self.crystal_struct = "trigonal"
+        elif (alfa == beta != gamma and a0 == b0 != c0):
             self.crystal_struct = "hexagonal"
+        elif (alfa == beta == gamma and a0 == b0 != c0):
+            self.crystal_struct = "tetragonal"
+        elif (alfa == beta == gamma and a0 != b0 != c0):
+            self.crystal_struct = "orthorhombic"
+        elif (alfa == gamma != beta and a0 != b0 != c0):
+            self.crystal_struct = "monoclinic"
+        elif (alfa != beta != gamma and a0 != b0 != c0):
+            self.crystal_struct = "triclinic"
         else:
             self.crystal_struct == None
 
-        cell0 = self.crystal_conv.get_cell()
         conv_atoms = ase.Atoms(
-                symbols=self.crystal_conv.get_chemical_symbols(),
-                positions=self.crystal_conv.get_positions(),
-                cell=self.crystal_conv.get_cell(),
-                pbc=True,
-            )
+                    symbols=self.crystal_conv.get_chemical_symbols(),
+                    positions=self.crystal_conv.get_positions(),
+                    cell=self.crystal_conv.get_cell(),
+                    pbc=True,
+                )
 
-
-        if self.crystal_struct == "cubic":
+        if (
+            self.crystal_struct == "cubic" or
+            self.crystal_struct == "triagonal" 
+            ):
             #Conventional cell has same latice constant in all directions!
-
+            cell0 = self.crystal_conv.get_cell()
+            
             a0 = self.crystal_conv.get_cell()[0,0]
 
             energy_vs_lat = []
 
-            for scaling in np.linspace(0.95,1.05,20):
+            for scaling in np.linspace(0.95,1.05,30):
                 scaled = conv_atoms.copy()
                 scaled.set_cell(cell0*scaling, scale_atoms = True)
                 scaled.calc = self._check_calculator()
@@ -722,33 +734,99 @@ class SimulationManager:
 
             return energy_vs_lat
         
-
-        if self.crystal_struct == "hexagonal":
+        if (
+            self.crystal_struct == "hexagonal" or
+            self.crystal_struct == "tetragonal" 
+        ):
             #Need to scale axis independant of eachoter
             scaling_step = np.linspace(0.95,1.05,20)
-            a0 = cell0[0,0]
-            b0 = cell0[1,1]
-            c0 = cell0[2,2]
+
             energy_vs_lat = []
+
+            #Convention that a and b are the same ones.
             for scale_a in scaling_step:
-                for scale_b in scaling_step:
-                    for scale_c in scaling_step:
-                        scaled = conv_atoms.copy()
-                        new_cell = (
-                            a0*scale_a,
-                            b0*scale_b,
-                            c0*scale_c,
-                            alfa,
-                            beta,
-                            gamma
-                        )
-                        scaled.set_cell(new_cell, scale_atoms = True)
-                        scaled.calc = self._check_calculator()
-                        energy_vs_lat.append([scaled.get_potential_energy(),
-                                              [a0*scale_a,b0*scale_b,c0*scale_c]])
+                for scale_c in scaling_step:
+                    scaled = conv_atoms.copy()
+                    new_cell = (
+                        a0*scale_a,
+                        b0*scale_a,
+                        c0*scale_c,
+                        alfa,
+                        beta,
+                        gamma
+                    )
+                    scaled.set_cell(new_cell, scale_atoms = True)
+                    scaled.calc = self._check_calculator()
+                    energy_vs_lat.append([scaled.get_potential_energy(),
+                                            [a0*scale_a,b0*scale_a,c0*scale_c]])
 
             return energy_vs_lat
+        
+        if (
+            self.crystal_struct == "orthorhomic" or
+            self.crystal_struct == "monoclinic" or
+            self.crystal_struct == "triclinic"
+        ):
+            #Need to scale axis independant of eachoter
+            #Would require 3-time nested for-loop. For performance assume a,b,c not strongly coupled
+            scaling_step = np.linspace(0.95,1.05,20)
 
+            energy_vs_lat = []
 
-
-
+            #Start by keeping b and c fixed
+            for scale_a in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*scale_a,
+                    b0*1,
+                    c0*1,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calculator()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_a])
+                
+            #Find lowest a, keep that and c fixed. Vary b
+            _, min_a = min(energy_vs_lat, key=lambda x: x[0])
+            energy_vs_lat = []
+            for scale_b in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*min_a,
+                    b0*scale_b,
+                    c0,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calculator()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_b])
+                
+            #With lowest a and b, vary c
+            _, min_b = min(energy_vs_lat, key=lambda x: x[0])
+            energy_vs_lat = []
+            for scale_c in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*min_a,
+                    b0*min_b,
+                    c0*scale_c,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calculator()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_c])
+                
+            #Return the lowest a,b and c
+            _, min_c = min(energy_vs_lat, key=lambda x: x[0])
+            return [min_a*a0,min_b*b0,min_c*c0]
+                
+        raise RuntimeError("Could not find convential cell type")

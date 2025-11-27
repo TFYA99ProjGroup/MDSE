@@ -6,7 +6,7 @@ from mdse.parser.parse_yml import main_read
 def main():
 
     #MgCu2 with mace
-    config = main_read("cohesive_data_cif_Zn_mace.yaml")
+    config = main_read("cohesive_data_cif_CuO_mace.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
     res = sm.simulate_nve()
@@ -14,12 +14,12 @@ def main():
     print(res.calc_lattice())
 
     #MgCu2 with mace
-    #config = main_read("cohesive_data_cif_MgCu2_mace.yaml")
-    #sm = SimulationManager(list(config[0].values())[0])
+    config = main_read("cohesive_data_cif_MgCu2_mace.yaml")
+    sm = SimulationManager(list(config[0].values())[0])
 
-    #res = sm.simulate_nve()
+    res = sm.simulate_nve()
 
-    #print(res.calc_lattice())
+    print(res.calc_lattice())
 
 
     #Fe with mace
@@ -32,12 +32,12 @@ def main():
 
 
     #A fcc metal, mace
-    config = main_read("cohesive_data_Cu_mace.yaml")
-    sm = SimulationManager(list(config[0].values())[0])
+    #config = main_read("cohesive_data_Cu_mace.yaml")
+    #sm = SimulationManager(list(config[0].values())[0])
 
-    res = sm.simulate_nve()
+    #res = sm.simulate_nve()
 
-    print(res.calc_lattice())
+    #print(res.calc_lattice())
 
 
 if __name__ == "__main__":
