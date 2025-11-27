@@ -16,7 +16,9 @@
       "lindemann", 
       "self_diffusion", 
       "isobaric_specific_heat",
-      "debye"
+      "debye",
+      "total_energy",
+      "defect"
     ]
   },
   "aliases": {

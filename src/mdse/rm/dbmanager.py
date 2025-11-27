@@ -24,7 +24,7 @@ class MongoDBEntry:
     # In here will be everything custom by us.
     mdse_fields: dict = field(default_factory=dict)
 
-    # SHould fields
+    # Should fields
     last_modified: datetime = None
     elements: list[str] = None
     nelements: int = None

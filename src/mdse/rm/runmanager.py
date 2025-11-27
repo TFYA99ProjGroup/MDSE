@@ -8,6 +8,7 @@ from datetime import datetime
 import secrets
 from mdse.parser.httk_reader import get_defects, save_defects, setup_db
 from mdse.parser.parse_yml import get_files
+from mdse.md.resultMD import ResultMD
 
 logger = logging.getLogger(__name__)
 
@@ -167,85 +168,37 @@ class RunManager:
             value = 0.0
         propertie_values[property] = value
 
-    def run_results(self, result, config):
+    def run_results(self, result: ResultMD, config):
         logger.debug(f"Results: {result}")
         crystal = config[next(iter(config))]["CRYSTAL"]
+        simulation = config[next(iter(config))]["SIMULATION"]
         ensamble = config[next(iter(config))]["ENSAMBLE"]
+
+        final_frame = result.frames[-1]
+
         entry = MongoDBEntry(
             id=str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K",
             last_modified=datetime.now(),
-            elements=result.frames[0].get_chemical_symbols(),
-            nelements=len(result.frames[0].get_chemical_symbols()),
+            elements=list(set(final_frame.get_chemical_symbols())),
+            nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
                 "isobaric_specific_heat":
                     result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
+                "total_energy": final_frame.info["pot_energy"]
+                    + final_frame.get_kinetic_energy(),
+                "defect": crystal.get("Defect", None),
+                "simulation_parameters": {**ensamble, **simulation},
             },
-            chemical_formula_reduced=str(result.frames[0].symbols.formula.reduce()[0]),
+            chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
+            cartesian_site_positions=final_frame.get_positions().tolist(),
+            lattice_vectors=final_frame.get_cell().tolist(),
+            nsites=len(final_frame.get_positions()),
+            species_at_sites=final_frame.get_chemical_symbols(),
         )
         return entry
-        # for index, config in enumerate(self.simulation_config):
-        logger.debug(config)
-        try:
-            properties = config[next(iter(config))]["RESULT"]["Properties"]
-        except Exception:
-            logger.error(
-                f"Did not find RESULT: Properties in {config[next(iter(config))]}"
-            )
-            properties = {}
-        # result = self.result_objects[index]
-        logger.debug(properties)
-        logger.debug(result)
-
-        crystal = config[next(iter(config))]["CRYSTAL"]
-        ensamble = config[next(iter(config))]["ENSAMBLE"]
-        simulation = config[next(iter(config))]["SIMULATION"]
-
-        docs = {}
-
-        docs["simulation_id"] = str(secrets.randbits(128))
-        docs["simulation"] = {
-            **simulation,
-            **ensamble,
-        }
-
-        if crystal.get("Defect") is not None:
-            docs["defect"] = crystal["Defect"]
-
-        final_frame = result.frames[-1]
-
-        atoms = {}
-        atoms["elements"] = final_frame.get_chemical_symbols()
-        atoms["positions"] = final_frame.get_positions().tolist()
-        atoms["lattice_vectors"] = final_frame.get_scaled_positions().tolist()
-        docs["atoms"] = atoms
-
-        composition = {}
-        composition["elements"] = list(set(final_frame.get_chemical_symbols()))
-        formula, _ = final_frame.symbols.formula.reduce()
-        composition["chemical_formula_reduced"] = str(formula)
-        docs["composition"] = composition
-
-        property_values = {}
-        property_functions = {
-            "lindemann": result.calc_lindemann,
-            "self-diffusion": result.calc_self_diff,
-            "isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
-            "debye": result.calc_debye_temperature,
-        }
-        for name, func in property_functions.items():
-            if (name in properties) or ("all" in properties):
-                self._add_property(name, property_values, func)
-        docs["properties"] = {
-            **property_values,
-            "total_energy": final_frame.info["pot_energy"]
-            + final_frame.get_kinetic_energy(),
-        }
-
-        logger.debug(len(docs))
-        return docs
 
     def run_simulations(self, overwrite_ensamble=None):
         """
@@ -288,10 +241,10 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
+                logger.debug(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
                     if type(msg) is MongoDBEntry:
-                        logger.debug(f"[Master] Received {msg} from worker {src}")
                         self.MongoDBentriesAsJson.append(msg.to_dict())
                     if jobs:
                         job = jobs.pop(0)
