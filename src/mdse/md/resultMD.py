@@ -54,7 +54,7 @@ class ResultMD:
             raise
         return cls([atom for atom in traj])
 
-    def _calc_msd_list(self, frame_skip = 0.2):
+    def _calc_msd_list(self, frame_skip=0.2):
         """Calculate the mean squared displacement (MSD) for each direction.
 
         Returns:
@@ -66,10 +66,10 @@ class ResultMD:
         """
         logger.debug("Beginning calculations for MSD")
 
-        self.check_equilibrium()
+        equilibrium_frame = self.check_equilibrium()
 
         if self.reached_equilibrium:
-            nskip = self.check_equilibrium()
+            nskip = equilibrium_frame
         else:
             nskip = int(frame_skip * len(self.frames))
         frames = self.frames[nskip:]
@@ -79,11 +79,13 @@ class ResultMD:
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
-        taus = range(int(nskip*frame_skip), len(positions) - int(frame_skip*nskip))
+        taus = range(
+            int(len(frames) * frame_skip),
+            len(positions) - int(frame_skip * len(frames)),
+        )
 
-        #Comment: This removes very short taus. So short timesteps
-        #But we still get the early frames. Nothing to-do with equilibrium
-
+        # Comment: This removes very short taus. So short timesteps
+        # But we still get the early frames. Nothing to-do with equilibrium
 
         MSD_at_tau_x = []
         MSD_at_tau_y = []
@@ -131,7 +133,7 @@ class ResultMD:
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
-    def calc_msd(self, frame_skip = 0.2):
+    def calc_msd(self, frame_skip=0.2):
         """Compute the overall mean squared displacement (MSD).
 
         Returns:
@@ -275,15 +277,17 @@ class ResultMD:
         self.check_equilibrium()
         if self.reached_equilibrium:
             max_lag = self.check_equilibrium()
-            frame_skip = max_lag/len(self.frames)
+            frame_skip = max_lag / len(self.frames)
         else:
             max_lag = int(frame_skip * len(self.frames))
         frames = self.frames[max_lag:]
         _, natoms = np.shape(frames)
         dt = frames[0].info["dt"] * 1e-15 / units.fs
-        logger.debug((
-            ("Calculating density of states for system."),
-            (f"frames: {max_lag}, natoms: {natoms}, dt: {dt} fs")),
+        logger.debug(
+            (
+                ("Calculating density of states for system."),
+                (f"frames: {max_lag}, natoms: {natoms}, dt: {dt} fs"),
+            ),
         )
 
         vacf = self._calc_vacf(frame_skip)
@@ -358,9 +362,9 @@ class ResultMD:
         hbar = constants.hbar
         _, natoms = np.shape(self.frames)
 
-        self.check_equilibrium()
+        equilibrium_frame = self.check_equilibrium()
         if self.reached_equilibrium:
-            frame_skip = self.check_equilibrium() / len(self.frames)
+            frame_skip = equilibrium_frame / len(self.frames)
 
         dos, omega = self.calc_density_of_states(frame_skip)
 
@@ -396,7 +400,9 @@ class ResultMD:
             filter_start = self.check_equilibrium()
         else:
             filter_start = int(len(MSD_of_tau_x) * 0.1)"""
-        filter_start = 0 #should already have filtered out first bad frames in calc_msd
+        filter_start = (
+            0  # should already have filtered out first bad frames in calc_msd
+        )
         filter_end = int(len(MSD_of_tau_x) * 0.9)
 
         MSD_of_tau_x = MSD_of_tau_x[filter_start:filter_end]
@@ -440,7 +446,7 @@ class ResultMD:
 
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
         for frame in self.frames:
-            E_eV.append(frame.info["pot_energy"]+frame.get_kinetic_energy())
+            E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
             V_A3.append(frame.get_volume())
 
         E_J = np.array(E_eV) * constants.eV
@@ -500,7 +506,7 @@ class ResultMD:
         E_eV, T_K = [], []
 
         for frame in self.frames:
-            E_eV.append(frame.info["pot_energy"]+frame.get_kinetic_energy())
+            E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
             T_K.append(frame.get_temperature())
 
         E_J = np.array(E_eV) * constants.eV
@@ -527,7 +533,7 @@ class ResultMD:
     def _energy_with_strain(self, crystal, strain_matrix):
         logger.debug("calc strained energy")
         crystal = self._attach_calc(crystal)
-        cell =  crystal.cell.copy()
+        cell = crystal.cell.copy()
 
         strained_cell = (np.eye(3) + strain_matrix) @ cell
         crystal.set_cell(strained_cell, scale_atoms=True)
@@ -535,7 +541,7 @@ class ResultMD:
         return crystal.get_potential_energy() * constants.eV
 
     def calc_C11(self, crystal_equil, epsilon=0.01):
-        '''Calculate the C11 elastic constant. Found by applying axial compression on
+        """Calculate the C11 elastic constant. Found by applying axial compression on
         one axis of the cell.
 
         parameters :
@@ -547,14 +553,12 @@ class ResultMD:
 
         returns:
             float: C11
-        '''
+        """
         logger.debug("Calculating C11")
         crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
-        compression = np.array([[epsilon, 0,    0],
-                                [0,     0,      0],
-                                [0,     0,      0]])
+        compression = np.array([[epsilon, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         E0 = crystal_equil.get_potential_energy() * constants.eV
         E_plus = self._energy_with_strain(crystal_equil.copy(), compression)
@@ -568,7 +572,7 @@ class ResultMD:
         return C11
 
     def calc_C12(self, crystal_equil, epsilon=0.01):
-        '''Calculate the C12 elastic constant. Found by applying compression
+        """Calculate the C12 elastic constant. Found by applying compression
         on one axis and viewing the dilation of the cell in another.
 
         parameters :
@@ -580,15 +584,12 @@ class ResultMD:
 
         returns:
             float: C12
-        '''
+        """
         logger.debug("Caluculating C12")
         crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
-        compression = np.array([[epsilon, 0,  0],
-                                [0, -epsilon, 0],
-                                [0,       0,  0]])
-
+        compression = np.array([[epsilon, 0, 0], [0, -epsilon, 0], [0, 0, 0]])
 
         E0 = crystal_equil.get_potential_energy() * constants.eV
         E_plus = self._energy_with_strain(crystal_equil.copy(), compression)
@@ -602,7 +603,7 @@ class ResultMD:
         return C12
 
     def calc_C44(self, crystal_equil, gamma):
-        ''' Calculate the C44 elastic constant. Found by applying shear strain
+        """Calculate the C44 elastic constant. Found by applying shear strain
         to a relaxed cell.
 
         parameters:
@@ -614,7 +615,7 @@ class ResultMD:
 
         returns:
             float: C44
-        '''
+        """
         logger.debug("C44")
         crystal_equil = self._attach_calc(crystal_equil)
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
@@ -622,20 +623,16 @@ class ResultMD:
         def energy_with_shear_strain(crystal, gamma):
             crystal = self._attach_calc(crystal)
             cell = crystal.cell.copy()
-            shear = np.array([[0, gamma/2, 0],
-                              [gamma/2, 0, 0],
-                              [0,       0, 0]])
+            shear = np.array([[0, gamma / 2, 0], [gamma / 2, 0, 0], [0, 0, 0]])
             shear_cell = (np.eye(3) + shear) @ cell
             crystal.set_cell(shear_cell, scale_atoms=True)
             return crystal.get_potential_energy() * constants.eV
 
-        shear = np.array([[0, gamma/2, 0],
-                          [gamma/2, 0, 0],
-                          [0,       0, 0]])
+        shear = np.array([[0, gamma / 2, 0], [gamma / 2, 0, 0], [0, 0, 0]])
 
-        E0  = crystal_equil.get_potential_energy() * constants.eV
-        E_plus  = self._energy_with_strain(crystal_equil.copy(), shear)
-        E_minus  = self._energy_with_strain(crystal_equil.copy(), -shear)
+        E0 = crystal_equil.get_potential_energy() * constants.eV
+        E_plus = self._energy_with_strain(crystal_equil.copy(), shear)
+        E_minus = self._energy_with_strain(crystal_equil.copy(), -shear)
 
         deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
 
@@ -644,9 +641,8 @@ class ResultMD:
 
         return C44
 
-
     def calc_shear_modulus(self, strain=0.01):
-        '''Calculates the shear modulus at an equilibrium frame.
+        """Calculates the shear modulus at an equilibrium frame.
         Shear modulus, G = (3*C44 + C11 - C12) / 5
 
         parameters:
@@ -656,7 +652,7 @@ class ResultMD:
 
         returns:
             float: shear_modulus
-        '''
+        """
         ## Maybe fix mean over serveral equil frames
         logger.debug("Calculating shear moudulus")
         equil_frame = self.check_equilibrium()
@@ -667,19 +663,18 @@ class ResultMD:
         C12 = self.calc_C12(crystal_equil, strain)
 
         # Voight gives an upper bound of the shear modulus
-        shear_modulus_voight = (3*C44 + C11 - C12) / 5
+        shear_modulus_voight = (3 * C44 + C11 - C12) / 5
 
         # Reuss gives a lower bound of the shear modulus
-        shear_modulus_reuss = 5*(C11 - C12)*C44 / (4*C44 + 3*(C11 - C12))
+        shear_modulus_reuss = 5 * (C11 - C12) * C44 / (4 * C44 + 3 * (C11 - C12))
 
         # Hill average of the Voight and Reuss shear modulus
         shear_modulus = (shear_modulus_reuss + shear_modulus_voight) / 2
         logger.debug(f"shear modulus: {shear_modulus}")
         return shear_modulus
 
-
     def calc_bulk_modulus(self, strain=0.01):
-        '''Calculates the shear modulus at an equilibrium frame.
+        """Calculates the shear modulus at an equilibrium frame.
         Bulk modulus, B = (C11 + 2*C12) / 3
 
         parameters:
@@ -690,7 +685,7 @@ class ResultMD:
 
         returns:
             float: bulk_modulus
-        '''
+        """
         logger.debug("Calculating bulk modulus")
         equil_frame = self.check_equilibrium()
         crystal_equil = self.frames[equil_frame].copy()
@@ -698,14 +693,13 @@ class ResultMD:
         C11 = self.calc_C11(crystal_equil, strain)
         C12 = self.calc_C12(crystal_equil, strain)
 
-        bulk_modulus = (C11 + 2*C12) / 3
+        bulk_modulus = (C11 + 2 * C12) / 3
 
         logger.debug(f"bulk_modulus: {bulk_modulus}")
         return bulk_modulus
 
-
     def calc_youngs_modulus(self, strain=0.01):
-        '''Calculates Young's modulus at an equilibrium frame.
+        """Calculates Young's modulus at an equilibrium frame.
         Young's modulus, E = 9*B*G / (3*B + G)
 
         parameters:
@@ -716,13 +710,13 @@ class ResultMD:
 
         returns:
             float: youngs_modulus
-        '''
+        """
         logger.debug("Calculating Young's modulus")
 
         B = self.calc_bulk_modulus(strain)
         G = self.calc_shear_modulus(strain)
 
-        youngs_modulus = 9*B*G / (3*B + G)
+        youngs_modulus = 9 * B * G / (3 * B + G)
 
         logger.debug(f"Young's modulus: {youngs_modulus}")
         return youngs_modulus
@@ -750,8 +744,10 @@ class ResultMD:
             list: Total energy at each frame
         """
         logger.debug("Get total energies")
-        return[frame.get_kinetic_energy() + frame.get_potential_energy()
-               for frame in self.frames]
+        return [
+            frame.get_kinetic_energy() + frame.get_potential_energy()
+            for frame in self.frames
+        ]
 
     def get_time_axis(self):
         """Gets the time steps where frames are from.
@@ -776,9 +772,8 @@ class ResultMD:
         equil_frame = self.check_equilibrium()
         if not self.reached_equilibrium:
             equil_frame = 7
-        return (
-            self.frames[0].info["E_single_atom"] -
-            (np.mean(pots[equil_frame:]) / len(self.frames[0])*atoms_per_unit)
+        return self.frames[0].info["E_single_atom"] - (
+            np.mean(pots[equil_frame:]) / len(self.frames[0]) * atoms_per_unit
         )
 
     def get_temperatures(self):
@@ -800,47 +795,46 @@ class ResultMD:
         logger.debug("Started check if equilibrium was reached")
         kin_energy = self.get_kin_energies()
         pot_energy = self.get_pot_energies()
-        Tot_energy = [kin+pot for (kin, pot) in zip(kin_energy, pot_energy)]
+        Tot_energy = [kin + pot for (kin, pot) in zip(kin_energy, pot_energy)]
         temperatures = self.get_temperatures()
 
-        #Too short to check equilibrium
-        if (len(self.get_kin_energies()) < 10):
+        # Too short to check equilibrium
+        if len(self.get_kin_energies()) < 10:
             self.reached_equilibrium = False
             logger.debug("Simulation had too few frames. No equilibrium")
             return 0
-         #----Based on total energy-----
+        # ----Based on total energy-----
 
-        energy_frame = self._check_equilibrium_const(Tot_energy,0.0001)
+        energy_frame = self._check_equilibrium_const(Tot_energy, 0.0001)
 
-        if energy_frame != len(Tot_energy)-2: #We found equilibrium
+        if energy_frame != len(Tot_energy) - 2:  # We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, energy reaches const value")
             return energy_frame
 
-         #----Based on temperature-----
+        # ----Based on temperature-----
 
-        temp_frame = self._check_equilibrium_const(temperatures,0.001)
+        temp_frame = self._check_equilibrium_const(temperatures, 0.001)
 
-        if temp_frame != len(temperatures)-2: #We found equilibrium
+        if temp_frame != len(temperatures) - 2:  # We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, temperature reaches const value")
             return temp_frame
 
-        #----If oscillating system----
+        # ----If oscillating system----
 
         oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.005)
-        if oscill_frame != len(Tot_energy)-2: #We found equilibrium
+        if oscill_frame != len(Tot_energy) - 2:  # We found equilibrium
             self.reached_equilibrium = True
             logger.debug("Found equilibrium, energy oscillates")
             return oscill_frame
 
-        #----No equilibrium---
+        # ----No equilibrium---
         self.reached_equilibrium = False
         logger.debug("No equilibrium was found")
         return 0
 
-
-    def _check_equilibrium_const(self, property,tol):
+    def _check_equilibrium_const(self, property, tol):
         """Checks when a propery starts to stabalize around a constant value.
 
         args:
@@ -850,11 +844,13 @@ class ResultMD:
             pos (int): Position of frame where equilibrium starts
         """
         logger.debug("Check if we have equilibrium in the form of constant energy")
-        difference = [abs(property[i+1]-property[i])/property[i]
-                      for i in range(len(property)-1)]
+        difference = [
+            abs(property[i + 1] - property[i]) / property[i]
+            for i in range(len(property) - 1)
+        ]
 
-        for pos,diff in enumerate(difference):
-            if (diff <= tol):
+        for pos, diff in enumerate(difference):
+            if diff <= tol:
                 break
             else:
                 pass
@@ -874,26 +870,28 @@ class ResultMD:
         """
         logger.debug("Check if equilibrium, in oscillating behavior")
         window_lenght = 5
-        windows = [Tot_energy[i: (i+window_lenght)]
-                   for i in range(0,len(Tot_energy)-window_lenght)]
-        #Mean of each window
-        windows_means = np.array([sum(win)/len(win) for win in windows])
+        windows = [
+            Tot_energy[i : (i + window_lenght)]
+            for i in range(0, len(Tot_energy) - window_lenght)
+        ]
+        # Mean of each window
+        windows_means = np.array([sum(win) / len(win) for win in windows])
 
-
-        diffs = [abs(windows_means[i+1]-windows_means[i]) / windows_means[i]
-                 for i in range(len(windows_means)-1)]
-        #Find where we start oscillating
+        diffs = [
+            abs(windows_means[i + 1] - windows_means[i]) / windows_means[i]
+            for i in range(len(windows_means) - 1)
+        ]
+        # Find where we start oscillating
         if len(diffs) == 0:
-            pos = len(Tot_energy)-2
+            pos = len(Tot_energy) - 2
 
         for pos, diff in enumerate(diffs):
-            if( diff < tol):
+            if diff < tol:
                 return pos
             else:
                 pass
 
-        return len(Tot_energy)-2
-
+        return len(Tot_energy) - 2
 
     def _attach_calc(self, crystal_equil):
         calc = self.frames[0].info["calc"]
@@ -903,6 +901,7 @@ class ResultMD:
             crystal_equil.calc = LennardJones()
         elif calc == "MACE":
             from mace.calculators import MACECalculator
+
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
