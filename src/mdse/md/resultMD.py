@@ -54,7 +54,7 @@ class ResultMD:
             raise
         return cls([atom for atom in traj])
 
-    def _calc_msd_list(self, frame_skip = 0.5):
+    def _calc_msd_list(self, frame_skip = 0.2):
         """Calculate the mean squared displacement (MSD) for each direction.
 
         Returns:
@@ -79,7 +79,7 @@ class ResultMD:
         # positions[t][i] gives position of atom i, at time t
         # positions[t][i][0] gives position of atom i in x-direction, at time t
 
-        taus = range(nskip, len(positions) - nskip)
+        taus = range(int(nskip*frame_skip), len(positions) - int(frame_skip*nskip))
 
         #Comment: This removes very short taus. So short timesteps
         #But we still get the early frames. Nothing to-do with equilibrium
@@ -131,7 +131,7 @@ class ResultMD:
 
         return taus_fs, MSD_at_tau_x, MSD_at_tau_y, MSD_at_tau_z
 
-    def calc_msd(self, frame_skip = 0.5):
+    def calc_msd(self, frame_skip = 0.2):
         """Compute the overall mean squared displacement (MSD).
 
         Returns:
