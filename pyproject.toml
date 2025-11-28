@@ -20,7 +20,7 @@ dependencies = [
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
     "mace-torch",
-    "httk @ git+https://github.com/httk/httk.git@v1.2.0",
+    "httk @ git+https://github.com/httk/httk.git@8d51154014cf8802fe980e6fc786985412930dfb",
 ]
 
 [tool.ruff]
