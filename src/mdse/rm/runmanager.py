@@ -5,6 +5,9 @@ import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
 from mdse.md.resultMD import ResultMD
+from pathlib import Path
+from mdse.parser.httk_reader import get_defects, save_defects, setup_db
+from mdse.parser.parse_yml import get_files
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +94,41 @@ class RunManager:
                 self.md_simulations.append(SimulationManager(item))
 
         logger.debug("RunManager done innit bruv!")
+
+    def _read_from_sqlite(self):
+        crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
+        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
+            database_path = crystal_config.get("Filepath")
+            logger.debug(f"Load from database at {database_path}")
+            self.database = setup_db(database_path)
+
+            query = crystal_config.get("Query")
+
+            defect_folder = Path("./defects")
+            defects = get_defects(self.database, **query)
+            save_defects(defects, defect_folder)
+
+            for config in self.simulation_config:
+                item = list(config.values())[0]
+
+                crystal_config = {
+                    "TYPE": "FILE",
+                    "Filepath": str(defect_folder),
+                }
+
+                item["CRYSTAL"] = crystal_config
+
+            self.simulation_config = get_files(
+                self.simulation_config, str(defect_folder)
+            )
+            for i, config in enumerate(self.simulation_config):
+                item = list(config.values())[0]
+                item["CRYSTAL"]["Defect"] = {
+                    "key": defects[i][0],
+                    "stoichiometry": defects[i][1],
+                    "configuration": defects[i][2],
+                }
+            logger.debug(f"simulations after database read: {self.simulation_config}")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
