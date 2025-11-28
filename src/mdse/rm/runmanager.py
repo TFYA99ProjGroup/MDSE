@@ -87,9 +87,9 @@ class RunManager:
         self.simulation_config = simulation_config
         self.MongoDBentriesAsJson = []  # List to store MongoDBEntry instances
 
-        if simulation_config is not None:
+        if self.simulation_config is not None:
             self._read_from_sqlite()
-            for config in simulation_config:
+            for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
