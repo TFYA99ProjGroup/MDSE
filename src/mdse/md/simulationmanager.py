@@ -632,44 +632,6 @@ class SimulationManager:
         tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
         return E_atom / tot_nr_of_atoms  #len(self.crystal)
 
-        # if len(formula_unit) == 1:
-        #     logger.debug("Found 1 type of element in crystal")
-        #     calc = self._check_calculator()
-
-        #     atom = ase.Atoms(
-        #         list(formula_unit.keys())[0],
-        #         positions=[(0, 0, 0)],
-        #         cell=[15, 15, 15],
-        #         pbc=False,
-        #     )
-        #     atom.calc = calc
-
-        #     E_atom = atom.get_potential_energy()
-
-        #     return E_atom, 1
-
-        # if len(formula_unit) == 2:
-        #     logger.debug("Found 2 unique elements in crystal")
-        #     calc = self._check_calculator()
-        #     positions = []
-        #     symbols = []
-        #     offset = 0
-
-        #     # TODO: This should be looked at!
-        #     for element, amount in formula_unit.items():
-        #         # for _ in range(amount):
-        #         symbols.append(element)
-        #         positions.append((offset, 0, 0))
-        #         offset = offset + 2
-
-        #     atom = ase.Atoms(symbols, positions=positions, cell=[15, 15, 15], pbc=False)
-        #     atom.calc = calc
-
-        #     E_atom = atom.get_potential_energy()
-
-        #     logger.debug(f"Single atom energy: {E_atom}")
-        #     return E_atom, len(symbols)
-
         logger.debug(
             f"Could not calc single_atom_energy for {formula_unit}."
             "Not implemented for that many atoms, yet"
