@@ -65,59 +65,61 @@ def validate_rm(file_path, sim_list, address):
     collection.delete_many({})
 
 
-def validate_db_document(data):
-    # Top-level keys
-    assert data["simulation_id"] is not None
-    assert isinstance(data["simulation_id"], str)
+def validate_db_document(doc):
+    # Mandatory string fields
+    assert "id" in doc and isinstance(doc["id"], str)
+    assert "type" in doc and isinstance(doc["type"], str)
+    assert doc["type"] == "structures"
 
-    assert "atoms" in data
-    assert isinstance(data["atoms"], dict)
+    # Simple list fields
+    assert "elements" in doc
+    assert isinstance(doc["elements"], list)
+    assert all(isinstance(e, str) for e in doc["elements"])
 
-    assert "composition" in data
-    assert isinstance(data["composition"], dict)
+    # Integers
+    assert "nelements" in doc
+    assert isinstance(doc["nelements"], int)
 
-    assert "properties" in data
-    assert isinstance(data["properties"], dict)
+    # Optional fields that are allowed to be None
+    nullable_fields = [
+        "elements_ratios",
+        "chemical_formula_descriptive",
+        "chemical_formula_anonymous",
+        "dimension_types",
+        "nperiodic_dimensions",
+        "lattice_vectors",
+        "cartesian_site_positions",
+        "nsites",
+        "species_at_sites",
+        "species",
+        "chemical_formula_hill",
+        "space_group_symmetry_operations_xyz",
+        "space_group_symbol_hall",
+        "space_group_symbol_hermann_mauguin",
+        "space_group_symbol_hermann_mauguin_extended",
+        "space_group_it_number",
+        "assemblies",
+    ]
 
-    # atoms dict
-    atoms = data["atoms"]
+    for f in nullable_fields:
+        assert f in doc, f"Missing optional field {f}"
+        assert doc[f] is None or isinstance(doc[f], (str, list, dict, int, float))
 
-    assert "elements" in atoms
-    assert isinstance(atoms["elements"], list)
-    assert all(isinstance(e, str) for e in atoms["elements"])
-
-    assert "positions" in atoms
-    assert isinstance(atoms["positions"], list)
-    for pos in atoms["positions"]:
-        assert isinstance(pos, list)
-        assert all(isinstance(x, (float, int)) for x in pos)
-
-    assert "lattice_vectors" in atoms
-    assert isinstance(atoms["lattice_vectors"], list)
-    for vec in atoms["lattice_vectors"]:
-        assert isinstance(vec, list)
-        assert all(isinstance(x, (float, int)) for x in vec)
-
-    # composition dict
-    comp = data["composition"]
-
-    assert "elements" in comp
-    assert isinstance(comp["elements"], list)
-    assert all(isinstance(e, str) for e in comp["elements"])
-
-    assert "chemical_formula_reduced" in comp
-    assert isinstance(comp["chemical_formula_reduced"], str)
-
-    # Properties dict
-    props = data["properties"]
-
-    expected_props = [
+    # Required numeric properties
+    numeric_properties = [
         "lindemann",
-        "self-diffusion",
-        "isobaric specific heat",
+        "self_diffusion",
+        "isobaric_specific_heat",
         "debye",
     ]
 
-    for key in expected_props:
-        assert key in props, f"Missing property {key}"
-        assert isinstance(props[key], (float, int))
+    for prop in numeric_properties:
+        assert prop in doc, f"Missing property {prop}"
+        assert isinstance(doc[prop], (float, int))
+
+    # last_modified timestamp
+    assert "last_modified" in doc
+
+    # structure_features must be a list
+    assert "structure_features" in doc
+    assert isinstance(doc["structure_features"], list)
