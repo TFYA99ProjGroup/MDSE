@@ -20,6 +20,8 @@ dependencies = [
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
     "mace-torch",
+    "pandas",
+    "seaborn",
     "httk @ git+https://github.com/httk/httk.git@v1.2.0",
 ]
 

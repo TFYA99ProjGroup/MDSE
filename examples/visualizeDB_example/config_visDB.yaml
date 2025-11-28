@@ -1,0 +1,18 @@
+data:
+  data_source: "json" #mongo when using mongoDB
+  path: "mock_data.json" #Path to .json or mongo
+plots:
+  plot_1:
+    type: "scatter"
+    x: "temperature"
+    y: "MSD"
+    z: "Lindeman"
+  plot_2:
+    type: "scatter"
+    x: "temperature"
+    y: "energy"
+  plot_3: #See so we get error
+    type: "All plot"
+  plot_4: #Should get errror
+    type: "scatter"
+    x: "temperature"
