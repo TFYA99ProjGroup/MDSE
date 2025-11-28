@@ -1,10 +1,11 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
-import json
-from pathlib import Path
 import math
-import secrets
+from mdse.rm.dbmanager import MongoDBEntry, DBManager
+from datetime import datetime
+from mdse.md.resultMD import ResultMD
+from pathlib import Path
 from mdse.parser.httk_reader import get_defects, save_defects, setup_db
 from mdse.parser.parse_yml import get_files
 
@@ -83,22 +84,14 @@ class RunManager:
         self.md_simulations = []
         self.result_objects = []
         self.outputs = []
-        self.docs = []
         self.simulation_config = simulation_config
+        self.MongoDBentriesAsJson = []  # List to store MongoDBEntry instances
 
-        if self.simulation_config is not None:
-            self._read_from_sqlite()
-            for config in self.simulation_config:
+        if simulation_config is not None:
+            for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                try:
-                    self.md_simulations.append(SimulationManager(item))
-
-                except Exception as e:
-                    self.md_simulations.append(None)
-                    logger.error(
-                        f"Failed to add simulation {item} to md_simulations: {e}"
-                    )
+                self.md_simulations.append(SimulationManager(item))
 
         logger.debug("RunManager done innit bruv!")
 
@@ -178,87 +171,37 @@ class RunManager:
             value = 0.0
         propertie_values[property] = value
 
-    def run_results(self, result, config):
+    def run_results(self, result: ResultMD, config):
         logger.debug(f"Results: {result}")
-
-        # for index, config in enumerate(self.simulation_config):
-        logger.debug(config)
-        try:
-            properties = config[next(iter(config))]["RESULT"]["Properties"]
-        except Exception:
-            logger.error(
-                f"Did not find RESULT: Properties in {config[next(iter(config))]}"
-            )
-            properties = {}
-        # result = self.result_objects[index]
-        logger.debug(properties)
-        logger.debug(result)
-
         crystal = config[next(iter(config))]["CRYSTAL"]
-        ensamble = config[next(iter(config))]["ENSAMBLE"]
         simulation = config[next(iter(config))]["SIMULATION"]
-
-        docs = {}
-
-        docs["simulation_id"] = str(secrets.randbits(128))
-        docs["simulation"] = {
-            **simulation,
-            **ensamble,
-        }
-
-        if crystal.get("Defect") is not None:
-            docs["defect"] = crystal["Defect"]
+        ensamble = config[next(iter(config))]["ENSAMBLE"]
 
         final_frame = result.frames[-1]
 
-        atoms = {}
-        atoms["elements"] = final_frame.get_chemical_symbols()
-        atoms["positions"] = final_frame.get_positions().tolist()
-        atoms["lattice_vectors"] = final_frame.get_scaled_positions().tolist()
-        docs["atoms"] = atoms
-
-        composition = {}
-        composition["elements"] = list(set(final_frame.get_chemical_symbols()))
-        formula, _ = final_frame.symbols.formula.reduce()
-        composition["chemical_formula_reduced"] = str(formula)
-        docs["composition"] = composition
-
-        property_values = {}
-        property_functions = {
-            "lindemann": result.calc_lindemann,
-            "self-diffusion": result.calc_self_diff,
-            "isobaric specific heat": result.calc_isochoric_heat_capacity_per_atom,
-            "debye": result.calc_debye_temperature,
-        }
-        for name, func in property_functions.items():
-            if (name in properties) or ("all" in properties):
-                self._add_property(name, property_values, func)
-        docs["properties"] = {
-            **property_values,
-            "total_energy": final_frame.info["pot_energy"]
-            + final_frame.get_kinetic_energy(),
-        }
-
-        logger.debug(len(docs))
-        return docs
-
-    def write_json_append(self):
-        path = Path("results/all_results.json")
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                try:
-                    existing_docs = json.load(f)
-                except json.JSONDecodeError:
-                    existing_docs = []
-        else:
-            existing_docs = []
-
-        all_docs = existing_docs + self.docs
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(all_docs, f, indent=2)
+        entry = MongoDBEntry(
+            id=str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K",
+            last_modified=datetime.now(),
+            elements=list(set(final_frame.get_chemical_symbols())),
+            nelements=len(list(set(final_frame.get_chemical_symbols()))),
+            mdse_fields={
+                "lindemann": result.calc_lindemann(),
+                "self_diffusion": result.calc_self_diff(),
+                "isobaric_specific_heat":
+                    result.calc_isochoric_heat_capacity_per_atom(),
+                "debye": result.calc_debye_temperature(),
+                "total_energy": final_frame.info["pot_energy"]
+                + final_frame.get_kinetic_energy(),
+                "defect": crystal.get("Defect", None),
+                "simulation_parameters": {**ensamble, **simulation},
+            },
+            chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
+            cartesian_site_positions=final_frame.get_positions().tolist(),
+            lattice_vectors=final_frame.get_cell().tolist(),
+            nsites=len(final_frame.get_positions()),
+            species_at_sites=final_frame.get_chemical_symbols(),
+        )
+        return entry
 
     def run_simulations(self, overwrite_ensamble=None):
         """
@@ -273,16 +216,13 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
-                if sim is None:
-                    logger.error("Simulation is None, skipping")
-                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
                 config = self.simulation_config[index]
-                docs = self.run_results(res, config)
-                self.docs.append(docs)
-            self.write_json_append()
+                entry = self.run_results(res, config)
+                self.MongoDBentriesAsJson.append(entry.to_dict())
+            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
             # Insert single core execution here if desired
             return
 
@@ -301,10 +241,11 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
+                logger.debug(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
-                    if msg != "":
-                        self.docs.append(msg)
+                    if type(msg) is MongoDBEntry:
+                        self.MongoDBentriesAsJson.append(msg.to_dict())
                     if jobs:
                         job = jobs.pop(0)
                         logger.debug(f"[Master] Sent new job {job} to worker {src}")
@@ -315,7 +256,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
-            self.write_json_append()
+            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
@@ -327,16 +268,13 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
-                    if sim is None:
-                        logger.error("Simulation is None, skipping")
-                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]
                     logger.debug(f"config::: {config}")
-                    docs = self.run_results(res, config)
+                    database_entry = self.run_results(res, config)
                     logger.debug(f"[Worker {rank}] Completed job {job}")
-                    comm.send(docs, dest=0, tag=TAG_DONE)
+                    comm.send(database_entry, dest=0, tag=TAG_DONE)
                 elif tag == TAG_STOP:
                     logger.debug(f"[Worker {rank}] Received stop signal from master.")
                     break
