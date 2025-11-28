@@ -88,6 +88,7 @@ class RunManager:
         self.MongoDBentriesAsJson = []  # List to store MongoDBEntry instances
 
         if simulation_config is not None:
+            self._read_from_sqlite()
             for config in simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
@@ -133,7 +134,6 @@ class RunManager:
                         }
 
                 self.simulation_config.extend(new_sims)
-
 
         for i in elements_to_remove:
             self.simulation_config[i] = None
@@ -187,8 +187,7 @@ class RunManager:
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat":
-                    result.calc_isochoric_heat_capacity_per_atom(),
+                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
@@ -216,6 +215,9 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
+                if sim is None:
+                    logger.error("Simulation is None, skipping")
+                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
@@ -268,6 +270,9 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
+                    if sim is None:
+                        logger.error("Simulation is None, skipping")
+                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]
