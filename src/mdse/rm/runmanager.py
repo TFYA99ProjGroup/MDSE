@@ -119,9 +119,9 @@ class RunManager:
                 config["CRYSTAL"] = new_config
 
                 elements_to_remove.append(i)
-                
+
                 new_sims = get_files([item], str(defect_folder))
-                
+
                 for i, item in enumerate(new_sims):
                     config = list(item.values())[0]
                     if query.get("host") is None:
