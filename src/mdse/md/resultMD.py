@@ -91,7 +91,7 @@ class ResultMD:
         MSD_at_tau_y = []
         MSD_at_tau_z = []
 
-        logger.debug("Beggining iteration over tau")
+        logger.debug(f"Beggining iteration over tau. Total {len(taus)}")
         for tau in taus:
             MSD_at_all_t_x = []  # Reset per tau
             MSD_at_all_t_y = []  # Reset per tau
@@ -393,7 +393,8 @@ class ResultMD:
             D_total (float): Self diffusion coefficent, w.r.t all directions.
         """
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
-
+        if taus_fs == []:
+            return 0
         # Filter out noisy start/end, 10%
         """
         if self.reached_equilibrium:
@@ -772,9 +773,8 @@ class ResultMD:
         if not self.reached_equilibrium:
             equil_frame = 7
 
-        return (
-            self.frames[0].info["E_single_atom"] -
-            (np.mean(pots[equil_frame:]) / len(self.frames[0]))
+        return self.frames[0].info["E_single_atom"] - (
+            np.mean(pots[equil_frame:]) / len(self.frames[0])
         )
 
     def get_temperatures(self):

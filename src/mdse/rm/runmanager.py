@@ -115,6 +115,7 @@ class RunManager:
                 new_config = {
                     "TYPE": "FILE",
                     "Filepath": str(defect_folder),
+                    "Name": crystal_config["Name"],
                 }
 
                 config["CRYSTAL"] = new_config
@@ -173,22 +174,29 @@ class RunManager:
 
     def run_results(self, result: ResultMD, config):
         logger.debug(f"Results: {result}")
+        logger.debug(f"Config: {config}")
         crystal = config[next(iter(config))]["CRYSTAL"]
         simulation = config[next(iter(config))]["SIMULATION"]
         ensamble = config[next(iter(config))]["ENSAMBLE"]
 
         final_frame = result.frames[-1]
 
+        logger.debug(crystal)
+
         entry = MongoDBEntry(
-            id=str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K",
+            id=str(crystal["Name"])
+            + "_"
+            + str(ensamble["Temp"])
+            + "K"
+            + "_"
+            + final_frame.get_chemical_symbols(),
             last_modified=datetime.now(),
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat": \
-                    result.calc_isochoric_heat_capacity_per_atom(),
+                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),

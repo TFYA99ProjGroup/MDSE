@@ -1,6 +1,7 @@
 Host_sim:
   CRYSTAL:
     TYPE: DATABASE
+    Name: diamondsqliterun
     Filepath: ../../../defects.sqlite
     Structure_folder: "./host"
     Query:
@@ -11,7 +12,7 @@ Host_sim:
     ThermoTime: 5
   SIMULATION:
     Timestep: 1 #fs
-    Length: 10
+    Length: 5
     TrajInterval: 1
     Calculator: MACE
     CalculatorParams: 
@@ -25,6 +26,7 @@ Host_sim:
 Simulation:
   CRYSTAL:
     TYPE: DATABASE
+    Name: diamondsqliterunde
     Filepath: ../../../defects.sqlite
     Structure_folder: "./defect"
     Query:
@@ -35,7 +37,7 @@ Simulation:
     ThermoTime: 5
   SIMULATION:
     Timestep: 1 #fs
-    Length: 10
+    Length: 5
     TrajInterval: 1
     Calculator: MACE
     CalculatorParams: 
