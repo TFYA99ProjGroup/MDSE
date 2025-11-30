@@ -661,6 +661,7 @@ class SimulationManager:
     def estimate_lattice(self):
         """
         Tries different lattice constants on the conventional cell.
+        Requires use of calculator, hence placed here and not in ResultMD.
 
         **For systems where we have same constant in all directions:
         Calculate volume at each guess. Then we do a EOS-fit in result to find min.
