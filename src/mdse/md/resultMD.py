@@ -1027,7 +1027,7 @@ class ResultMD:
 
             energy_vs_vol = []
 
-            for scaling in np.linspace(0.95,1.05,30): #increase for better result
+            for scaling in np.linspace(0.95,1.05,50): #increase for better result
                 scaled = conv_atoms.copy()
                 scaled.set_cell(cell0*scaling, scale_atoms = True)
                 scaled.calc = self._check_calc_2()
@@ -1042,7 +1042,7 @@ class ResultMD:
         ):
             #Need to scale axis independant of eachoter
             logger.debug(f"Start calculating energy vs [a,a,c] for: {self.crystal_struct}")
-            scaling_step = np.linspace(0.95,1.05,20) #increase to get better result
+            scaling_step = np.linspace(0.95,1.05,50) #increase to get better result
 
             energy_vs_lat = []
 
@@ -1075,7 +1075,7 @@ class ResultMD:
             #Would require 3-time nested for-loop. For performance assume a,b,c not strongly coupled,
             #and optimize one axis at time
             logger.debug(f"Start calculating which [a,b,c] minimizes: {self.crystal_struct}")
-            scaling_step = np.linspace(0.95,1.05,20) #Increase to get better result
+            scaling_step = np.linspace(0.95,1.05,50) #Increase to get better result
 
             energy_vs_lat = []
 
@@ -1155,7 +1155,7 @@ class ResultMD:
         """
         logger.debug("Start calculating/extracting which optimal lattice const is.")
 
-        energy_v_lattice = self._estimate_lattice()
+        energy_v_lattice = self._estimate_lattice() #Will update self.crystral_struct
         cov_structure = self.crystal_struct
 
         if not self.crystal_conv:

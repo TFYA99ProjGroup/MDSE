@@ -344,23 +344,19 @@ def test_equilibrium_check_oscill(mock_oscillation_walk):
 
 @pytest.fixture
 def cubic_system():
-    "Generates frame from a cubic crystal simulation"
-    frame = MockAtoms([0,0,0])
+    "Generates _calc_lattice() data for a cubic crystal simulation"
 
     #Create parabol shape of energy vs vol
     volumes = np.linspace(10*0.95, 10*1.05, 10)
     energies = (volumes - 10)**2 + 5 #E(V) = (V-10)^2 +5 , so min at V=10
-    lattice_frames = [[E, V] for E, V in zip(energies, volumes)]
+    energy_v_vol = [[E, V] for E, V in zip(energies, volumes)]
     
-    frame.info["lattice_frames"] = lattice_frames
-    frame.info["Structure"] = "cubic"
-
-    return [frame]
+    return energy_v_vol
+  
 
 @pytest.fixture
 def hexagonal_system():
-    "Generates frame from a hexagonal crystal simulation"
-    frame = MockAtoms([0,0,0])
+    "Generates _calc_lattice() data for a hexagonal crystal simulation"
 
     #Optimal
     a0 = 1
@@ -369,34 +365,45 @@ def hexagonal_system():
     #Create quadratic shape of energy vs lattice
     a_vals = np.linspace(a0*0.95, a0*1.05, 10)
     c_vals = np.linspace(c0*0.95, c0*1.05, 10)
-    energies = (a_vals-a0)
-    latt_frames = []
+    energy_v_latt = []
     for a in a_vals:
         for c in c_vals:
             E = (a - a0)**2 + (c - c0)**2 + 10 #E(a,c) = (a-a0)^2 + (c-c0)^2 + E0
-            latt_frames.append([E, [a, a, c]]) 
-    frame.info["lattice_frames"] = latt_frames
-    frame.info["Structure"] = "hexagonal"
+            energy_v_latt.append([E, [a, a, c]]) 
 
-    return [frame]
+    return energy_v_latt
 
-def test_cubic_lattice(cubic_system):
+def test_cubic_lattice(monkeypatch, cubic_system):
     """Test cubic system, with min at V=10 """
-    result = ResultMD(cubic_system)
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return cubic system 
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: cubic_system)
+    result.crystal_conv = True
+    result.crystal_struct = "cubic"
+
     structure, opt_latt = result.calc_lattice()
 
     assert np.isclose(opt_latt[0], 10**(1/3), 0.001)
     assert(structure == "cubic")
 
-def test_hexagonal_lattice(hexagonal_system):
+def test_hexagonal_lattice(monkeypatch, hexagonal_system):
     """Tries if hexagonal system, with min at a=b=1, c=2"""
-    result = ResultMD(hexagonal_system)
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return hexagonal system 
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: hexagonal_system)
+    result.crystal_conv = True
+    result.crystal_struct = "hexagonal"
+
     structure, opt_latt = result.calc_lattice()
 
     assert np.isclose(opt_latt[0], 1, 0.000001)
     assert np.isclose(opt_latt[1], 1, 0.000001)
     assert np.isclose(opt_latt[2], 2, 0.000001)
-    print(opt_latt)
+
     #a==b
     assert(opt_latt[0] == opt_latt[1])
     assert(structure == "hexagonal")
