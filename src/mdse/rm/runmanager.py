@@ -189,14 +189,15 @@ class RunManager:
             + str(ensamble["Temp"])
             + "K"
             + "_"
-            + final_frame.get_chemical_symbols(),
+            + "".join(final_frame.get_chemical_symbols()),
             last_modified=datetime.now(),
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
+                "isobaric_specific_heat": \
+                    result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
