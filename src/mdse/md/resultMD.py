@@ -5,6 +5,7 @@ from asap3 import Trajectory
 from ase import units
 
 from asap3 import EMT, LennardJones
+from ase.eos import EquationOfState
 
 import logging
 
@@ -903,27 +904,72 @@ class ResultMD:
         return crystal_equil
 
     def calc_lattice(self):
-        """Uses .info["lattice_frames"] wich is energy vs latice_constant.
-        Find what/which lattice constant gives the lowest energy.
-        For conventional cell
+        """For conventional cell, find what lattice constants minimizes energy
+
+        **For cubic or triagonal: Use a EOS-fit
+        **For hexagonal or tetragonal: Use a quadratic fit
+        **For orthorhomic, monoclinic or triclinic: Already minimized
 
         returns:
             cov_structure(str): Name of the conventional cell structure
-            min_latt(list): The lattice constant in 1D (cubic) or list for 3D (other)
+            list: The optimal lattice constant in 3-directions
         
         """
+        logger.debug("Start calculating/extracting which optimal lattice const is.")
         energy_v_lattice = self.frames[0].info["lattice_frames"]
         cov_structure = self.frames[0].info["Structure"]
 
 
         if not energy_v_lattice:
+            logger.debug("self.frames[0].info['lattice_frames'] was empty")
             raise RuntimeError("Calc_lattice is missing .info[lattice_frames]")
         if not cov_structure:
+            logger.debug("self.frames[0].info['Structure'] was empty")
             raise RuntimeError("Calc_lattice is missing .info[Structure]")
         
-        if cov_structure == "cubic" or cov_structure == "hexagonal":
-            _, min_latt = min(energy_v_lattice, key=lambda x: x[0])
-            return cov_structure ,min_latt
-        
+        logger.debug(f"Succsesfully extracted info from .info[]")
+        if cov_structure == "cubic" or cov_structure == "triagonal":
+            #Do EOS-fit
+            logger.debug(f"Do EOS-fit")
+            energies = np.array([e1 for e1,e2 in energy_v_lattice ])
+            volumes = np.array([e2 for e1,e2 in energy_v_lattice ])
+
+            sort_indx = np.argsort(volumes)
+            volumes = volumes[sort_indx]
+            energies = energies[sort_indx]
+
+            eos = EquationOfState(volumes, energies, eos = "birchmurnaghan")
+            v0, e0, B = eos.fit()
+            logger.debug(f"Suscsesfully did EOS-fit")
+            return cov_structure, [v0**(1/3),v0**(1/3),v0**(1/3)]
+
+
+        if (
+            cov_structure == "hexagonal" or
+            cov_structure == "tetragonal" 
+        ):
+            #Since 2 independent axis, need to do a line-fit
+            logger.debug("Do quadratic fit")
+            energies = np.array([e1 for e1,e2 in energy_v_lattice ])
+            lattice_consts = np.array([e2 for e1,e2 in energy_v_lattice ])
+
+            latt_a = lattice_consts[:,0]
+            latt_c = lattice_consts[:,2]
+
+            funcs = np.array([latt_a**0, latt_a, latt_c, latt_a**2, latt_a*latt_c,latt_c**2])
+            p = np.linalg.lstsq(funcs.T, energies, rcond = -1)[0]
+
+            p0 = p[0]
+            p1 = p[1:3]
+            p2 = np.array([(2 * p[3], p[4]), (p[4], 2 * p[5])])
+            a0, c0 = np.linalg.solve(p2.T, -p1)
+            logger.debug("Sucssesfully did quadratic fit")
+            return cov_structure, [a0,a0,c0]
+                    
+
+
+        #If none of the above, it had 3 independent lattice constants, which we
+        #minimized/optimized already.
+        logger.debug("Crystal had 3 independent axis. Return the optimal lattice consts")
         return cov_structure, energy_v_lattice
  

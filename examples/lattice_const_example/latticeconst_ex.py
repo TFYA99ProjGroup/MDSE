@@ -5,7 +5,7 @@ from mdse.parser.parse_yml import main_read
 
 def main():
 
-    #MgCu2 with mace
+    #CuO with mace, monoclinic
     config = main_read("cohesive_data_cif_CuO_mace.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
@@ -13,7 +13,7 @@ def main():
 
     print(res.calc_lattice())
 
-    #MgCu2 with mace
+    #MgCu2 with mace, cubic
     config = main_read("cohesive_data_cif_MgCu2_mace.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
@@ -22,22 +22,30 @@ def main():
     print(res.calc_lattice())
 
 
-    #Fe with mace
-    #config = main_read("cohesive_data_Fe_mace.yaml")
-    #sm = SimulationManager(list(config[0].values())[0])
+    #Fe with mace, cubic
+    config = main_read("cohesive_data_Fe_mace.yaml")
+    sm = SimulationManager(list(config[0].values())[0])
 
-    #res = sm.simulate_nve()
+    res = sm.simulate_nve()
 
-    #print(res.calc_lattice())
+    print(res.calc_lattice())
 
 
-    #A fcc metal, mace
-    #config = main_read("cohesive_data_Cu_mace.yaml")
-    #sm = SimulationManager(list(config[0].values())[0])
+    #Cu with EMT, cubic
+    config = main_read("cohesive_data_Cu.yaml")
+    sm = SimulationManager(list(config[0].values())[0])
 
-    #res = sm.simulate_nve()
+    res = sm.simulate_nve()
 
-    #print(res.calc_lattice())
+    print(res.calc_lattice())
+
+    #Zn, hexagonal
+    config = main_read("cohesive_data_cif_Zn_mace.yaml")
+    sm = SimulationManager(list(config[0].values())[0])
+
+    res = sm.simulate_nve()
+
+    print(res.calc_lattice())
 
 
 if __name__ == "__main__":

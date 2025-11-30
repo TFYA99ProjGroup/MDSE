@@ -676,19 +676,28 @@ class SimulationManager:
 
     def estimate_lattice(self):
         """
+        Tries different lattice constants on the conventional cell.
 
-        This function runs the simulations necessary for estimating laticeconstant.
-        The line fitting is then done in result class
+        **For systems where we have same constant in all directions:
+        Calculate volume at each guess. Then we do a EOS-fit in result to find min.
 
-        Use the small self.crystal_prim, and calculator from self.calculator
+        **For system where 2 independent constants:
+        Calc. energy for each lattice constant guess. Then in resultMD, do a
+        quadratic line-fit to find minimum.
 
-        Since resultMD doesnt keep the calculator, do the simulations here.
+        **For systems where 3 independent constants:
+        Try changing 1, keeping two other fixed. Find min for this one.
+        Then using this min, try guessing for one other direction, find min.
+        So will get an estimate of which 3 constants in all directions give min.
+        
 
-        return volume, should work for non-cubic also.
-
-        Assumes the cell given from bulk and .cif is conventional.
+        returns:
+            energy_vs_vol(list): [energy, volume]
+            energy_vs_latt(list): [energy, [a,a,c]]
+            list: [a,b,c] which minimized energy
         
         """
+        logger.debug("Starting estimate_lattice()")
         a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
 
         if (alfa == beta == gamma == 90 and a0==b0==c0):
@@ -706,8 +715,9 @@ class SimulationManager:
         elif (alfa != beta != gamma and a0 != b0 != c0):
             self.crystal_struct = "triclinic"
         else:
-            self.crystal_struct == None
+            raise RuntimeError("esimate_lattice() could not determine structure type")
 
+        logger.debug(f"Found structure {self.crystal_struct}")
         conv_atoms = ase.Atoms(
                     symbols=self.crystal_conv.get_chemical_symbols(),
                     positions=self.crystal_conv.get_positions(),
@@ -719,26 +729,30 @@ class SimulationManager:
             self.crystal_struct == "cubic" or
             self.crystal_struct == "triagonal" 
             ):
-            #Conventional cell has same latice constant in all directions!
+            #Same lattice const. in all directions.
+            #Find optimal using EOS fit in result
+            logger.debug(f"Start calculating energy vs volume for: {self.crystal_struct}")
             cell0 = self.crystal_conv.get_cell()
             
             a0 = self.crystal_conv.get_cell()[0,0]
 
-            energy_vs_lat = []
+            energy_vs_vol = []
 
             for scaling in np.linspace(0.95,1.05,30):
                 scaled = conv_atoms.copy()
                 scaled.set_cell(cell0*scaling, scale_atoms = True)
                 scaled.calc = self._check_calculator()
-                energy_vs_lat.append([scaled.get_potential_energy(),a0*scaling])
+                energy_vs_vol.append([scaled.get_potential_energy(),scaled.get_volume()])
 
-            return energy_vs_lat
+            logger.debug(f"Sucesfully calculated energy vs vol.")
+            return energy_vs_vol
         
         if (
             self.crystal_struct == "hexagonal" or
             self.crystal_struct == "tetragonal" 
         ):
             #Need to scale axis independant of eachoter
+            logger.debug(f"Start calculating energy vs [a,a,c] for: {self.crystal_struct}")
             scaling_step = np.linspace(0.95,1.05,20)
 
             energy_vs_lat = []
@@ -760,6 +774,7 @@ class SimulationManager:
                     energy_vs_lat.append([scaled.get_potential_energy(),
                                             [a0*scale_a,b0*scale_a,c0*scale_c]])
 
+            logger.debug(f"Sucesfully calculated energy vs [a,a,c]")
             return energy_vs_lat
         
         if (
@@ -768,7 +783,9 @@ class SimulationManager:
             self.crystal_struct == "triclinic"
         ):
             #Need to scale axis independant of eachoter
-            #Would require 3-time nested for-loop. For performance assume a,b,c not strongly coupled
+            #Would require 3-time nested for-loop. For performance assume a,b,c not strongly coupled,
+            #and optimize one axis at time
+            logger.debug(f"Start calculating which [a,b,c] minimizes: {self.crystal_struct}")
             scaling_step = np.linspace(0.95,1.05,20)
 
             energy_vs_lat = []
@@ -788,7 +805,8 @@ class SimulationManager:
                 scaled.calc = self._check_calculator()
                 energy_vs_lat.append([scaled.get_potential_energy(),
                                         scale_a])
-                
+            logger.debug(f"Sucesfully found min a")   
+
             #Find lowest a, keep that and c fixed. Vary b
             _, min_a = min(energy_vs_lat, key=lambda x: x[0])
             energy_vs_lat = []
@@ -806,7 +824,8 @@ class SimulationManager:
                 scaled.calc = self._check_calculator()
                 energy_vs_lat.append([scaled.get_potential_energy(),
                                         scale_b])
-                
+            logger.debug(f"Sucesfully found min b")   
+
             #With lowest a and b, vary c
             _, min_b = min(energy_vs_lat, key=lambda x: x[0])
             energy_vs_lat = []
@@ -824,9 +843,10 @@ class SimulationManager:
                 scaled.calc = self._check_calculator()
                 energy_vs_lat.append([scaled.get_potential_energy(),
                                         scale_c])
-                
+            logger.debug(f"Sucesfully found min b")   
+
             #Return the lowest a,b and c
             _, min_c = min(energy_vs_lat, key=lambda x: x[0])
             return [min_a*a0,min_b*b0,min_c*c0]
                 
-        raise RuntimeError("Could not find convential cell type")
+
