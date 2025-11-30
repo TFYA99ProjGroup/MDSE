@@ -350,9 +350,9 @@ def cubic_system():
     volumes = np.linspace(10*0.95, 10*1.05, 10)
     energies = (volumes - 10)**2 + 5 #E(V) = (V-10)^2 +5 , so min at V=10
     energy_v_vol = [[E, V] for E, V in zip(energies, volumes)]
-    
+
     return energy_v_vol
-  
+
 
 @pytest.fixture
 def hexagonal_system():
@@ -369,7 +369,7 @@ def hexagonal_system():
     for a in a_vals:
         for c in c_vals:
             E = (a - a0)**2 + (c - c0)**2 + 10 #E(a,c) = (a-a0)^2 + (c-c0)^2 + E0
-            energy_v_latt.append([E, [a, a, c]]) 
+            energy_v_latt.append([E, [a, a, c]])
 
     return energy_v_latt
 
@@ -377,7 +377,7 @@ def test_cubic_lattice(monkeypatch, cubic_system):
     """Test cubic system, with min at V=10 """
     result = ResultMD(None)
 
-    #Patch calc_lattice() to return cubic system 
+    #Patch calc_lattice() to return cubic system
     monkeypatch.setattr(result, "_estimate_lattice",
                         lambda: cubic_system)
     result.crystal_conv = True
@@ -392,7 +392,7 @@ def test_hexagonal_lattice(monkeypatch, hexagonal_system):
     """Tries if hexagonal system, with min at a=b=1, c=2"""
     result = ResultMD(None)
 
-    #Patch calc_lattice() to return hexagonal system 
+    #Patch calc_lattice() to return hexagonal system
     monkeypatch.setattr(result, "_estimate_lattice",
                         lambda: hexagonal_system)
     result.crystal_conv = True

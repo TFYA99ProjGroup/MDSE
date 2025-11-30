@@ -149,9 +149,10 @@ class SimulationManager:
                     b=crystal_params.get("Lattice_b", None),
                     c=crystal_params.get("Lattice_c", None),
                     cubic=crystal_params.get("Cubic"),
-                ) 
-                
-                self.crystal = self.crystal_conv * crystal_params.get("Supercell", (1, 1, 1))
+                )
+
+                self.crystal = (self.crystal_conv *
+                crystal_params.get("Supercell", (1, 1, 1)))
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
@@ -161,7 +162,8 @@ class SimulationManager:
                     crystal_params.get("Filepath")
                 )
 
-                self.crystal = self.crystal_conv*crystal_params.get("Supercell", (1,1,1))
+                self.crystal = (self.crystal_conv*
+                                crystal_params.get("Supercell", (1,1,1)))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
@@ -646,4 +648,3 @@ class SimulationManager:
         )
         return 0, 0
 
-    
