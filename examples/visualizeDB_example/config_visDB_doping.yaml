@@ -1,0 +1,8 @@
+data:
+  data_source: "json" #mongo when using mongoDB
+  path: "mock_data_doping.json" #Path to .json or mongo
+plots:
+  plot_1_doping:
+    type: "doping"
+    average: True
+    fix_y: True

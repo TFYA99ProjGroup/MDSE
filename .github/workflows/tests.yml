@@ -64,16 +64,8 @@ jobs:
 
       - name: Start MongoDB container
         run: |
-          docker run -d --name mongo-test -p 27017:27017 mongo:latest
-          # Wait until port 27017 is ready
-          for i in {1..30}; do
-            if nc -z localhost 27017; then
-              echo "MongoDB ready"
-              break
-            fi
-            echo "Waiting for MongoDB..."
-            sleep 1
-          done
+          docker compose -f database/docker-compose.yaml up -d --build
+          sleep 3  # Wait for MongoDB to be ready
 
       - name: Run regular tests
         run: pytest -m "not mpi"
