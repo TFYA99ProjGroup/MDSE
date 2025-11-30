@@ -5,12 +5,15 @@ from asap3 import Trajectory
 from ase import units
 
 from asap3 import EMT, LennardJones
+from ase import Atoms
 from ase.eos import EquationOfState
+from pathlib import Path
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+the_mace_calculator = None
 
 class ResultMD:
     """Class representing the result of a molecular dynamics (MD) simulation.
@@ -21,7 +24,7 @@ class ResultMD:
 
     "default constructor, used for list of atoms objects ..."
 
-    def __init__(self, data):
+    def __init__(self, data, conv_crystal = None, calc_params = None):
         """Initialize the ResultMD object.
 
         Parameters:
@@ -33,6 +36,11 @@ class ResultMD:
         self.frames_in_fs = 50
         self.name = ""
         self.reached_equilibrium = False
+
+        #For calculating lattice constant
+        self.crystal_conv = conv_crystal
+        self.calc_params = calc_params
+        self.crystal_struct = None
 
         self.dos = None
         logger.debug("Init done")
@@ -903,6 +911,236 @@ class ResultMD:
 
         return crystal_equil
 
+    def _check_calc_2(self):
+        """"
+        STOLEN from simulationmanager. So we can init. our own calculator here.
+        Will use the parameters from simulation manager, to re-init the same
+        calculator used there.
+
+        Is needed so we can perform calculations here.
+
+        returns:
+            calculator: Instance of the calculator to use
+        """
+        if not self.crystal_conv:
+            raise RuntimeError("ResultMD object was not given conventional cell when init.")
+
+        self.calculator = self.frames[0].info["calc"]
+        if self.calculator == "EMT":
+            if self.calc_params.get("use_glass"):
+                calculator = EMT(EMTMetalGlassParameters())
+            else:
+                calculator = EMT(**self.calc_params)
+        elif self.calculator == "LennardJones":
+            for key in self.calc_params.keys():
+                if key == "elements":
+                    continue
+                self.calc_params[key] = np.array(self.calc_params[key])
+            self._check_keys(
+                "CalcParams", self.calc_params, ["elements", "epsilon", "sigma", "rCut"]
+            )
+            calculator = LennardJones(**self.calc_params)
+        elif self.calculator == "MACE":
+            from mace.calculators import MACECalculator
+            logger.debug("We want to use mace!")
+            global the_mace_calculator
+
+            if the_mace_calculator is None:
+                logger.debug("First time we set a MACE calculator")
+                logger.debug("Trying to get MACE model weights from: ")
+                logger.debug(Path(self.calc_params.get("model_paths")).resolve())
+                the_mace_calculator = MACECalculator(**self.calc_params)
+            else:
+                logger.debug("NOT first time we create with mace")
+
+            calculator = the_mace_calculator
+        else:
+            error_msg = (
+                f"Calculator {self.calculator} not implemented, "
+                "valid calculators are: EMT, LennardJones, MACE"
+            )
+            raise NotImplementedError(error_msg)
+
+        return calculator
+
+    def _estimate_lattice(self):
+        """
+        Tries different lattice constants on the conventional cell.
+
+        **For systems where we have same constant in all directions:
+        Calculate volume at each guess. Then we do a EOS-fit latter to find min.
+
+        **For system where 2 independent constants:
+        Calc. energy for each lattice constant guess. Then, latter do a
+        quadratic line-fit to find minimum.
+
+        **For systems where 3 independent constants:
+        Try changing 1, keeping two other fixed. Find min for this one.
+        Then using this min, try guessing for one other direction, find min.
+        So will get an estimate of which 3 constants in all directions give min.
+        
+
+        returns:
+            energy_vs_vol(list): [energy, volume]
+            energy_vs_latt(list): [energy, [a,a,c]]
+            list: [a,b,c] which minimized energy
+        
+        """
+        logger.debug("Starting estimate_lattice()")
+        a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
+
+        if (alfa == beta == gamma == 90 and a0==b0==c0):
+                 self.crystal_struct = "cubic"
+        elif (alfa == beta != gamma and a0 == b0 == c0):
+            self.crystal_struct = "trigonal"
+        elif (alfa == beta != gamma and a0 == b0 != c0):
+            self.crystal_struct = "hexagonal"
+        elif (alfa == beta == gamma and a0 == b0 != c0):
+            self.crystal_struct = "tetragonal"
+        elif (alfa == beta == gamma and a0 != b0 != c0):
+            self.crystal_struct = "orthorhombic"
+        elif (alfa == gamma != beta and a0 != b0 != c0):
+            self.crystal_struct = "monoclinic"
+        elif (alfa != beta != gamma and a0 != b0 != c0):
+            self.crystal_struct = "triclinic"
+        else:
+            raise RuntimeError("esimate_lattice() could not determine structure type")
+
+        logger.debug(f"Found structure {self.crystal_struct}")
+        conv_atoms = Atoms(
+                    symbols=self.crystal_conv.get_chemical_symbols(),
+                    positions=self.crystal_conv.get_positions(),
+                    cell=self.crystal_conv.get_cell(),
+                    pbc=True,
+                )
+
+        if (
+            self.crystal_struct == "cubic" or
+            self.crystal_struct == "triagonal" 
+            ):
+            #Same lattice const. in all directions.
+            #Find optimal using EOS fit in result
+            logger.debug(f"Start calculating energy vs volume for: {self.crystal_struct}")
+            cell0 = self.crystal_conv.get_cell()
+            
+            a0 = self.crystal_conv.get_cell()[0,0]
+
+            energy_vs_vol = []
+
+            for scaling in np.linspace(0.95,1.05,30): #increase for better result
+                scaled = conv_atoms.copy()
+                scaled.set_cell(cell0*scaling, scale_atoms = True)
+                scaled.calc = self._check_calc_2()
+                energy_vs_vol.append([scaled.get_potential_energy(),scaled.get_volume()])
+
+            logger.debug(f"Sucesfully calculated energy vs vol.")
+            return energy_vs_vol
+        
+        if (
+            self.crystal_struct == "hexagonal" or
+            self.crystal_struct == "tetragonal" 
+        ):
+            #Need to scale axis independant of eachoter
+            logger.debug(f"Start calculating energy vs [a,a,c] for: {self.crystal_struct}")
+            scaling_step = np.linspace(0.95,1.05,20) #increase to get better result
+
+            energy_vs_lat = []
+
+            #Convention that a and b are the same ones.
+            for scale_a in scaling_step:
+                for scale_c in scaling_step:
+                    scaled = conv_atoms.copy()
+                    new_cell = (
+                        a0*scale_a,
+                        b0*scale_a,
+                        c0*scale_c,
+                        alfa,
+                        beta,
+                        gamma
+                    )
+                    scaled.set_cell(new_cell, scale_atoms = True)
+                    scaled.calc = self._check_calc_2()
+                    energy_vs_lat.append([scaled.get_potential_energy(),
+                                            [a0*scale_a,b0*scale_a,c0*scale_c]])
+
+            logger.debug(f"Sucesfully calculated energy vs [a,a,c]")
+            return energy_vs_lat
+        
+        if (
+            self.crystal_struct == "orthorhomic" or
+            self.crystal_struct == "monoclinic" or
+            self.crystal_struct == "triclinic"
+        ):
+            #Need to scale axis independant of eachoter
+            #Would require 3-time nested for-loop. For performance assume a,b,c not strongly coupled,
+            #and optimize one axis at time
+            logger.debug(f"Start calculating which [a,b,c] minimizes: {self.crystal_struct}")
+            scaling_step = np.linspace(0.95,1.05,20) #Increase to get better result
+
+            energy_vs_lat = []
+
+            #Start by keeping b and c fixed
+            for scale_a in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*scale_a,
+                    b0*1,
+                    c0*1,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calc_2()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_a])
+            logger.debug(f"Sucesfully found min a")   
+
+            #Find lowest a, keep that and c fixed. Vary b
+            _, min_a = min(energy_vs_lat, key=lambda x: x[0])
+            energy_vs_lat = []
+            for scale_b in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*min_a,
+                    b0*scale_b,
+                    c0,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calc_2()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_b])
+            logger.debug(f"Sucesfully found min b")   
+
+            #With lowest a and b, vary c
+            _, min_b = min(energy_vs_lat, key=lambda x: x[0])
+            energy_vs_lat = []
+            for scale_c in scaling_step:
+                scaled = conv_atoms.copy()
+                new_cell = (
+                    a0*min_a,
+                    b0*min_b,
+                    c0*scale_c,
+                    alfa,
+                    beta,
+                    gamma
+                )
+                scaled.set_cell(new_cell, scale_atoms = True)
+                scaled.calc = self._check_calc_2()
+                energy_vs_lat.append([scaled.get_potential_energy(),
+                                        scale_c])
+            logger.debug(f"Sucesfully found min b")   
+
+            #Return the lowest a,b and c
+            _, min_c = min(energy_vs_lat, key=lambda x: x[0])
+            return [min_a*a0,min_b*b0,min_c*c0]
+                
+
+
+
     def calc_lattice(self):
         """For conventional cell, find what lattice constants minimizes energy
 
@@ -916,16 +1154,14 @@ class ResultMD:
         
         """
         logger.debug("Start calculating/extracting which optimal lattice const is.")
-        energy_v_lattice = self.frames[0].info["lattice_frames"]
-        cov_structure = self.frames[0].info["Structure"]
 
+        energy_v_lattice = self._estimate_lattice()
+        cov_structure = self.crystal_struct
 
-        if not energy_v_lattice:
-            logger.debug("self.frames[0].info['lattice_frames'] was empty")
-            raise RuntimeError("Calc_lattice is missing .info[lattice_frames]")
-        if not cov_structure:
-            logger.debug("self.frames[0].info['Structure'] was empty")
-            raise RuntimeError("Calc_lattice is missing .info[Structure]")
+        if not self.crystal_conv:
+            logger.debug("No conventional crystal found in resultMD object")
+            raise RuntimeError("Cant calc lattice, as no conventional cell was given when"
+            "resultMD object was created")
         
         logger.debug(f"Succsesfully extracted info from .info[]")
         if cov_structure == "cubic" or cov_structure == "triagonal":
