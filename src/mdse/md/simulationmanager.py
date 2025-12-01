@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # since the constructor of this is SLOW we only want to do it once
 the_mace_calculator = None
 
+
 class SimulationManager:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
@@ -248,6 +249,7 @@ class SimulationManager:
         # self.crystal.info["atoms_per_unit"] = n_atoms
         logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
+
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
         #self.result[0].info["lattice_frames"] = self.estimate_lattice()
         #self.result[0].info["Structure"] = self.crystal_struct
@@ -353,6 +355,7 @@ class SimulationManager:
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
+
             logger.debug("We want to use mace!")
             global the_mace_calculator
 

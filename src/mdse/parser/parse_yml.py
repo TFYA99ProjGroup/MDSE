@@ -182,7 +182,7 @@ def get_files(simulations, config_file_path):
         dir_path = (config_dir / crystal_params.get("Filepath")).resolve()
         if crystal_params.get("TYPE") == "DATABASE":
             logger.debug("CRYSTAL input is path to database")
-            crystal_params["Filepath"] = dir_path
+            crystal_params["Filepath"] = str(dir_path)
             expanded_parameters.append(sim)
             continue
 
