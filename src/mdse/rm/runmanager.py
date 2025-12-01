@@ -87,8 +87,9 @@ class RunManager:
         self.simulation_config = simulation_config
         self.MongoDBentriesAsJson = []  # List to store MongoDBEntry instances
 
-        if simulation_config is not None:
-            for config in simulation_config:
+        if self.simulation_config is not None:
+            self._read_from_sqlite()
+            for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
@@ -96,39 +97,52 @@ class RunManager:
         logger.debug("RunManager done innit bruv!")
 
     def _read_from_sqlite(self):
-        crystal_config = list(self.simulation_config[0].values())[0].get("CRYSTAL")
-        if crystal_config and crystal_config.get("TYPE") == "DATABASE":
-            database_path = crystal_config.get("Filepath")
-            logger.debug(f"Load from database at {database_path}")
-            self.database = setup_db(database_path)
+        elements_to_remove = []
+        for i, item in enumerate(self.simulation_config):
+            config = list(item.values())[0]
+            crystal_config = config.get("CRYSTAL")
+            if crystal_config and crystal_config.get("TYPE") == "DATABASE":
+                database_path = crystal_config.get("Filepath")
+                logger.debug(f"Load from database at {database_path}")
+                self.database = setup_db(database_path)
 
-            query = crystal_config.get("Query")
+                query = crystal_config.get("Query", {})
 
-            defect_folder = Path("./defects")
-            defects = get_defects(self.database, **query)
-            save_defects(defects, defect_folder)
+                defect_folder = Path(crystal_config.get("Structure_folder"))
+                defects = get_defects(self.database, **query)
+                save_defects(defects, defect_folder)
 
-            for config in self.simulation_config:
-                item = list(config.values())[0]
-
-                crystal_config = {
+                new_config = {
                     "TYPE": "FILE",
                     "Filepath": str(defect_folder),
+                    "Name": crystal_config["Name"],
                 }
 
-                item["CRYSTAL"] = crystal_config
+                config["CRYSTAL"] = new_config
 
-            self.simulation_config = get_files(
-                self.simulation_config, str(defect_folder)
-            )
-            for i, config in enumerate(self.simulation_config):
-                item = list(config.values())[0]
-                item["CRYSTAL"]["Defect"] = {
-                    "key": defects[i][0],
-                    "stoichiometry": defects[i][1],
-                    "configuration": defects[i][2],
-                }
-            logger.debug(f"simulations after database read: {self.simulation_config}")
+                elements_to_remove.append(i)
+
+                new_sims = get_files([item], str(defect_folder))
+
+                for i, item in enumerate(new_sims):
+                    config = list(item.values())[0]
+                    if query.get("host") is None:
+                        config["CRYSTAL"]["Defect"] = {
+                            "key": defects[i][0],
+                            "stoichiometry": defects[i][1],
+                            "configuration": defects[i][2],
+                            "host_material": defects[i][3],
+                        }
+
+                self.simulation_config.extend(new_sims)
+
+        for i in elements_to_remove:
+            self.simulation_config[i] = None
+
+        for i in elements_to_remove:
+            self.simulation_config.remove(None)
+
+        logger.debug(f"simulations after database read: {self.simulation_config}")
 
     def attach_output(self, **kwargs):
         """Attaches output destinations to the RunManager.
@@ -160,21 +174,29 @@ class RunManager:
 
     def run_results(self, result: ResultMD, config):
         logger.debug(f"Results: {result}")
+        logger.debug(f"Config: {config}")
         crystal = config[next(iter(config))]["CRYSTAL"]
         simulation = config[next(iter(config))]["SIMULATION"]
         ensamble = config[next(iter(config))]["ENSAMBLE"]
 
         final_frame = result.frames[-1]
 
+        logger.debug(crystal)
+
         entry = MongoDBEntry(
-            id=str(crystal["Name"]) + "_" + str(ensamble["Temp"]) + "K",
+            id=str(crystal["Name"])
+            + "_"
+            + str(ensamble["Temp"])
+            + "K"
+            + "_"
+            + "".join(final_frame.get_chemical_symbols()),
             last_modified=datetime.now(),
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat":
+                "isobaric_specific_heat": \
                     result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
@@ -203,6 +225,9 @@ class RunManager:
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
             for index, sim in enumerate(self.md_simulations):
+                if sim is None:
+                    logger.error("Simulation is None, skipping")
+                    continue
                 if overwrite_ensamble is not None:
                     sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
@@ -255,6 +280,9 @@ class RunManager:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
                     sim = self.md_simulations[job]
+                    if sim is None:
+                        logger.error("Simulation is None, skipping")
+                        continue
                     res = sim.simulate()
                     #############################################
                     config = self.simulation_config[job]

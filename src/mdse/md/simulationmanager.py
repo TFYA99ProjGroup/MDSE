@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # since the constructor of this is SLOW we only want to do it once
 the_mace_calculator = None
 
+
 class SimulationManager:
     """
     A utility class for setting up and running simple molecular dynamics (MD)
@@ -234,11 +235,13 @@ class SimulationManager:
             raise RuntimeError(e)
         self.crystal.info["dt"] = self.timestep
         logger.debug("Start saving single_atom_energy info to .info[]")
-        E_atom, n_atoms = self.single_atom_energy()
+        E_atom = self.single_atom_energy()
+        # E_atom, n_atoms = self.single_atom_energy()
         self.crystal.info["E_single_atom"] = E_atom
-        self.crystal.info["atoms_per_unit"] = n_atoms
+        # self.crystal.info["atoms_per_unit"] = n_atoms
         logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
+
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
 
         logger.debug("Init done")
@@ -342,6 +345,7 @@ class SimulationManager:
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
+
             logger.debug("We want to use mace!")
             global the_mace_calculator
 
@@ -610,43 +614,26 @@ class SimulationManager:
         formula_unit = {el: n // common_divider for el, n in counts.items()}
         logger.debug(f"Found following formula: {formula_unit}")
 
-        if len(formula_unit) == 1:
-            logger.debug("Found 1 type of element in crystal")
-            calc = self._check_calculator()
+        # store the energy
+        E_atom = 0
 
+        # for each element  in the chemical formula, simulate it alone
+        for element, n in formula_unit.items():
+            calc = self._check_calculator()
             atom = ase.Atoms(
-                list(formula_unit.keys())[0],
+                [element], #list(element): Cu -> ['C','u']
                 positions=[(0, 0, 0)],
                 cell=[15, 15, 15],
                 pbc=False,
             )
             atom.calc = calc
 
-            E_atom = atom.get_potential_energy()
+            # add energy weighted by count
+            E_atom += atom.get_potential_energy()*n
 
-            return E_atom, 1
-
-        if len(formula_unit) == 2:
-            logger.debug("Found 2 unique elements in crystal")
-            calc = self._check_calculator()
-            positions = []
-            symbols = []
-            offset = 0
-
-            # TODO: This should be looked at!
-            for element, amount in formula_unit.items():
-                # for _ in range(amount):
-                symbols.append(element)
-                positions.append((offset, 0, 0))
-                offset = offset + 2
-
-            atom = ase.Atoms(symbols, positions=positions, cell=[15, 15, 15], pbc=False)
-            atom.calc = calc
-
-            E_atom = atom.get_potential_energy()
-
-            logger.debug(f"Single atom energy: {E_atom}")
-            return E_atom, len(symbols)
+        # normalize so we return average energy per atom
+        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
+        return E_atom / tot_nr_of_atoms  #len(self.crystal)
 
         logger.debug(
             f"Could not calc single_atom_energy for {formula_unit}."

@@ -6,6 +6,9 @@ from mdse.parser.classes import (
     DefectInfo,
     ChemicalPotential,
     HostSuperCellResult,
+    HostSuperCell,
+    HullDistance,
+    ScreenCell,
     ScreenResult,
 )
 import httk.db
@@ -58,26 +61,36 @@ def get_defects(store, **query):
     start = time.time()
     search = store.searcher()
 
-    search_defect_cell = search.variable(DefectCell)
-    search_defect_info = search.variable(DefectInfo)
+    search_host_cell = search.variable(HostSuperCell)
 
-    search.add(search_defect_info.key == search_defect_cell.key)
+    if query.get("host") is not None:
+        search.add(search_host_cell.material == query["host"])
 
-    if query.get("key") is not None:
-        search.add(search_defect_cell.key == query["key"])
+        search.output(search_host_cell.material, "host_material")
+        search.output(search_host_cell.host_supercell, "structure")
+    else:
+        search_defect_cell = search.variable(DefectCell)
+        search_defect_info = search.variable(DefectInfo)
 
-    if query.get("priority") is not None:
-        search.add(search_defect_cell.priority == query["priority"])
+        search.add(search_defect_info.key == search_defect_cell.key)
 
-    search.output(search_defect_cell.key, "key")
-    search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
-    search.output(search_defect_info.configuration, "configuration")
-    search.output(search_defect_cell.defect_structure, "structure")
+        if query.get("key") is not None:
+            search.add(search_defect_cell.key == str(query["key"]))
+
+        if query.get("priority") is not None:
+            search.add(search_defect_cell.priority == query["priority"])
+
+        search.output(search_defect_cell.key, "key")
+        search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
+        search.output(search_defect_info.configuration, "configuration")
+        search.output(search_host_cell.material, "host_material")
+        search.output(search_defect_cell.defect_structure, "structure")
+
     query_time = time.time() - start
 
     logger.debug(f"Query took {query_time:.2f} seconds")
 
-    matches = [defecttuple[0] for defecttuple in list(search)]
+    matches = [materialtuple[0] for materialtuple in list(search)]
     if not matches:
         logger.warning(f"No defect structure found for query: {query}")
         return None
@@ -104,7 +117,7 @@ def save_to_cif(defect, defects_folder):
         The corresponding path to the cif file, or None if save failed.
     """
     key = defect[0]
-    structure = defect[3]
+    structure = defect[-1]
 
     structure.rc_sites.wyckoff_symbols = None
     structure.rc_sites.multiplicities = None
@@ -205,9 +218,18 @@ def get_defect_formation_energy(store, address, **query):
     search_defect_info = search.variable(DefectInfo)
     search_screen_result = search.variable(ScreenResult)
     search_host = search.variable(HostSuperCellResult)
+    search_screen_cell = search.variable(ScreenCell)
+    search_hull_distance = search.variable(HullDistance)
+
+    search.add(search_defect_info.key == search_screen_cell.defect_key)
+    search.add(search_defect_info.key == search_hull_distance.defect_key)
+    search.add(search_screen_result.defect_key == search_defect_info.key)
+
+    search.add(search_screen_cell.charge == search_hull_distance.defect_charge)
+    search.add(search_screen_cell.spin == search_hull_distance.defect_spin)
 
     search.add(search_screen_result.charge == 0)
-    search.add(search_screen_result.defect_key == search_defect_info.key)
+    search.add(search_hull_distance.min_distance < 1e-5)
 
     if query.get("key") is not None:
         search.add(search_defect_info.key == query["key"])
@@ -241,7 +263,7 @@ def get_defect_formation_energy(store, address, **query):
 
     db_manager = DBManager(address)
 
-    db_manager.write_dict_to_db(dft_data, collection_str="DFT data")
+    db_manager.write_dict_to_db(dft_data, collection_str="DFT_data")
 
 
 def get_chem_pot(store, stoichiometry):
@@ -279,11 +301,30 @@ def get_chem_pot(store, stoichiometry):
     search.output(search_chem_pot.material, "material")
     search.output(search_chem_pot.chemical_potential, "chem_pot")
 
-    query_result = [chempot[0] for chempot in list(search)]
-    query_result = {elem: int(count) for elem, count in query_result}
+    query_result = [item[0] for item in list(search)]
+    query_result = {
+        elem: chemical_potential for elem, chemical_potential in query_result
+    }
 
     chemical_potential = 0
     for elem, count in matches.items():
         chemical_potential += query_result[elem] * count
 
     return chemical_potential
+
+
+def transfer_chemical_potential(store, address):
+    search = store.searcher()
+    search_chem_pot = search.variable(ChemicalPotential)
+
+    search.output(search_chem_pot.material, "material")
+    search.output(search_chem_pot.chemical_potential, "chem_pot")
+
+    query_result = [chempot[0] for chempot in list(search)]
+    chem_pots = {}
+    for elem, chemical_potential in query_result:
+        chem_pots[elem] = {"element": elem, "chemical_potential": chemical_potential}
+
+    db_manager = DBManager(address)
+
+    db_manager.write_dict_to_db(chem_pots, collection_str="Chemical_potential")
