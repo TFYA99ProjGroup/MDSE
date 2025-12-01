@@ -367,6 +367,77 @@ def test_equilibrium_check_oscill(mock_oscillation_walk):
     equil_index = result._check_equilibrium_const(temperatures, 0.001)
     assert equil_index == (len(Tot_energy) - 2)
 
+    #Oscillating energy, should trigger
+    equil_index = result._check_equilibrium_oscill(Tot_energy,0.005)
+    assert(equil_index == 1)
+
     # Oscillating energy, should trigger
     equil_index = result._check_equilibrium_oscill(Tot_energy, 0.005)
     assert equil_index == 1
+
+
+@pytest.fixture
+def cubic_system():
+    "Generates _calc_lattice() data for a cubic crystal simulation"
+
+    #Create parabol shape of energy vs vol
+    volumes = np.linspace(10*0.95, 10*1.05, 10)
+    energies = (volumes - 10)**2 + 5 #E(V) = (V-10)^2 +5 , so min at V=10
+    energy_v_vol = [[E, V] for E, V in zip(energies, volumes)]
+
+    return energy_v_vol
+
+
+@pytest.fixture
+def hexagonal_system():
+    "Generates _calc_lattice() data for a hexagonal crystal simulation"
+
+    #Optimal
+    a0 = 1
+    c0 = 2
+
+    #Create quadratic shape of energy vs lattice
+    a_vals = np.linspace(a0*0.95, a0*1.05, 10)
+    c_vals = np.linspace(c0*0.95, c0*1.05, 10)
+    energy_v_latt = []
+    for a in a_vals:
+        for c in c_vals:
+            E = (a - a0)**2 + (c - c0)**2 + 10 #E(a,c) = (a-a0)^2 + (c-c0)^2 + E0
+            energy_v_latt.append([E, [a, a, c]])
+
+    return energy_v_latt
+
+def test_cubic_lattice(monkeypatch, cubic_system):
+    """Test cubic system, with min at V=10 """
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return cubic system
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: cubic_system)
+    result.crystal_conv = True
+    result.crystal_struct = "cubic"
+
+    structure, opt_latt = result.calc_lattice()
+
+    assert np.isclose(opt_latt[0], 10**(1/3), 0.001)
+    assert(structure == "cubic")
+
+def test_hexagonal_lattice(monkeypatch, hexagonal_system):
+    """Tries if hexagonal system, with min at a=b=1, c=2"""
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return hexagonal system
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: hexagonal_system)
+    result.crystal_conv = True
+    result.crystal_struct = "hexagonal"
+
+    structure, opt_latt = result.calc_lattice()
+
+    assert np.isclose(opt_latt[0], 1, 0.000001)
+    assert np.isclose(opt_latt[1], 1, 0.000001)
+    assert np.isclose(opt_latt[2], 2, 0.000001)
+
+    #a==b
+    assert(opt_latt[0] == opt_latt[1])
+    assert(structure == "hexagonal")

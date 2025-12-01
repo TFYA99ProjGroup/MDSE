@@ -142,21 +142,29 @@ class SimulationManager:
                     crystal_params,
                     ["Name", "Structure", "Lattice_a", "Cubic"],
                 )
-                self.crystal = bulk(
+
+                self.crystal_conv = bulk(
                     crystal_params.get("Name"),
                     crystal_params.get("Structure"),
                     a=crystal_params.get("Lattice_a"),
                     b=crystal_params.get("Lattice_b", None),
                     c=crystal_params.get("Lattice_c", None),
                     cubic=crystal_params.get("Cubic"),
-                ) * crystal_params.get("Supercell", (1, 1, 1))
+                )
+
+                self.crystal = (self.crystal_conv *
+                crystal_params.get("Supercell", (1, 1, 1)))
 
             # ... or from some standard file format, ...
             elif crystal_type == "FILE":
                 self._check_keys("CRYSTAL", crystal_params, ["Filepath"])
-                self.crystal = ase.io.read(
+
+                self.crystal_conv = ase.io.read(
                     crystal_params.get("Filepath")
-                ) * crystal_params.get("Supercell", (1, 1, 1))
+                )
+
+                self.crystal = (self.crystal_conv*
+                                crystal_params.get("Supercell", (1,1,1)))
 
             # ... or by specifying each atom individually
             elif crystal_type == "LIST":
@@ -243,6 +251,8 @@ class SimulationManager:
         self.result = [self.crystal.copy()]
 
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
+        #self.result[0].info["lattice_frames"] = self.estimate_lattice()
+        #self.result[0].info["Structure"] = self.crystal_struct
 
         logger.debug("Init done")
 
@@ -492,7 +502,7 @@ class SimulationManager:
             logger.error(e)
             raise
         self.result[0].info["calc"] = self.calculator
-        return ResultMD(self.result)
+        return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
     def simulate_npt(
         self,
@@ -543,7 +553,7 @@ class SimulationManager:
             raise
         self.result[0].info["p_au"] = self.pressure_au
         self.result[0].info["calc"] = self.calculator
-        return ResultMD(self.result)
+        return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
     def simulate_nvt(
         self,
@@ -591,7 +601,7 @@ class SimulationManager:
             logger.error(e)
             raise
         self.result[0].info["calc"] = self.calculator
-        return ResultMD(self.result)
+        return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
     def single_atom_energy(self):
         """This function returns the energy of a single atom in the structure.
@@ -640,3 +650,4 @@ class SimulationManager:
             "Not implemented for that many atoms, yet"
         )
         return 0, 0
+
