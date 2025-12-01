@@ -71,14 +71,27 @@ def get_defects(store, **query):
     else:
         search_defect_cell = search.variable(DefectCell)
         search_defect_info = search.variable(DefectInfo)
+        search_screen_cell = search.variable(ScreenCell)
+        search_hull_distance = search.variable(HullDistance)
 
         search.add(search_defect_info.key == search_defect_cell.key)
+        search.add(search_defect_info.key == search_screen_cell.defect_key)
+        search.add(search_defect_info.key == search_hull_distance.defect_key)
+
+        search.add(search_screen_cell.charge == search_hull_distance.defect_charge)
+        search.add(search_screen_cell.spin == search_hull_distance.defect_spin)
 
         if query.get("key") is not None:
             search.add(search_defect_cell.key == str(query["key"]))
 
         if query.get("priority") is not None:
             search.add(search_defect_cell.priority == query["priority"])
+
+        if query.get("charge") is not None:
+            search.add(search_screen_cell.charge == query["charge"])
+
+        if query.get("hulldistance") is not None:
+            search.add(search_hull_distance.min_distance < query["hulldistance"])
 
         search.output(search_defect_cell.key, "key")
         search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
@@ -233,6 +246,8 @@ def get_defect_formation_energy(store, address, **query):
 
     if query.get("key") is not None:
         search.add(search_defect_info.key == query["key"])
+
+
 
     search.output(search_defect_info.key, "key")
     search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
