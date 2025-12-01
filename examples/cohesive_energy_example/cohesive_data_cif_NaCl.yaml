@@ -24,3 +24,4 @@ Simulation1:
       sigma:
         - [3.40, 3.40]      # sigma_11, sigma_12
         - [3.40, 3.40]      # sigma_21, sigma_22
+      rCut: 10.0
