@@ -293,31 +293,14 @@ def write_to_database(args):
         logger.info(f"Writing data from {path} to {args.address}")
         writer.write_jsonfiles_to_db(path)
 
+
 def visualize_DB(args):
     path = args.filepath
 
     run_visualize_db(path)
 
 
-def main():
-    """
-    Entry point for the MDSE CLI.
-
-    Provides the following subcommands:
-
-    - `simulate`: Run simulations defined in a YAML file.
-        >>> mdse simulate -f config.yml
-    - `view`: Open structure files with the ASE GUI.
-        >>> mdse view -f file1.traj file2.traj
-    - `clean`: Remove all `.traj` files in a directory.
-        >>> mdse clean -f ./results
-
-    Notes
-    -----
-    The selected subcommand is dispatched to the corresponding function
-    via `argparse`'s ``set_defaults(func=...)``.
-    """
-
+def create_parser():
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE")
 
@@ -458,20 +441,42 @@ def main():
     write_to_db.set_defaults(func=write_to_database)
 
     visualize_db = subparsers.add_parser(
-        "visualize" , help="Visualizes data from database. Uses config file to."
+        "visualize", help="Visualizes data from database. Uses config file to."
     )
 
     visualize_db.add_argument(
         "-f",
         "--filepath",
-        required = True,
-        metavar = "FILEPATH",
-        help = "Filepath to config file, that has info about what data and what plots."
+        required=True,
+        metavar="FILEPATH",
+        help="Filepath to config file, that has info about what data and what plots.",
     )
 
     visualize_db.set_defaults(func=visualize_DB)
+    return parser
 
-    # ----------Other----------
+
+def main():
+    """
+    Entry point for the MDSE CLI.
+
+    Provides the following subcommands:
+
+    - `simulate`: Run simulations defined in a YAML file.
+        >>> mdse simulate -f config.yml
+    - `view`: Open structure files with the ASE GUI.
+        >>> mdse view -f file1.traj file2.traj
+    - `clean`: Remove all `.traj` files in a directory.
+        >>> mdse clean -f ./results
+
+    Notes
+    -----
+    The selected subcommand is dispatched to the corresponding function
+    via `argparse`'s ``set_defaults(func=...)``.
+    """
+
+    parser = create_parser()
+
     args = parser.parse_args()
 
     setup_logging(debug=args.debug)
