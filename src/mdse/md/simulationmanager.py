@@ -180,6 +180,10 @@ class SimulationManager:
             else:
                 raise NotImplementedError()
 
+            if crystal_params.get("PBC") is not None:
+                self.crystal_conv.set_pbc(crystal_params.get("PBC"))
+                self.crystal.set_pbc(crystal_params.get("PBC"))
+
         except Exception as e:
             logger.error("Error while creating inital crystal:")
             logger.error(e)
