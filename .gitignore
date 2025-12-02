@@ -1,6 +1,7 @@
 
 # ASE files
 *.traj
+*.cif
 
 # NSC Output files
 slurm-*.out

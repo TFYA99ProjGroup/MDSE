@@ -92,8 +92,8 @@ class RunManager:
             for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                self.md_simulations.append(SimulationManager(item))
-
+                # self.md_simulations.append(SimulationManager(item))
+                self.md_simulations.append(item)
         logger.debug("RunManager done innit bruv!")
 
     def _read_from_sqlite(self):
@@ -224,7 +224,8 @@ class RunManager:
             logger.warning(
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
-            for index, sim in enumerate(self.md_simulations):
+            for index, sim_conf in enumerate(self.md_simulations):
+                sim = SimulationManager(sim_conf)
                 if sim is None:
                     logger.error("Simulation is None, skipping")
                     continue
@@ -279,7 +280,8 @@ class RunManager:
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
-                    sim = self.md_simulations[job]
+                    # sim = self.md_simulations[job]
+                    sim = SimulationManager(self.md_simulations[job])
                     if sim is None:
                         logger.error("Simulation is None, skipping")
                         continue
