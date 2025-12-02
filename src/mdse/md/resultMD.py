@@ -455,6 +455,10 @@ class ResultMD:
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
 
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
+
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
+
         for frame in self.frames:
             E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
             V_A3.append(frame.get_volume())
@@ -514,6 +518,9 @@ class ResultMD:
             Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
         """
         E_eV, T_K = [], []
+
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
 
         for frame in self.frames:
             E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
@@ -756,6 +763,9 @@ class ResultMD:
             list: Total energy at each frame
         """
         logger.debug("Get total energies")
+        
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
         return [
             frame.get_kinetic_energy() + frame.info["pot_energy"]
             for frame in self.frames

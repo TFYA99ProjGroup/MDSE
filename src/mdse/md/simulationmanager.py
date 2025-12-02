@@ -204,7 +204,6 @@ class SimulationManager:
             self.calc_params = simulation_params.get("CalculatorParams", {}).copy()
             self.create_trajectory = simulation_params.get("Create_traj", False)
             self.save_potential_energy = simulation_params.get("Calc_pot",False)
-            print(self.save_potential_energy)
 
         except Exception as e:
             logger.error("Error parameter values")
