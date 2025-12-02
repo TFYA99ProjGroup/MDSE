@@ -251,7 +251,7 @@ class DBManager:
                 return None
         return val
 
-    def read_from_db(self, conditions, outputs):
+    def read_from_db(self, conditions, outputs,collection_str="structures"):
         """
         Query the MongoDB collection and extract selected fields.
 
@@ -267,6 +267,9 @@ class DBManager:
         outputs : list of str
             List of fields to extract from each document. Supports dotted
             paths for nested fields (e.g. ``"properties.lindemann"``).
+        collection_str : str
+            String that defines what collection to query, default value perserver
+            legacy behavior
 
         Returns
         -------
@@ -299,7 +302,7 @@ class DBManager:
         }
         """
         db = self.client["materials_db"]
-        collection = db["structures"]
+        collection = db[collection_str]
 
         docs = collection.find(conditions)
         result = {}
@@ -311,3 +314,27 @@ class DBManager:
                 )
 
         return result
+
+    def get_all_values(self, field, collection_str="structures"):
+        """
+        Return a list of all values that appear for a given field in a collection.
+        Supports nested fields via dot notation (e.g. 'properties.lindemann').
+        """
+        db = self.client["materials_db"]
+        coll = db[collection_str]
+
+        cursor = coll.find(
+            {field: {"$exists": True}},
+            {field: 1, "_id": 0}
+        )
+
+        values = []
+        for doc in cursor:
+            # Extract nested value using your existing helper
+            val = self._get_nested(doc, field)
+            if isinstance(val, list):
+                values.extend(val)     # flatten lists
+            else:
+                values.append(val)
+
+        return values
