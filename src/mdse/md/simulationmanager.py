@@ -203,6 +203,8 @@ class SimulationManager:
             self.calculator = simulation_params.get("Calculator")
             self.calc_params = simulation_params.get("CalculatorParams", {}).copy()
             self.create_trajectory = simulation_params.get("Create_traj", False)
+            self.save_potential_energy = simulation_params.get("Calc_pot",False)
+            print(self.save_potential_energy)
 
         except Exception as e:
             logger.error("Error parameter values")
@@ -254,7 +256,8 @@ class SimulationManager:
         #logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
 
-        self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
+        if self.save_potential_energy:
+            self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
         #self.result[0].info["lattice_frames"] = self.estimate_lattice()
         #self.result[0].info["Structure"] = self.crystal_struct
 
@@ -383,7 +386,8 @@ class SimulationManager:
 
     def _attach_frame(self):
         self.result.append(self.crystal.copy())
-        self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
+        if self.save_potential_energy:
+            self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
 
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""

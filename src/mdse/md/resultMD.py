@@ -737,6 +737,8 @@ class ResultMD:
         returns:
             list: Potential energy at each frame
         """
+        #Check if pot_energy is calculated. If not, calculates it
+        self._attach_pot_energy_to_frames()
         return [frame.info["pot_energy"] for frame in self.frames]
 
     def get_kin_energies(self):
@@ -755,7 +757,7 @@ class ResultMD:
         """
         logger.debug("Get total energies")
         return [
-            frame.get_kinetic_energy() + frame.get_potential_energy()
+            frame.get_kinetic_energy() + frame.info["pot_energy"]
             for frame in self.frames
         ]
 
@@ -769,6 +771,29 @@ class ResultMD:
         dt = self.frames[0].info["dt"]
         times = np.arange(len(self.frames)) * dt
         return times
+
+    def _attach_pot_energy_to_frames(self):
+        """If there was no 'Calc_pot' flag in the .yaml config file, potential energy
+        wont be calculated and saved to frame.info["pot_energy"].
+
+        This function uses calculator to calculate and attach .info["pot_energy"] to
+        all frames, if no such information was saved in simulation manager.        
+        """
+        logger.debug("Potential energy was needed, check if stored in frames")
+        #Check if SM saved potential energy
+        if "pot_energy" in self.frames[0].info:
+            logger.debug("Potential energy already saved in frames")
+            return
+        
+        logger.debug("No potential energy was saved in frames, calc. it")
+        #No pot energy was saved, need to init calculator and re-calculate
+        calculator = self._check_calc_2()
+        for frame in self.frames:
+            frame.calc = calculator
+            frame.info["pot_energy"] = frame.get_potential_energy()
+        logger.debug("pot_energy was added to all frames")
+
+
 
     def single_atom_energy(self):
         """This function returns the energy of a single atom in the structure.

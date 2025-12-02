@@ -7,10 +7,13 @@ def main():
     #-------A fcc metal. Cu with EMT
     config = main_read("cohesive_data_Cu.yaml")
     sm = SimulationManager(list(config[0].values())[0])
-
+    print("*********Created SM*******")
     res = sm.simulate_nve()
-
-    print(res.get_cohesive_energy())
+    print("********Created result********")
+    res.get_pot_energies()
+    print("********Called potential energy********")
+    #print(res.get_cohesive_energy())
+    #print("********called cohesive energy********")
 
     #---------Cu with Mace (Must have model_path i the .yaml)
     #config = main_read("cohesive_data_Cu_mace.yaml")
