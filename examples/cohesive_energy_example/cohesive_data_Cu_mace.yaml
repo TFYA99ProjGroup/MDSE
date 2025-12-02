@@ -14,7 +14,7 @@ Copper:
     Temp: 200
   SIMULATION:
     Timestep: 2 #fs
-    Length: 500
+    Length: 10
     TrajInterval: 5
     Calculator: MACE
     CalculatorParams:

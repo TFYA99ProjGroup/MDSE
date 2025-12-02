@@ -246,12 +246,12 @@ class SimulationManager:
             logger.error("Failed to check the calculator: {e}")
             raise RuntimeError(e)
         self.crystal.info["dt"] = self.timestep
-        logger.debug("Start saving single_atom_energy info to .info[]")
-        E_atom = self.single_atom_energy()
+        #logger.debug("Start saving single_atom_energy info to .info[]")
+        #E_atom = self.single_atom_energy()
         # E_atom, n_atoms = self.single_atom_energy()
-        self.crystal.info["E_single_atom"] = E_atom
+        #self.crystal.info["E_single_atom"] = E_atom
         # self.crystal.info["atoms_per_unit"] = n_atoms
-        logger.debug("Saved single_atom_energy info succesfull")
+        #logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
 
         self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
@@ -606,52 +606,3 @@ class SimulationManager:
             raise
         self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result, self.crystal_conv, self.calc_params)
-
-    def single_atom_energy(self):
-        """This function returns the energy of a single atom in the structure.
-        Used when calculating cohesive energy.
-
-        returns:
-            E_atom (float): The energy of one atom in the structure
-            int: How many atoms in formula. Ex MgCu2 gives 3
-        """
-        logger.debug("Start calculating single_atom energies")
-
-        # Get chemical formula of the "super" crystal
-        formula_super = self.crystal.get_chemical_formula()
-
-        # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
-        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
-        counts = {el: int(n) if n else 1 for el, n in matches}
-
-        common_divider = reduce(math.gcd, counts.values())
-        formula_unit = {el: n // common_divider for el, n in counts.items()}
-        logger.debug(f"Found following formula: {formula_unit}")
-
-        # store the energy
-        E_atom = 0
-
-        # for each element  in the chemical formula, simulate it alone
-        for element, n in formula_unit.items():
-            calc = self._check_calculator()
-            atom = ase.Atoms(
-                [element], #list(element): Cu -> ['C','u']
-                positions=[(0, 0, 0)],
-                cell=[15, 15, 15],
-                pbc=False,
-            )
-            atom.calc = calc
-
-            # add energy weighted by count
-            E_atom += atom.get_potential_energy()*n
-
-        # normalize so we return average energy per atom
-        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
-        return E_atom / tot_nr_of_atoms  #len(self.crystal)
-
-        logger.debug(
-            f"Could not calc single_atom_energy for {formula_unit}."
-            "Not implemented for that many atoms, yet"
-        )
-        return 0, 0
-

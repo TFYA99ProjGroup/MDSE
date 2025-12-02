@@ -30,22 +30,22 @@ def main():
 
 
     #--------A MgCu2 crystal, using EMT with parameter
-    config = main_read("cohesive_data_cif_MgCu2.yaml")
-    sm = SimulationManager(list(config[0].values())[0])
+    #config = main_read("cohesive_data_cif_MgCu2.yaml")
+    #sm = SimulationManager(list(config[0].values())[0])
 
-    res = sm.simulate_nve()
+    #res = sm.simulate_nve()
 
-    print(res.get_cohesive_energy())
+    #print(res.get_cohesive_energy())
 
 
     #--------NaCl with LJ
-    config = main_read("cohesive_data_cif_NaCl.yaml")
+    #config = main_read("cohesive_data_cif_NaCl.yaml")
 
-    sm = SimulationManager(list(config[0].values())[0])
+    #sm = SimulationManager(list(config[0].values())[0])
 
-    res = sm.simulate_nve()
+    #res = sm.simulate_nve()
 
-    print(res.get_cohesive_energy())
+    #print(res.get_cohesive_energy())
 
 
 if __name__ == "__main__":

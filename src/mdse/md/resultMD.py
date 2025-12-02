@@ -770,6 +770,51 @@ class ResultMD:
         times = np.arange(len(self.frames)) * dt
         return times
 
+    def single_atom_energy(self):
+        """This function returns the energy of a single atom in the structure.
+        Used when calculating cohesive energy.
+
+        returns:
+            E_atom (float): The energy of one atom in the structure
+            int: How many atoms in formula. Ex MgCu2 gives 3
+        """
+        logger.debug("Start calculating single_atom energies")
+
+        # Get chemical formula of the "super" crystal
+        import re
+        from functools import reduce
+        import math
+        formula_super = self.frames[0].get_chemical_formula()
+
+        # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
+        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
+        counts = {el: int(n) if n else 1 for el, n in matches}
+
+        common_divider = reduce(math.gcd, counts.values())
+        formula_unit = {el: n // common_divider for el, n in counts.items()}
+        logger.debug(f"Found following formula: {formula_unit}")
+
+        # store the energy
+        E_atom = 0
+        calc = self._check_calc_2()
+        # for each element  in the chemical formula, simulate it alone
+        for element, n in formula_unit.items():
+            atom = Atoms(
+                [element], #list(element): Cu -> ['C','u']
+                positions=[(0, 0, 0)],
+                cell=[15, 15, 15],
+                pbc=False,
+            )
+            atom.calc = calc
+
+            # add energy weighted by count
+            E_atom += atom.get_potential_energy()*n
+
+        # normalize so we return average energy per atom
+        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
+        return E_atom / tot_nr_of_atoms  #len(self.crystal)
+
+
     def get_cohesive_energy(self):
         """The cohesive energy, as E_single_atom - E_bulk_all_atoms / nr of atoms
 
@@ -782,7 +827,7 @@ class ResultMD:
         if not self.reached_equilibrium:
             equil_frame = 7
 
-        return self.frames[0].info["E_single_atom"] - (
+        return self.single_atom_energy() - (
             np.mean(pots[equil_frame:]) / len(self.frames[0])
         )
 
