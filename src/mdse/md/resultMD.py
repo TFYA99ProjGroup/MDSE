@@ -763,7 +763,7 @@ class ResultMD:
             list: Total energy at each frame
         """
         logger.debug("Get total energies")
-        
+
         #Check if potential energy is saved. If not, calculate it
         self._attach_pot_energy_to_frames()
         return [
@@ -995,6 +995,16 @@ class ResultMD:
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
+    
+    def _check_keys(self, name, d, keys):
+        """
+        STOLEN from simulationmanager. Used in _check_calc_2 to see so LJ
+        has correct parameters.
+        """
+        missing = [k for k in keys if k not in d]
+        if missing:
+            raise KeyError(f"Missing keys in {name}: {missing}")
+
 
     def _check_calc_2(self):
         """"
