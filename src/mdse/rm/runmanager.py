@@ -234,8 +234,8 @@ class RunManager:
                 res = sim.simulate()
                 config = self.simulation_config[index]
                 entry = self.run_results(res, config)
-                self.MongoDBentriesAsJson.append(entry.to_dict())
-            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
+                # self.MongoDBentriesAsJson.append(entry.to_dict())
+                DBManager.create_json_from_mongodbentries([entry.to_dict()])
             # Insert single core execution here if desired
             return
 
@@ -258,7 +258,9 @@ class RunManager:
 
                 if tag == TAG_DONE:
                     if type(msg) is MongoDBEntry:
-                        self.MongoDBentriesAsJson.append(msg.to_dict())
+                        # self.MongoDBentriesAsJson.append(msg.to_dict())
+                        DBManager.create_json_from_mongodbentries([msg.dict()])
+
                     if jobs:
                         job = jobs.pop(0)
                         logger.debug(f"[Master] Sent new job {job} to worker {src}")
@@ -269,7 +271,7 @@ class RunManager:
                         finished_workers += 1
 
             logger.debug("[Master] All jobs completed.")
-            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
+            # DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
