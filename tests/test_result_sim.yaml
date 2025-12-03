@@ -57,16 +57,17 @@ Copper:
     Ensamble: NPT
     Temp_list: 
       - 100
+      - 200
     Pressure: 3.85e-2
     ThermoTime: 100
     BaroTime: 1000
   SIMULATION:
-    Timestep: 2 #fs
-    Length: 2
+    Timestep: 1 #fs
+    Length: 5
     TrajInterval: 1
     Calculator: MACE
     CalculatorParams: 
-      model_paths: ../models/2023-12-10-mace-128-L0_energy_epoch-249.model
+      model_paths: models/2023-12-10-mace-128-L0_energy_epoch-249.model
       device: cpu
     Create_traj: True
   RESULT:
