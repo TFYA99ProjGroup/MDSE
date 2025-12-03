@@ -13,8 +13,8 @@ Simulation1:
     Temp: 800
   SIMULATION:
     Timestep: 2 #fs
-    Length: 5
-    TrajInterval: 10
+    Length: 50
+    TrajInterval: 5
     Calculator: MACE
     CalculatorParams:
       model_paths: /home/lukas/TFYA99/mace-mpa-0-medium.model # insert path here

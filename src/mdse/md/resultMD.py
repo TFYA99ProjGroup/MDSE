@@ -832,6 +832,20 @@ class ResultMD:
         # store the energy
         E_atom = 0
         calc = self._check_calc_2()
+
+        #If EMT with paramater, first attachment must be to compound, not single element.
+        #Will crash otherwise
+        if self.calculator == "EMT" and self.calc_params.get("use_glass"):
+            el_tot = list(formula_unit.keys())
+            dummy_atom = Atoms(
+                el_tot,
+                            positions = [(i*1,0,0) for i in range (len(el_tot))],
+                            cell = [5,5,5],
+                            pbc=False
+                            )
+            dummy_atom.calc = calc
+
+
         # for each element  in the chemical formula, simulate it alone
         for element, n in formula_unit.items():
             atom = Atoms(

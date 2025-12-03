@@ -14,9 +14,9 @@ Copper:
     Temp: 200
   SIMULATION:
     Timestep: 2 #fs
-    Length: 10
+    Length: 100
     TrajInterval: 5
     Calculator: MACE
     CalculatorParams:
       model_paths: /home/lukas/TFYA99/mace-mpa-0-medium.model # insert path here
-      device: cpu #cuda or cpu 
+      device: cpu #cuda or cpu
