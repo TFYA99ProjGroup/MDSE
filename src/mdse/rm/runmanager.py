@@ -254,23 +254,23 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
-                logger.debug(f"[Master] Received {msg} from worker {src}")
+                logger.info(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
                     if type(msg) is MongoDBEntry:
                         # self.MongoDBentriesAsJson.append(msg.to_dict())
-                        DBManager.create_json_from_mongodbentries([msg.dict()])
+                        DBManager.create_json_from_mongodbentries([msg.to_dict()])
 
                     if jobs:
                         job = jobs.pop(0)
-                        logger.debug(f"[Master] Sent new job {job} to worker {src}")
+                        logger.info(f"[Master] Sent new job {job} to worker {src}")
                         comm.send(job, dest=src, tag=TAG_WORK)
                     else:
                         logger.debug(f"[Master] Sent stop signal to worker {src}")
                         comm.send(None, dest=src, tag=TAG_STOP)
                         finished_workers += 1
 
-            logger.debug("[Master] All jobs completed.")
+            logger.info("[Master] All jobs completed.")
             # DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
         else:
             # Initialize worker by notifying master
@@ -292,7 +292,7 @@ class RunManager:
                     config = self.simulation_config[job]
                     logger.debug(f"config::: {config}")
                     database_entry = self.run_results(res, config)
-                    logger.debug(f"[Worker {rank}] Completed job {job}")
+                    logger.info(f"[Worker {rank}] Completed job {job}")
                     comm.send(database_entry, dest=0, tag=TAG_DONE)
                 elif tag == TAG_STOP:
                     logger.debug(f"[Worker {rank}] Received stop signal from master.")
