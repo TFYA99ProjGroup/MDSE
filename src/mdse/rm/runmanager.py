@@ -1,6 +1,5 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
-from mpi4py import MPI as _TrueMPI
 import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
@@ -13,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 _FORCE_NO_MPI = False  # Set to True to simulate missing MPI backend for testing
 try:
+    from mpi4py import MPI as _TrueMPI
     comm = _TrueMPI.COMM_WORLD
     _ = comm.Get_rank()
     MPI = _TrueMPI

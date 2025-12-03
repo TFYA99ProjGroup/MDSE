@@ -181,7 +181,7 @@ class DBManager:
         `structures`.
 
         The method:
-        1. Scans the directory specified by `path` for `.json` files.
+        1. Scans the directory specified by `path` for `.jsonl` files.
         2. Reads each file into a Python dictionary.
         3. Inserts all documents into the MongoDB collection.
 
