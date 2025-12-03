@@ -67,7 +67,7 @@ class RunManager:
                         can be written.
     """
 
-    def __init__(self, simulation_config=None) -> None:
+    def __init__(self, simulation_config=None, overwrite_config=None) -> None:
         """Initializes RunManager with optional simulation configurations.
 
         If simulation configurations are provided, a SimulationManager instance is
@@ -212,7 +212,7 @@ class RunManager:
         )
         return entry
 
-    def run_simulations(self, overwrite_ensamble=None):
+    def run_simulations(self):
         """
         Distribute simulations across MPI ranks using a work queue.
         Each rank (not including master) runs simulations.
@@ -228,8 +228,6 @@ class RunManager:
                 if sim is None:
                     logger.error("Simulation is None, skipping")
                     continue
-                if overwrite_ensamble is not None:
-                    sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
                 config = self.simulation_config[index]
                 entry = self.run_results(res, config)

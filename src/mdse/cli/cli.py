@@ -162,11 +162,29 @@ def simulate(args):
     sim_list = main_read(args.filepath)
     logger.info(f"Starting {len(sim_list)} simulations")
 
+    config_dict = {}
+    for item in args.config:
+        key, val = item.split("=", 1)
+        config_dict[key] = parse_value(val)
+    
     rm = RunManager(sim_list)
-    if args.ensamble is not None:
-        logger.debug(f"Overwriting config ensamble with {args.ensamble}")
+    if args.config is not None:
+        logger.debug(f"Overwriting config  with {config_dict}")
     rm.run_simulations(overwrite_ensamble=args.ensamble)
     logger.info("Simulation done!")
+
+
+def parse_value(val):
+    if "," in val:
+        return val.split(",")
+
+    try:
+        return int(val)
+    except ValueError:
+        try:
+            return float(val)
+        except ValueError:
+            return val
 
 
 def calc_msd(args):
@@ -318,11 +336,13 @@ def create_parser():
         help="The filepath to be simulated",
     )
     parser_simulate.add_argument(
-        "-e",
-        "--ensamble",
+        "-c",
+        "--config",
         required=False,
-        metavar="ENSAMBLE",
-        help="Which ensamble to be used: NVT, NVE or NPT",
+        metavar="KEY=VAL",
+        nargs="+"
+        help="Overwrite config variables, needs correctly spelled strings. Eg.
+              'Name=Ar' to replace the element with Argon.",
     )
     parser_simulate.add_argument(
         "--mpi",
