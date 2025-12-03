@@ -8,6 +8,7 @@ import glob
 import os
 import logging
 import webbrowser
+import re
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
@@ -125,12 +126,13 @@ def simulate_mpi(args):
             f"MPI run: {len(sim_list)} simulations using {comm.Get_size()} ranks."
         )
 
-    rm = RunManager(sim_list)
-    if args.ensamble is not None:
+    if args.config is not None:
         if rank == 0:
-            logger.debug(f"Overwriting config ensamble with {args.ensamble}")
+            config_dict = parse_config(args.config)
+            logger.debug(f"Overwriting config with {config_dict}")
+            rm = RunManager(sim_list, config_dict)
 
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+    rm.run_simulations()
 
     if rank == 0:
         logger.info("MPI simulations done")
@@ -162,29 +164,47 @@ def simulate(args):
     sim_list = main_read(args.filepath)
     logger.info(f"Starting {len(sim_list)} simulations")
 
-    config_dict = {}
-    for item in args.config:
-        key, val = item.split("=", 1)
-        config_dict[key] = parse_value(val)
-    
-    rm = RunManager(sim_list)
+    config_dict = parse_config(args.config)
     if args.config is not None:
-        logger.debug(f"Overwriting config  with {config_dict}")
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+        logger.debug(f"Overwriting config with {config_dict}")
+    rm = RunManager(sim_list, config_dict)
+    rm.run_simulations()
     logger.info("Simulation done!")
 
 
-def parse_value(val):
-    if "," in val:
-        return val.split(",")
-
+def convert_scalar(v):
+    # int?
     try:
-        return int(val)
+        return int(v)
     except ValueError:
         try:
-            return float(val)
+            return float(v)
         except ValueError:
-            return val
+            return v
+
+
+def parse_value(v):
+    if v.startswith("[") and v.endswith("]"):
+        inner = v[1:-1]  # remove [ ]
+        # split by comma OR whitespace
+        parts = re.split(r"[,\s]+", inner.strip())
+        d = {}
+        for p in parts:
+            if "=" in p:
+                k, val = p.split("=", 1)
+                d[k] = val
+        return d
+
+    return v
+
+
+def parse_config(items):
+    """Parse 'key=value' items into a possibly nested dict."""
+    result = {}
+    for item in items:
+        key, val = item.split("=", 1)
+        result[key] = parse_value(val)
+    return result
 
 
 def calc_msd(args):
@@ -340,9 +360,11 @@ def create_parser():
         "--config",
         required=False,
         metavar="KEY=VAL",
-        nargs="+"
-        help="Overwrite config variables, needs correctly spelled strings. Eg.
-              'Name=Ar' to replace the element with Argon.",
+        nargs="+",
+        help=(
+            "Overwrite config variables, needs correctly spelled strings."
+            + "Eg. 'Name=Ar' to replace the element with Argon."
+        ),
     )
     parser_simulate.add_argument(
         "--mpi",

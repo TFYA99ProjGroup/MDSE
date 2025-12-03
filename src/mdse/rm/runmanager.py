@@ -94,6 +94,32 @@ class RunManager:
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
 
+        if overwrite_config is not None:
+            all_categories = {
+                "CRYSTAL": ["TYPE", "Name", "Filepath", "Structure_folder", "Query"],
+                "ENSAMBLE": ["Ensamble", "Temp", "ThermoTime"],
+                "SIMULATION": [
+                    "Timestep",
+                    "Length",
+                    "TrajInterval",
+                    "Calculator",
+                    "CalculatorParams",
+                    "Create_traj",
+                ],
+                "RESULT": ["Properties"],
+            }
+            for simulation in self.simulation_config:
+                for category in all_categories.keys():
+                    for key in all_categories[category]:
+                        if key in overwrite_config.keys():
+                            logger.debug(simulation)
+                            first_value = next(iter(simulation.values()))
+                            first_value[category][key] = overwrite_config[key]
+            logger.debug(f"overwrite config: {overwrite_config}")
+            logger.debug(
+                f"config has been overwritten. Now the config is {self.simulation_config}"
+            )
+
         logger.debug("RunManager done innit bruv!")
 
     def _read_from_sqlite(self):
@@ -196,8 +222,7 @@ class RunManager:
             mdse_fields={
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat": \
-                    result.calc_isochoric_heat_capacity_per_atom(),
+                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
