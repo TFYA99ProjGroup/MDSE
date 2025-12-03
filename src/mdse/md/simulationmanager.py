@@ -10,9 +10,6 @@ from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
 from asap3 import EMTMetalGlassParameters
 from pathlib import Path
-import re
-from functools import reduce
-import math
 
 import logging
 import numpy as np

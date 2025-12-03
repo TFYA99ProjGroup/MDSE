@@ -787,14 +787,14 @@ class ResultMD:
         wont be calculated and saved to frame.info["pot_energy"].
 
         This function uses calculator to calculate and attach .info["pot_energy"] to
-        all frames, if no such information was saved in simulation manager.        
+        all frames, if no such information was saved in simulation manager.
         """
         logger.debug("Potential energy was needed, check if stored in frames")
         #Check if SM saved potential energy
         if "pot_energy" in self.frames[0].info:
             logger.debug("Potential energy already saved in frames")
             return
-        
+
         logger.debug("No potential energy was saved in frames, calc. it")
         #No pot energy was saved, need to init calculator and re-calculate
         calculator = self._check_calc_2()
@@ -833,7 +833,8 @@ class ResultMD:
         E_atom = 0
         calc = self._check_calc_2()
 
-        #If EMT with paramater, first attachment must be to compound, not single element.
+        #If EMT with paramater, first attachment must be to compound,
+        #not single element.
         #Will crash otherwise
         if self.calculator == "EMT" and self.calc_params.get("use_glass"):
             el_tot = list(formula_unit.keys())
@@ -1009,7 +1010,7 @@ class ResultMD:
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
-    
+
     def _check_keys(self, name, d, keys):
         """
         STOLEN from simulationmanager. Used in _check_calc_2 to see so LJ

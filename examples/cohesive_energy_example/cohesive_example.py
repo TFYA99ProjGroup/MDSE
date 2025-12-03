@@ -9,7 +9,7 @@ def main():
     sm = SimulationManager(list(config[0].values())[0])
 
     res = sm.simulate_nve()
- 
+
     print(res.get_cohesive_energy())
 
     #---------Cu with Mace (Must have model_path i the .yaml)
