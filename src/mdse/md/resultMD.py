@@ -450,7 +450,8 @@ class ResultMD:
         """
         E_eV, V_A3 = [], []
 
-        p_au = self.frames[0].info["p_au"]
+        pressure = self.get_pressures()
+        p_au = np.mean(pressure)
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
 
@@ -794,6 +795,38 @@ class ResultMD:
         """
         logger.debug("Get tempertures")
         return [frame.get_temperature() for frame in self.frames]
+
+    def get_pressures(self):
+        """Gets pressure for all frames
+
+        returns:
+            list : List of all pressures at each frame
+
+        """
+        pressure = []
+        for frame in self.frames:
+            pressure.append(self.get_pressure(frame))
+
+        return pressure
+
+
+    def get_pressure(self, frame):
+        """Gets pressure for a specified frame, specified by the average of the
+        normal stresses on the orthogonal planes.
+
+        parameters:
+            frame : int
+                The specified frame for which to calculate the pressure.
+
+        returns:
+            float : The pressure in the current frame
+
+        """
+        frame.calc = self._check_calc_2()
+        stress = frame.get_stress()
+        pressure = - (stress[0] + stress[1] + stress[2])/ 3
+
+        return pressure
 
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.
