@@ -4,7 +4,7 @@ from mdse.cli.cli import create_parser, simulate_mpi
 
 def test_simulate_calls_runmanager():
     parser = create_parser()
-    args = parser.parse_args(["simulate", "-f", "config.yaml", "-e", "NVT"])
+    args = parser.parse_args(["simulate", "-f", "config.yaml", "-c", "Ensamble=NVT"])
 
     with (
         patch("mdse.cli.cli.main_read") as mock_main_read,
@@ -17,17 +17,14 @@ def test_simulate_calls_runmanager():
 
         args.func(args)
 
-        mock_main_read.assert_called_once_with("config.yaml")
+        mock_main_read.assert_called_once_with("config.yaml", {"Ensamble": "NVT"})
         mock_RunManager.assert_called_once_with(["sim1", "sim2"])
-        mock_rm_instance.run_simulations.assert_called_once_with(
-            overwrite_ensamble="NVT"
-        )
 
 
 def test_simulate_mpi_calls_runmanager():
     class Args:
         filepath = "config.yaml"
-        ensamble = "NVT"
+        config = ["Ensamble=NVT"]
         mpi = True
 
     args = Args()
@@ -48,11 +45,8 @@ def test_simulate_mpi_calls_runmanager():
 
         simulate_mpi(args)
 
-        mock_main_read.assert_called_once_with("config.yaml")
+        mock_main_read.assert_called_once_with("config.yaml", {"Ensamble": "NVT"})
         mock_RunManager.assert_called_once_with(["sim1"])
-        mock_rm_instance.run_simulations.assert_called_once_with(
-            overwrite_ensamble="NVT"
-        )
 
 
 def test_calc_msd_calls():

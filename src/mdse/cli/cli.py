@@ -8,7 +8,6 @@ import glob
 import os
 import logging
 import webbrowser
-import re
 
 from mdse.parser.parse_yml import main_read
 from mdse.rm.runmanager import RunManager
@@ -118,19 +117,23 @@ def simulate_mpi(args):
     except Exception as e:
         logger.error(f"MPI backend not available: {e}. Exiting.")
         return
+    try:
+        config_dict = parse_config(args.config)
 
-    sim_list = main_read(args.filepath)
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        if rank == 0:
+            logger.debug(f"Overwriting config with {config_dict}")
+    sim_list = main_read(args.filepath, config_dict)
 
     if rank == 0:
         logger.info(
             f"MPI run: {len(sim_list)} simulations using {comm.Get_size()} ranks."
         )
 
-    if args.config is not None:
-        if rank == 0:
-            config_dict = parse_config(args.config)
-            logger.debug(f"Overwriting config with {config_dict}")
-            rm = RunManager(sim_list, config_dict)
+    rm = RunManager(sim_list)
 
     rm.run_simulations()
 
@@ -161,19 +164,24 @@ def simulate(args):
         simulate_mpi(args)
         return
 
-    sim_list = main_read(args.filepath)
+    try:
+        config_dict = parse_config(args.config)
+
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        logger.debug(f"Overwriting config with {config_dict}")
+
+    sim_list = main_read(args.filepath, config_dict)
     logger.info(f"Starting {len(sim_list)} simulations")
 
-    config_dict = parse_config(args.config)
-    if args.config is not None:
-        logger.debug(f"Overwriting config with {config_dict}")
-    rm = RunManager(sim_list, config_dict)
+    rm = RunManager(sim_list)
     rm.run_simulations()
     logger.info("Simulation done!")
 
 
 def convert_scalar(v):
-    # int?
     try:
         return int(v)
     except ValueError:
@@ -184,26 +192,30 @@ def convert_scalar(v):
 
 
 def parse_value(v):
-    if v.startswith("[") and v.endswith("]"):
-        inner = v[1:-1]  # remove [ ]
-        # split by comma OR whitespace
-        parts = re.split(r"[,\s]+", inner.strip())
-        d = {}
-        for p in parts:
-            if "=" in p:
-                k, val = p.split("=", 1)
-                d[k] = val
-        return d
+    v = v.strip()
+    if "," in v:
+        return [convert_scalar(x) for x in v.split(",")]
+    return convert_scalar(v)
 
-    return v
+
+def insert_nested(d, key_path, value):
+    keys = key_path.split(".")
+    cur = d
+    for k in keys[:-1]:
+        if k not in cur:
+            cur[k] = {}
+        cur = cur[k]
+    cur[keys[-1]] = value
 
 
 def parse_config(items):
-    """Parse 'key=value' items into a possibly nested dict."""
+    if items is None:
+        return None
     result = {}
     for item in items:
         key, val = item.split("=", 1)
-        result[key] = parse_value(val)
+        value = parse_value(val)
+        insert_nested(result, key, value)
     return result
 
 

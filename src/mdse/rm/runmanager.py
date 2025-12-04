@@ -67,7 +67,7 @@ class RunManager:
                         can be written.
     """
 
-    def __init__(self, simulation_config=None, overwrite_config=None) -> None:
+    def __init__(self, simulation_config=None) -> None:
         """Initializes RunManager with optional simulation configurations.
 
         If simulation configurations are provided, a SimulationManager instance is
@@ -93,32 +93,6 @@ class RunManager:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
                 self.md_simulations.append(SimulationManager(item))
-
-        if overwrite_config is not None:
-            all_categories = {
-                "CRYSTAL": ["TYPE", "Name", "Filepath", "Structure_folder", "Query"],
-                "ENSAMBLE": ["Ensamble", "Temp", "ThermoTime"],
-                "SIMULATION": [
-                    "Timestep",
-                    "Length",
-                    "TrajInterval",
-                    "Calculator",
-                    "CalculatorParams",
-                    "Create_traj",
-                ],
-                "RESULT": ["Properties"],
-            }
-            for simulation in self.simulation_config:
-                for category in all_categories.keys():
-                    for key in all_categories[category]:
-                        if key in overwrite_config.keys():
-                            logger.debug(simulation)
-                            first_value = next(iter(simulation.values()))
-                            first_value[category][key] = overwrite_config[key]
-            logger.debug(f"overwrite config: {overwrite_config}")
-            logger.debug(
-                f"config has been overwritten. Now the config is {self.simulation_config}"
-            )
 
         logger.debug("RunManager done innit bruv!")
 
