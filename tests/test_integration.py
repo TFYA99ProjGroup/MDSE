@@ -44,7 +44,7 @@ def validate_rm(file_path, sim_list, address):
 
     count_after = collection.count_documents({})
 
-    expected_new_docs = 4
+    expected_new_docs = 8
 
     assert count_after - count_before == expected_new_docs, (
         f"Expected {expected_new_docs} new documents, got {count_after - count_before}"

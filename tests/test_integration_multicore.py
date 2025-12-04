@@ -61,7 +61,7 @@ def validate_rm_without_runmanager(file_path, address):
 
     count_after = collection.count_documents({})
 
-    expected_new_docs = 4
+    expected_new_docs = 8
 
     assert count_after - count_before == expected_new_docs, (
         f"Expected {expected_new_docs} new documents, got {count_after - count_before}"
