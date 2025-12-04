@@ -89,7 +89,8 @@ def make_fake_entries(n=10, seed=420):
                     "TrajInterval": 1,
                     "Calculator": "MACE",
                     "CalculatorParams": {
-                        "model_paths": "../2023-12-10-mace-128-L0_energy_epoch-249.model",
+                        "model_paths": \
+                            "../2023-12-10-mace-128-L0_energy_epoch-249.model",
                         "device": "cpu",
                     },
                     "Create_traj": True,
