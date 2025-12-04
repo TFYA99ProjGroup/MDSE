@@ -180,7 +180,7 @@ class RunManager:
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
-                **crystal.get("Defect", None),
+                **crystal.get("Defect", {}),
                 "simulation_parameters": {**ensamble, **simulation},
             },
             chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
