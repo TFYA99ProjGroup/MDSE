@@ -4,6 +4,10 @@ from mdse.parser.httk_reader import (
     transfer_chemical_potential,
 )
 
+from mdse.logging.logging_config import setup_logging
+
+setup_logging()
+
 store = setup_db("../defects.sqlite")
 
 mongodb = "mongodb://admin:secret@localhost:27017/"

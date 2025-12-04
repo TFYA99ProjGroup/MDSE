@@ -338,3 +338,13 @@ class DBManager:
                 values.append(val)
 
         return values
+
+    def clear_collection(self, collection_str):
+        """
+        Deletes all elements in a collection.
+        """
+        db = self.client["materials_db"]
+        collection = db[collection_str]
+
+        result = collection.delete_many({})
+        logger.info(f"Deleted {result.deleted_count} entries.")
