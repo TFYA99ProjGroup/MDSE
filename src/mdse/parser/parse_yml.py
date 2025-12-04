@@ -123,9 +123,6 @@ def unnest_simulation_parameters(all_simulations, overwrite_config={}):
                                     )
 
                         else:
-                            logger.debug(
-                                f"not dict: {first_value[category][key]}, {overwrite_config[key]}"
-                            )
                             first_value[category][key] = overwrite_config[key]
         logger.debug(f"overwrite config: {overwrite_config}")
         logger.debug(

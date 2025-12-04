@@ -194,14 +194,14 @@ class RunManager:
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
-                "lindemann": result.calc_lindemann(),
-                "self_diffusion": result.calc_self_diff(),
-                "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
-                "debye": result.calc_debye_temperature(),
-                "total_energy": final_frame.info["pot_energy"]
-                + final_frame.get_kinetic_energy(),
-                "defect": crystal.get("Defect", None),
-                "simulation_parameters": {**ensamble, **simulation},
+            "lindemann": result.calc_lindemann(),
+            "self_diffusion": result.calc_self_diff(),
+            "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
+            "debye": result.calc_debye_temperature(),
+            "total_energy": final_frame.info["pot_energy"]
+            + final_frame.get_kinetic_energy(),
+            "defect": crystal.get("Defect", None),
+            "simulation_parameters": {**ensamble, **simulation},
             },
             chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
             cartesian_site_positions=final_frame.get_positions().tolist(),
