@@ -152,3 +152,28 @@ class VisualizeResult:
         plt.ylabel(labels[energy_type])
         plt.title(f"{labels[energy_type]} for {len(self.results)} simulations")
         plt.show()
+
+    def plot_temp(self):
+        """Calls the get_temperatues on result object to get temperature over all frames.
+        Generates plot with temperature vs time.
+        """
+        temps = []
+        times = []
+        for res in self.results:
+            times.append(res.get_time_axis())
+
+        names = [res.name for res in self.results]
+        for res in self.results:
+            temps.append(res.get_temperatures())
+
+
+
+
+        for time, temp, name in zip(times,temps, names):
+            plt.plot(time,temp)
+            plt.text(time[-1],temp[-1], f"{name}")
+        logger.debug("Energy and time where succsesfully fetched")
+        plt.xlabel("Time (fs)")
+        plt.ylabel("Temperature")
+        plt.title(f"Temperature for {len(self.results)} simulations")
+        plt.show()
