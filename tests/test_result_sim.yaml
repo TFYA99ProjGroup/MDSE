@@ -1,4 +1,4 @@
-Copper:
+Copper_NPT:
   CRYSTAL:
     TYPE: BULK
     Name: Cu
@@ -24,7 +24,7 @@ Copper:
     Properties:
       - all
 
-Copper:
+Copper_NVT:
   CRYSTAL:
     TYPE: BULK
     Name: Cu
@@ -73,7 +73,7 @@ Iron:
     Properties:
       - all
 
-Copper:
+Copper_MACE:
   CRYSTAL:
     TYPE: BULK
     Name: Cu
