@@ -1,6 +1,7 @@
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
+import uuid
 import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
@@ -189,7 +190,7 @@ class RunManager:
             + str(ensamble["Temp"])
             + "K"
             + "_"
-            + "".join(final_frame.get_chemical_symbols()),
+            + str(uuid.uuid4())[:8],
             last_modified=datetime.now(),
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
