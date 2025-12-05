@@ -667,11 +667,17 @@ class ResultMD:
         ## Maybe fix mean over serveral equil frames
         logger.debug("Calculating shear moudulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C44 = self.calc_C44(crystal_equil, strain)
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C44, C11, C12 = [], [], []
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C44.append(self.calc_C44(crystal_equil, strain))
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C44 = np.mean(C44)
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         # Voight gives an upper bound of the shear modulus
         shear_modulus_voight = (3 * C44 + C11 - C12) / 5
@@ -699,10 +705,16 @@ class ResultMD:
         """
         logger.debug("Calculating bulk modulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C11, C12 = [], []
+
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         bulk_modulus = (C11 + 2 * C12) / 3
 
