@@ -16,6 +16,18 @@
 #
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    ---------------------------------------------------------------------------
+#
+#    Modifications Copyright (C) 2025 See AUTHORS
+#
+#    This file has been modified for use in MDSE.
+#    The original licensing and copyright information above remains fully
+#    applicable to the original code. Any modifications are also subject
+#    to the terms of the GNU General Public License.
+#
+#    Modified by: See AUTHORS
+#
 
 from __future__ import print_function, division
 

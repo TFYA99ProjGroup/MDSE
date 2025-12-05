@@ -1,4 +1,11 @@
-from mdse.parser.httk_reader import (
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+# SPDX-License-Identifier: MIT
+
+from httklib.httk_reader import (
     setup_db,
     get_defect_formation_energy,
     transfer_chemical_potential,

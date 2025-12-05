@@ -1,10 +1,17 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+# SPDX-License-Identifier: MIT
+
 """
 This example showcases how to load a crystal structure from an sqlite
     database into a CIF file.
     Gets the crystal for the NV center in diamond.
 """
 
-from mdse.parser.httk_reader import get_defects, save_to_cif, setup_db
+from httklib.httk_reader import get_defects, save_to_cif, setup_db
 
 # This example needs a path to a sqlite database
 search = setup_db("../../../defects.sqlite")

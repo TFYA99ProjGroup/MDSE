@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "httklib"
+version = "1.0"
+requires-python = ">=3.9.21, <3.12"
+dependencies = [
+    "httk @ git+https://github.com/httk/httk.git@8d51154014cf8802fe980e6fc786985412930dfb",
+]

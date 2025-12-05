@@ -1,3 +1,10 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+# SPDX-License-Identifier: MIT
+
 """
 Short example script that demonstrates that you can specify a path to a folder in the
 config and that the parser will create jobs for each config file in the folder. In

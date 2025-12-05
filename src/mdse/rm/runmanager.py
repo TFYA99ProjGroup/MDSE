@@ -1,3 +1,10 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+#
+# SPDX-License-Identifier: MIT
+
 from mdse.md.simulationmanager import SimulationManager
 import logging
 from mpi4py import MPI as _TrueMPI
@@ -7,7 +14,7 @@ from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
 from mdse.md.resultMD import ResultMD
 from pathlib import Path
-from mdse.parser.httk_reader import get_defects, save_defects, setup_db
+from httklib.httk_reader import get_defects, save_defects, setup_db
 from mdse.parser.parse_yml import get_files
 
 logger = logging.getLogger(__name__)
