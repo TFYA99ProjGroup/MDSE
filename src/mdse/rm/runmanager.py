@@ -196,7 +196,8 @@ class RunManager:
             mdse_fields={
             "lindemann": result.calc_lindemann(),
             "self_diffusion": result.calc_self_diff(),
-            "isobaric_specific_heat": result.calc_isochoric_heat_capacity_per_atom(),
+            "isobaric_specific_heat": \
+                result.calc_isochoric_heat_capacity_per_atom(),
             "debye": result.calc_debye_temperature(),
             "total_energy": final_frame.info["pot_energy"]
             + final_frame.get_kinetic_energy(),
