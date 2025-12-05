@@ -256,7 +256,9 @@ class RunManager:
                 logger.debug(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
-                    if type(msg) is MongoDBEntry:
+                    if msg is None:
+                        logger.warning(f"[Master] Worker {src} reported no entry for last job (skipped/failed).")
+                    elif type(msg) is MongoDBEntry:
                         self.MongoDBentriesAsJson.append(msg.to_dict())
                     if jobs:
                         job = jobs.pop(0)
@@ -282,6 +284,7 @@ class RunManager:
                     sim = self.md_simulations[job]
                     if sim is None:
                         logger.error("Simulation is None, skipping")
+                        comm.send(None, dest=0, tag=TAG_DONE)
                         continue
                     res = sim.simulate()
                     #############################################
