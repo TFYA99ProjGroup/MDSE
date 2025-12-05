@@ -191,7 +191,7 @@ class RunManager:
         )
         return entry
 
-    def run_simulations(self, overwrite_ensamble=None):
+    def run_simulations(self):
         """
         Distribute simulations across MPI ranks using a work queue.
         Each rank (not including master) runs simulations.
@@ -207,8 +207,6 @@ class RunManager:
                 if sim is None:
                     logger.error("Simulation is None, skipping")
                     continue
-                if overwrite_ensamble is not None:
-                    sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
                 config = self.simulation_config[index]
                 entry = self.run_results(res, config)

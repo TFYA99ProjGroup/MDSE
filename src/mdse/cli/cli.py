@@ -117,8 +117,16 @@ def simulate_mpi(args):
     except Exception as e:
         logger.error(f"MPI backend not available: {e}. Exiting.")
         return
+    try:
+        config_dict = parse_config(args.config)
 
-    sim_list = main_read(args.filepath)
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        if rank == 0:
+            logger.debug(f"Overwriting config with {config_dict}")
+    sim_list = main_read(args.filepath, config_dict)
 
     if rank == 0:
         logger.info(
@@ -126,11 +134,8 @@ def simulate_mpi(args):
         )
 
     rm = RunManager(sim_list)
-    if args.ensamble is not None:
-        if rank == 0:
-            logger.debug(f"Overwriting config ensamble with {args.ensamble}")
 
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+    rm.run_simulations()
 
     if rank == 0:
         logger.info("MPI simulations done")
@@ -159,14 +164,59 @@ def simulate(args):
         simulate_mpi(args)
         return
 
-    sim_list = main_read(args.filepath)
+    try:
+        config_dict = parse_config(args.config)
+
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        logger.debug(f"Overwriting config with {config_dict}")
+
+    sim_list = main_read(args.filepath, config_dict)
     logger.info(f"Starting {len(sim_list)} simulations")
 
     rm = RunManager(sim_list)
-    if args.ensamble is not None:
-        logger.debug(f"Overwriting config ensamble with {args.ensamble}")
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+    rm.run_simulations()
     logger.info("Simulation done!")
+
+
+def convert_scalar(v):
+    try:
+        return int(v)
+    except ValueError:
+        try:
+            return float(v)
+        except ValueError:
+            return v
+
+
+def parse_value(v):
+    v = v.strip()
+    if "," in v:
+        return [convert_scalar(x) for x in v.split(",")]
+    return convert_scalar(v)
+
+
+def insert_nested(d, key_path, value):
+    keys = key_path.split(".")
+    cur = d
+    for k in keys[:-1]:
+        if k not in cur:
+            cur[k] = {}
+        cur = cur[k]
+    cur[keys[-1]] = value
+
+
+def parse_config(items):
+    if items is None:
+        return None
+    result = {}
+    for item in items:
+        key, val = item.split("=", 1)
+        value = parse_value(val)
+        insert_nested(result, key, value)
+    return result
 
 
 def calc_msd(args):
@@ -318,11 +368,15 @@ def create_parser():
         help="The filepath to be simulated",
     )
     parser_simulate.add_argument(
-        "-e",
-        "--ensamble",
+        "-c",
+        "--config",
         required=False,
-        metavar="ENSAMBLE",
-        help="Which ensamble to be used: NVT, NVE or NPT",
+        metavar="KEY=VAL",
+        nargs="+",
+        help=(
+            "Overwrite config variables, needs correctly spelled strings."
+            + "Eg. 'Name=Ar' to replace the element with Argon."
+        ),
     )
     parser_simulate.add_argument(
         "--mpi",
