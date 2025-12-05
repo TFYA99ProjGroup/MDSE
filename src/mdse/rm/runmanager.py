@@ -257,7 +257,8 @@ class RunManager:
 
                 if tag == TAG_DONE:
                     if msg is None:
-                        logger.warning(f"[Master] Worker {src} reported no entry for last job (skipped/failed).")
+                        logger.warning(f"[Master] Worker {src} reported no" +
+                                        "entry for last job (skipped/failed).")
                     elif type(msg) is MongoDBEntry:
                         self.MongoDBentriesAsJson.append(msg.to_dict())
                     if jobs:
