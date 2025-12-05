@@ -7,10 +7,8 @@ def run_detection():
     """
     An example script to connect to the database and run outlier detection.
     """
-    # --- Configuration ---
     mongo_uri = "mongodb://admin:secret@localhost:27017/"
 
-    # --- Main script ---
     logger.debug("Connecting to the database")
     try:
         db_manager = DBManager(mongo_uri)
@@ -39,7 +37,6 @@ def run_detection():
         logger.info("No outliers were found with the current settings.")
 
 if __name__ == "__main__":
-    # Configure logging to show INFO level messages
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(levelname)s - %(message)s')
 

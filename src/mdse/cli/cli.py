@@ -300,6 +300,47 @@ def visualize_DB(args):
     run_visualize_db(path)
 
 
+def outlier_detection(args):
+    """
+    Connect to the database and run outlier detection.
+    """
+    logger.debug(f"Connecting to the database at {args.address}")
+    try:
+        db_manager = DBManager(args.address)
+    except Exception as e:
+        logger.error(
+            f"Failed to connect to MongoDB. "
+            f"Ensure it is running. Error: {e}"
+        )
+        return
+
+    logger.debug(
+        f"Running outlier detection with properties: {args.properties}, "
+        f"db: {args.db_client}, collection: {args.db_collection}, "
+        f"std_dev: {args.std_dev}"
+    )
+    outliers = db_manager.detect_outliers(
+        properties_to_check=args.properties,
+        db_client=args.db_client,
+        db_collection=args.db_collection,
+        std_dev_threshold=args.std_dev,
+    )
+
+    if outliers:
+        logger.info(f"Found {len(outliers)} outliers.")
+        for outlier in outliers:
+            logger.info(
+                f"Outlier: "
+                f"ID: {outlier['id']}, "
+                f"Property: {outlier['property']}, "
+                f"Value: {outlier['value']}, "
+                f"Group mean: {outlier['mean']}, "
+                f"Group std_dev: {outlier['std_dev']}"
+            )
+    else:
+        logger.info("No outliers were found with the current settings.")
+
+
 def create_parser():
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE")
@@ -453,6 +494,51 @@ def create_parser():
     )
 
     visualize_db.set_defaults(func=visualize_DB)
+
+    detect_outliers = subparsers.add_parser(
+        "outliers", help="Detects outliers in the database."
+    )
+    detect_outliers.add_argument(
+        "-a",
+        "--address",
+        metavar="ADDRESS",
+        help="The address of the MongoDB database.",
+        required=True,
+    )
+    detect_outliers.add_argument(
+        "-p",
+        "--properties",
+        nargs="+",
+        metavar="PROPERTY",
+        help="One or more properties to check for outliers. "
+        "If not provided, defaults will be used.",
+        required=False,
+    )
+    detect_outliers.add_argument(
+        "--db-client",
+        metavar="DB_CLIENT",
+        help="The name of the MongoDB database to use. Defaults to 'materials_db'.",
+        required=False,
+        default="materials_db",
+    )
+    detect_outliers.add_argument(
+        "--db-collection",
+        metavar="DB_COLLECTION",
+        help="The name of the collection to use. Defaults to 'structures'.",
+        required=False,
+        default="structures",
+    )
+    detect_outliers.add_argument(
+        "--std-dev",
+        metavar="STD_DEV_THRESHOLD",
+        type=float,
+        help="The number of standard deviations for outlier detection. "
+        "Defaults to 2.0.",
+        required=False,
+        default=2.0,
+    )
+    detect_outliers.set_defaults(func=outlier_detection)
+
     return parser
 
 
