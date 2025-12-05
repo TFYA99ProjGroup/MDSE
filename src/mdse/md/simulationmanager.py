@@ -555,7 +555,6 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
-        self.result[0].info["p_au"] = self.pressure_au
         self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
