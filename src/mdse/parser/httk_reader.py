@@ -263,6 +263,8 @@ def get_defect_formation_energy(store, address, **query):
 
     db_manager = DBManager(address)
 
+    db_manager.clear_collection("DFT_data")
+
     db_manager.write_dict_to_db(dft_data, collection_str="DFT_data")
 
 
@@ -326,5 +328,7 @@ def transfer_chemical_potential(store, address):
         chem_pots[elem] = {"element": elem, "chemical_potential": chemical_potential}
 
     db_manager = DBManager(address)
+
+    db_manager.clear_collection("Chemical_potential")
 
     db_manager.write_dict_to_db(chem_pots, collection_str="Chemical_potential")

@@ -128,9 +128,9 @@ class RunManager:
                     config = list(item.values())[0]
                     if query.get("host") is None:
                         config["CRYSTAL"]["Defect"] = {
-                            "key": defects[i][0],
-                            "stoichiometry": defects[i][1],
-                            "configuration": defects[i][2],
+                            "defect_key": defects[i][0],
+                            "defect_stoichiometry": defects[i][1],
+                            "defect_configuration": defects[i][2],
                             "host_material": defects[i][3],
                         }
 
@@ -143,27 +143,6 @@ class RunManager:
             self.simulation_config.remove(None)
 
         logger.debug(f"simulations after database read: {self.simulation_config}")
-
-    def attach_output(self, **kwargs):
-        """Attaches output destinations to the RunManager.
-
-        Currently supports attaching file paths for writing results.
-
-        Keyword Args:
-            file (str, optional): Path to the file where simulation results should be
-                                    written.
-        """
-        for k, value in kwargs.items():
-            if k == "file":
-                self.outputs.append(value)
-
-    def write_results(self):
-        """Writes the results of simulations to the attached output destinations.
-
-        This method is a placeholder and should be implemented to handle writing
-        simulation results (e.g., to files or other storage).
-        """
-        pass
 
     def _add_property(self, property, propertie_values, func):
         value = func()
@@ -194,15 +173,15 @@ class RunManager:
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
-            "lindemann": result.calc_lindemann(),
-            "self_diffusion": result.calc_self_diff(),
-            "isobaric_specific_heat": \
-                result.calc_isochoric_heat_capacity_per_atom(),
-            "debye": result.calc_debye_temperature(),
-            "total_energy": final_frame.info["pot_energy"]
-            + final_frame.get_kinetic_energy(),
-            "defect": crystal.get("Defect", None),
-            "simulation_parameters": {**ensamble, **simulation},
+                "lindemann": result.calc_lindemann(),
+                "self_diffusion": result.calc_self_diff(),
+                "isobaric_specific_heat": \
+                    result.calc_isochoric_heat_capacity_per_atom(),
+                "debye": result.calc_debye_temperature(),
+                "total_energy": final_frame.info["pot_energy"]
+                + final_frame.get_kinetic_energy(),
+                **crystal.get("Defect", {}),
+                "simulation_parameters": {**ensamble, **simulation},
             },
             chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
             cartesian_site_positions=final_frame.get_positions().tolist(),
