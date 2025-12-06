@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sphinx sphinx-rtd-theme
+          cd httklib 
+          pip install -e .
+          cd ..
           pip install -e .
 
       - name: Build Sphinx HTML
