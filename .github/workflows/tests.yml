@@ -46,6 +46,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libopenmpi-dev openmpi-bin
           python -m pip install --upgrade pip
+          cd httklib
+          pip install -e .
+          cd ..
           pip install -e .
           pip install pytest
         
