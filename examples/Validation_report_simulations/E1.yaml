@@ -1,0 +1,21 @@
+Al_NVE:  
+  CRYSTAL:
+    TYPE: BULK
+    Name: Al
+    Structure: fcc
+    Lattice_a: 4.05
+    Cubic: True
+    Supercell: 
+      - 10
+      - 10
+      - 10
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 200
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 500
+    TrajInterval: 5
+    Create_traj: True
+    Calculator: EMT
+    Calc_pot: True

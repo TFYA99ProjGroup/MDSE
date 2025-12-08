@@ -243,7 +243,9 @@ class SimulationManager:
         except Exception as e:
             logger.error("Failed to check the calculator: {e}")
             raise RuntimeError(e)
-        self.crystal.info["dt"] = self.timestep
+        #self.crystal.info["dt"] = self.timestep <<<----------------------
+        self.crystal.info["dt"] = self.timestep*self.traj_interval
+
         #logger.debug("Start saving single_atom_energy info to .info[]")
         #E_atom = self.single_atom_energy()
         # E_atom, n_atoms = self.single_atom_energy()

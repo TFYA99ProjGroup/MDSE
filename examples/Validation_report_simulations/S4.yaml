@@ -1,0 +1,19 @@
+Gold:  
+  CRYSTAL:
+    TYPE: BULK
+    Name: Au
+    Structure: fcc
+    Lattice_a: 4.08
+    Cubic: True
+    Supercell: 
+      - 5 
+      - 5
+      - 5
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 298
+  SIMULATION:
+    Timestep: 0.7 #0.599 160 #0.66 145 #0.665 144.33 #0.667 143.9 #0.67 #0.7 #0.34 #fs
+    Length: 2000
+    TrajInterval: 1
+    Calculator: EMT

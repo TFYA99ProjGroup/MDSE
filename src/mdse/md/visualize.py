@@ -114,12 +114,13 @@ class VisualizeResult:
                 )
         names = [res.name for res in self.results]
         for DOS_i, omega_i,name in zip(DOS,omega,names):
-            plt.plot(omega_i,DOS_i)
+            plt.plot(omega_i,DOS_i, label = name)
             plt.text(omega_i[-1],DOS_i[-1],f"{name}")
 
         logger.debug("DOS plot values were sucesfully fetched")
         plt.xlabel("Angular frequency")
         plt.ylabel("DOS")
+        plt.legend(loc="upper right") 
         plt.title(f"DOS vs angular frequency, for {len(self.results)} simulations")
         plt.show()
 

@@ -33,7 +33,7 @@ class ResultMD:
         logger.debug("Initialize ResultMD")
 
         self.frames = data
-        self.frames_in_fs = 50
+        self.frames_in_fs = 10
         self.name = ""
         self.reached_equilibrium = False
 
@@ -284,6 +284,7 @@ class ResultMD:
                   `dt` (e.g., rad/fs if `dt` is in fs).
         """
         self.check_equilibrium()
+        print(self.check_equilibrium())
         if self.reached_equilibrium:
             max_lag = self.check_equilibrium()
             frame_skip = max_lag / len(self.frames)
@@ -304,8 +305,8 @@ class ResultMD:
 
         freqs = np.fft.rfftfreq(n, d=dt)
         omega = 2 * np.pi * freqs
-
-        if self.dos is None:
+        if True:
+        ##if self.dos is None:
             logger.debug("DOS not yet calculated")
             spectrum = np.fft.rfft(vacf) * dt
 
@@ -999,6 +1000,7 @@ class ResultMD:
         return len(Tot_energy) - 2
 
     def _attach_calc(self, crystal_equil):
+        """
         calc = self.frames[0].info["calc"]
         if calc == "EMT":
             crystal_equil.calc = EMT()
@@ -1010,7 +1012,10 @@ class ResultMD:
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
-
+        """
+        crystal_equil.calc = self._check_calc_2()
+        return crystal_equil
+    
     def _check_keys(self, name, d, keys):
         """
         STOLEN from simulationmanager. Used in _check_calc_2 to see so LJ
