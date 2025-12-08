@@ -38,6 +38,7 @@ mdse = "mdse.cli.cli:main"
 addopts = ""
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+pythonpath = ["."]
 norecursedirs = [
     "httk-src",
     "database/mongo_data",

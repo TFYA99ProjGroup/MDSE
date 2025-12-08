@@ -451,7 +451,8 @@ class ResultMD:
         """
         E_eV, V_A3 = [], []
 
-        p_au = self.frames[0].info["p_au"]
+        pressure = self.get_pressures()
+        p_au = np.mean(pressure)
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
 
@@ -674,11 +675,17 @@ class ResultMD:
         ## Maybe fix mean over serveral equil frames
         logger.debug("Calculating shear moudulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C44 = self.calc_C44(crystal_equil, strain)
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C44, C11, C12 = [], [], []
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C44.append(self.calc_C44(crystal_equil, strain))
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C44 = np.mean(C44)
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         # Voight gives an upper bound of the shear modulus
         shear_modulus_voight = (3 * C44 + C11 - C12) / 5
@@ -706,10 +713,16 @@ class ResultMD:
         """
         logger.debug("Calculating bulk modulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C11, C12 = [], []
+
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         bulk_modulus = (C11 + 2 * C12) / 3
 
@@ -890,6 +903,38 @@ class ResultMD:
         """
         logger.debug("Get tempertures")
         return [frame.get_temperature() for frame in self.frames]
+
+    def get_pressures(self):
+        """Gets pressure for all frames
+
+        returns:
+            list : List of all pressures at each frame
+
+        """
+        pressure = []
+        for frame in self.frames:
+            pressure.append(self.get_pressure(frame))
+
+        return pressure
+
+
+    def get_pressure(self, frame):
+        """Gets pressure for a specified frame, specified by the average of the
+        normal stresses on the orthogonal planes.
+
+        parameters:
+            frame : int
+                The specified frame for which to calculate the pressure.
+
+        returns:
+            float : The pressure in the current frame
+
+        """
+        frame.calc = self._check_calc_2()
+        stress = frame.get_stress()
+        pressure = - (stress[0] + stress[1] + stress[2])/ 3
+
+        return pressure
 
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.

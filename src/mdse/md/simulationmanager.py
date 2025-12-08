@@ -4,8 +4,7 @@ from asap3.md.verlet import VelocityVerlet
 from asap3 import LennardJones, Trajectory, EMT
 from ase.build import bulk
 from ase.visualize import view
-from ase.md.nose_hoover_chain import IsotropicMTKNPT
-from asap3.md.nose_hoover_chain import NoseHooverChainNVT
+from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
 from asap3 import EMTMetalGlassParameters
@@ -557,7 +556,6 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
-        self.result[0].info["p_au"] = self.pressure_au
         self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
