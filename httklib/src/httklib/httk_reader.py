@@ -1,22 +1,16 @@
 #
-# Copyright (C) 2025 See AUTHORS
+# Copyright (C) 2025 See Authors
 #
-# This file is part of MDSE.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, version 3.
 #
-# MDSE is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
-# MDSE is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-#
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with MDSE. If not, see <http://www.gnu.org/licenses/>.
-#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see https://www.gnu.org/licenses/.
 
 from pathlib import Path
 import re
@@ -35,8 +29,6 @@ import httk.db
 import time
 
 import logging
-
-from mdse.rm.dbmanager import DBManager
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +194,7 @@ def save_defects(defects, defect_folder):
     return defect_paths
 
 
-def get_defect_formation_energy(store, address, **query):
+def get_defect_formation_energy(store, **query):
     """
     Compute defect formation energies from a data store and write the results to
     MongoDB.
@@ -267,7 +259,7 @@ def get_defect_formation_energy(store, address, **query):
     for match in matches:
         stoichiometry = match[1]
 
-        chem_pot = get_chem_pot(store, stoichiometry)
+        chem_pot = calc_chem_pot(store, stoichiometry)
 
         defect_formation_energy = match[2] - match[3] - chem_pot
 
@@ -281,14 +273,10 @@ def get_defect_formation_energy(store, address, **query):
             "spin": match[4],
         }
 
-    db_manager = DBManager(address)
-
-    db_manager.clear_collection("DFT_data")
-
-    db_manager.write_dict_to_db(dft_data, collection_str="DFT_data")
+    return {"collection_str": "DFT_data", "data": dft_data}
 
 
-def get_chem_pot(store, stoichiometry):
+def calc_chem_pot(store, stoichiometry):
     """
     Compute the total chemical potential contribution for a given defect stoichiometry.
 
@@ -335,7 +323,7 @@ def get_chem_pot(store, stoichiometry):
     return chemical_potential
 
 
-def transfer_chemical_potential(store, address):
+def get_chemical_potential(store):
     search = store.searcher()
     search_chem_pot = search.variable(ChemicalPotential)
 
@@ -347,8 +335,4 @@ def transfer_chemical_potential(store, address):
     for elem, chemical_potential in query_result:
         chem_pots[elem] = {"element": elem, "chemical_potential": chemical_potential}
 
-    db_manager = DBManager(address)
-
-    db_manager.clear_collection("Chemical_potential")
-
-    db_manager.write_dict_to_db(chem_pots, collection_str="Chemical_potential")
+    return {"collection_str": "Chemical_potential", "data": chem_pots}
