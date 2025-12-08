@@ -1,9 +1,8 @@
 # Copyright (c) 2025 See AUTHORS
 #
 # This work is licensed under the terms of the MIT license.
-# For a copy, see <https://opensource.org/licenses/MIT>.
-#
-# SPDX-License-Identifier: MIT
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
 
 import logging
 from mdse.visualizeDB.vis_plots import (scatter_plot, doping_plot,
