@@ -20,11 +20,12 @@ logger = logging.getLogger(__name__)
 def defect_formation_energy(db):
     defects = db.read_from_db(
         {"defect_host_material": "diamond"},
-        outputs=[
+       outputs=[
             "id",
             "defect_key",
             "defect_stoichiometry",
             "defect_host_material",
+            "host_material",
             "total_energy",
         ],
     )
@@ -40,7 +41,6 @@ def defect_formation_energy(db):
 
         element_counts = get_nelements(defect_stoichiometry)
         element_counts = {elem: count for elem, count in element_counts.items()}
-
         E_DF, total_chem_pot = calc_formation_energy(E_Host, element_counts, db, E_D)
 
         md_entries[entry["id"]] = {
@@ -51,7 +51,7 @@ def defect_formation_energy(db):
             "tot_energy_defect" : E_D,
             "tot_energy_host" : E_Host,
             "formation_energy": E_DF,
-        }
+       }
 
     db.clear_collection("MACE_results")
     db.write_dict_to_db(md_entries, collection_str="MACE_results")

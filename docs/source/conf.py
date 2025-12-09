@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -12,8 +18,8 @@ import sys
 sys.path.insert(0, os.path.abspath("../../src/mdse"))
 
 project = "MDSE"
-copyright = "2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas"
-author = "A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik S. Lukas"
+copyright = "2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik, S. Lukas"
+author = "A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik, S. Lukas"
 release = "0.2.0"
 
 # -- General configuration ---------------------------------------------------

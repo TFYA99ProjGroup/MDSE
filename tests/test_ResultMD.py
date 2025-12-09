@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -335,9 +341,12 @@ def test_time_axis(mock_frames):
     assert len(times) == len(mock_frames)
 
 
-def test_cohesive_energy(mock_frames):
+def test_cohesive_energy(mock_frames, monkeypatch):
     """Check that cohesive energy runs, and returns a float"""
     result = ResultMD(mock_frames)
+    #Patch single_atom_energy() to return dummy
+    monkeypatch.setattr(result, "single_atom_energy",
+                        lambda: 0.0)
     coh_energy = result.get_cohesive_energy()
 
     assert isinstance(coh_energy, float)

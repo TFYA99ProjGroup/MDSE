@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 """
 Functions for parsing MDSE configuration files.
 """
@@ -118,8 +124,16 @@ def simulate_mpi(args):
     except Exception as e:
         logger.error(f"MPI backend not available: {e}. Exiting.")
         return
+    try:
+        config_dict = parse_config(args.config)
 
-    sim_list = main_read(args.filepath)
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        if rank == 0:
+            logger.debug(f"Overwriting config with {config_dict}")
+    sim_list = main_read(args.filepath, config_dict)
 
     if rank == 0:
         logger.info(
@@ -127,11 +141,8 @@ def simulate_mpi(args):
         )
 
     rm = RunManager(sim_list)
-    if args.ensamble is not None:
-        if rank == 0:
-            logger.debug(f"Overwriting config ensamble with {args.ensamble}")
 
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+    rm.run_simulations()
 
     if rank == 0:
         logger.info("MPI simulations done")
@@ -160,14 +171,59 @@ def simulate(args):
         simulate_mpi(args)
         return
 
-    sim_list = main_read(args.filepath)
+    try:
+        config_dict = parse_config(args.config)
+
+    except AttributeError:
+        config_dict = None
+
+    if config_dict is not None:
+        logger.debug(f"Overwriting config with {config_dict}")
+
+    sim_list = main_read(args.filepath, config_dict)
     logger.info(f"Starting {len(sim_list)} simulations")
 
     rm = RunManager(sim_list)
-    if args.ensamble is not None:
-        logger.debug(f"Overwriting config ensamble with {args.ensamble}")
-    rm.run_simulations(overwrite_ensamble=args.ensamble)
+    rm.run_simulations()
     logger.info("Simulation done!")
+
+
+def convert_scalar(v):
+    try:
+        return int(v)
+    except ValueError:
+        try:
+            return float(v)
+        except ValueError:
+            return v
+
+
+def parse_value(v):
+    v = v.strip()
+    if "," in v:
+        return [convert_scalar(x) for x in v.split(",")]
+    return convert_scalar(v)
+
+
+def insert_nested(d, key_path, value):
+    keys = key_path.split(".")
+    cur = d
+    for k in keys[:-1]:
+        if k not in cur:
+            cur[k] = {}
+        cur = cur[k]
+    cur[keys[-1]] = value
+
+
+def parse_config(items):
+    if items is None:
+        return None
+    result = {}
+    for item in items:
+        key, val = item.split("=", 1)
+        value = parse_value(val)
+        insert_nested(result, key, value)
+    return result
 
 
 def calc_msd(args):
@@ -314,6 +370,47 @@ def visualize_DB(args):
     run_visualize_db(path)
 
 
+def outlier_detection(args):
+    """
+    Connect to the database and run outlier detection.
+    """
+    logger.debug(f"Connecting to the database at {args.address}")
+    try:
+        db_manager = DBManager(args.address)
+    except Exception as e:
+        logger.error(
+            f"Failed to connect to MongoDB. "
+            f"Ensure it is running. Error: {e}"
+        )
+        return
+
+    logger.debug(
+        f"Running outlier detection with properties: {args.properties}, "
+        f"db: {args.db_client}, collection: {args.db_collection}, "
+        f"std_dev: {args.std_dev}"
+    )
+    outliers = db_manager.detect_outliers(
+        properties_to_check=args.properties,
+        db_client=args.db_client,
+        db_collection=args.db_collection,
+        std_dev_threshold=args.std_dev,
+    )
+
+    if outliers:
+        logger.info(f"Found {len(outliers)} outliers.")
+        for outlier in outliers:
+            logger.info(
+                f"Outlier: "
+                f"ID: {outlier['id']}, "
+                f"Property: {outlier['property']}, "
+                f"Value: {outlier['value']}, "
+                f"Group mean: {outlier['mean']}, "
+                f"Group std_dev: {outlier['std_dev']}"
+            )
+    else:
+        logger.info("No outliers were found with the current settings.")
+
+
 def create_parser():
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE")
@@ -332,11 +429,15 @@ def create_parser():
         help="The filepath to be simulated",
     )
     parser_simulate.add_argument(
-        "-e",
-        "--ensamble",
+        "-c",
+        "--config",
         required=False,
-        metavar="ENSAMBLE",
-        help="Which ensamble to be used: NVT, NVE or NPT",
+        metavar="KEY=VAL",
+        nargs="+",
+        help=(
+            "Overwrite config variables, needs correctly spelled strings."
+            + "Eg. 'Name=Ar' to replace the element with Argon."
+        ),
     )
     parser_simulate.add_argument(
         "--mpi",
@@ -481,6 +582,50 @@ def create_parser():
     )
 
     formation_energy_db.set_defaults(func=calculate_defect_formation_energy)
+
+    detect_outliers = subparsers.add_parser(
+        "outliers", help="Detects outliers in the database."
+    )
+    detect_outliers.add_argument(
+        "-a",
+        "--address",
+        metavar="ADDRESS",
+        help="The address of the MongoDB database.",
+        required=True,
+    )
+    detect_outliers.add_argument(
+        "-p",
+        "--properties",
+        nargs="+",
+        metavar="PROPERTY",
+        help="One or more properties to check for outliers. "
+        "If not provided, defaults will be used.",
+        required=False,
+    )
+    detect_outliers.add_argument(
+        "--db-client",
+        metavar="DB_CLIENT",
+        help="The name of the MongoDB database to use. Defaults to 'materials_db'.",
+        required=False,
+        default="materials_db",
+    )
+    detect_outliers.add_argument(
+        "--db-collection",
+        metavar="DB_COLLECTION",
+        help="The name of the collection to use. Defaults to 'structures'.",
+        required=False,
+        default="structures",
+    )
+    detect_outliers.add_argument(
+        "--std-dev",
+        metavar="STD_DEV_THRESHOLD",
+        type=float,
+        help="The number of standard deviations for outlier detection. "
+        "Defaults to 2.0.",
+        required=False,
+        default=2.0,
+    )
+    detect_outliers.set_defaults(func=outlier_detection)
 
     return parser
 

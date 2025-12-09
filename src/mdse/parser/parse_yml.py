@@ -1,7 +1,14 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import yaml
 import logging
 from copy import deepcopy
 from pathlib import Path
+
 logger = logging.getLogger(__name__)
 # from yaml.loader import SafeLoader
 
@@ -29,7 +36,7 @@ def read_yaml_simulations(filename):
         return simulations_config
 
 
-def unnest_simulation_parameters(all_simulations):
+def unnest_simulation_parameters(all_simulations, overwrite_config={}):
     """
     Expands nested parameters (lists or ranges) in the
     simulations_config dictionary for each simulation.
@@ -49,7 +56,7 @@ def unnest_simulation_parameters(all_simulations):
     logger.debug("Beginning unnesting parameters")
     parameters_to_expand = [
         "Temp",
-        "Pressure"
+        "Pressure",
     ]  # Parameters that may be nested as lists or ranges
     final_simulation_configs = []  # Will hold all expanded simulation configs
     for simulation_name, simulation_full_config in all_simulations.items():
@@ -63,7 +70,8 @@ def unnest_simulation_parameters(all_simulations):
             expanded_simulations = []
             for simulation in current_simulations:
                 expanded_simulations.extend(
-                    expand_parameter(simulation, parameter))
+                    expand_parameter(simulation, parameter, overwrite_config)
+                )
             # Update current simulations to the newly expanded list
             # for the next parameter
             current_simulations = expanded_simulations
@@ -72,10 +80,100 @@ def unnest_simulation_parameters(all_simulations):
             {name: conf} for name, conf in current_simulations
         )
     logger.debug("Unnesting done")
+    logger.debug(final_simulation_configs)
+
+    if overwrite_config:
+        all_categories = {
+            "CRYSTAL": ["TYPE", "Name", "Filepath", "Structure_folder", "Query"],
+            "ENSAMBLE": ["Ensamble", "Temp", "ThermoTime"],
+            "SIMULATION": [
+                "Timestep",
+                "Length",
+                "TrajInterval",
+                "Calculator",
+                "CalculatorParams",
+                "Create_traj",
+            ],
+            "RESULT": ["Properties"],
+        }
+        for simulation in final_simulation_configs:
+            for category in all_categories.keys():
+                for key in all_categories[category]:
+                    if key in overwrite_config.keys():
+                        logger.debug(simulation)
+                        first_value = next(iter(simulation.values()))
+                        if (
+                            type(overwrite_config[key]) is dict
+                            and type(first_value[category][key]) is dict
+                        ):
+                            try:
+                                if (
+                                    first_value["SIMULATION"]["Calculator"]
+                                    == "LennardJones"
+                                ):
+                                    new_config = nest_lennard_jones(
+                                        first_value[category][key],
+                                        overwrite_config[key],
+                                    )
+                                    if new_config:
+                                        first_value[category][key] = new_config
+                                    continue
+                            except Exception:
+                                pass
+                            for nested_key in first_value[category][key].keys():
+                                logger.debug(f"nestedkey {nested_key}")
+                                logger.debug(f"{overwrite_config[key]}")
+                                if nested_key in overwrite_config[key].keys():
+                                    first_value[category][key][nested_key] = (
+                                        overwrite_config[key][nested_key]
+                                    )
+
+                        else:
+                            first_value[category][key] = overwrite_config[key]
+        logger.debug(f"overwrite config: {overwrite_config}")
+        logger.debug(
+            f"config has been overwritten. Now the config is {final_simulation_configs}"
+        )
+
     return final_simulation_configs
 
 
-def expand_parameter(simulation_to_expand, parameter):
+def nest_lennard_jones(og_config, overwrite_config):
+    """
+
+    Args:
+        og_config (_type_): _description_
+        overwrite_config (_type_): _description_
+
+    Example:
+    mdse .... -c CalcParams.epsilon=0.3
+    mdse ... -c CalcParams.epsilon.0
+    {"elements": [0], "epsilon": [[0.226738]], "sigma": [[0.70641]], "rCut": [[1.3]]} ->
+    {"elements": [0], "epsilon": [[0.3]], "sigma": [[0.70641]], "rCut": [[1.3]]}
+    """
+    logger.debug("in nest_lennard_jones!")
+    new_config = {}
+    try:
+        for key in og_config.keys():
+            new_config[key] = og_config[key]
+            if key in overwrite_config.keys():
+                logger.debug(overwrite_config[key])
+                for index in overwrite_config[key].keys():
+                    if (
+                        type(overwrite_config[key][index]) is not list
+                        and key != "elements"
+                    ):
+                        overwrite_config[key][index] = [overwrite_config[key][index]]
+                    new_config[key][int(index)] = overwrite_config[key][index]
+
+    except Exception as e:
+        logger.error(
+            "You wrote the overwrite wrong! Please try again, "
+            + f"or consider to use something other than Lennard Jones {e}"
+        )
+
+
+def expand_parameter(simulation_to_expand, parameter, overwrite_config={}):
     """
     Expands a single parameter for a given simulation if
     it is specified as a list or a range.
@@ -112,6 +210,13 @@ def expand_parameter(simulation_to_expand, parameter):
     values_as_list = ensamble_params.get(param_list)
     if values_as_list:
         logger.debug(f"Parameter {parameter} was a list, extracting...")
+        logger.debug(param_list)
+        logger.debug(overwrite_config.keys())
+        if param_list in overwrite_config.keys():
+            logger.debug(
+                f"overwriting {values_as_list} with {overwrite_config[param_list]}"
+            )
+            values_as_list = overwrite_config[param_list]
         for value in values_as_list:
             # Shallow copy, might need more for nested structures
             new_params = deepcopy(sim_params)
@@ -123,14 +228,22 @@ def expand_parameter(simulation_to_expand, parameter):
         return result
 
     # If parameter is a range, expand for each value in the range
-    values_as_range = sim_params.get(param_range)
+    logger.debug(sim_params)
+    values_as_range = ensamble_params.get(param_range)
     if values_as_range:
         logger.debug(f"Parameter {parameter} was a range, iterating...")
+        if param_range in overwrite_config.keys():
+            logger.debug(f"Before overwrite{values_as_range}")
+            for key in values_as_range.keys():
+                if key in overwrite_config[param_range].keys():
+                    values_as_range[key] = overwrite_config[param_range][key]
+            logger.debug(f"After overwrite{values_as_range}")
+
         for value in range(
-                values_as_range["Start"],
-                values_as_range["Stop"],
-                values_as_range["Step"],
-            ):
+            values_as_range["Start"],
+            values_as_range["Stop"],
+            values_as_range["Step"],
+        ):
             new_params = deepcopy(sim_params)
             new_params.get("ENSAMBLE").pop(param_range)
             new_params.get("ENSAMBLE")[parameter] = value
@@ -141,7 +254,7 @@ def expand_parameter(simulation_to_expand, parameter):
     return [(sim_name, sim_params)]
 
 
-def main_read(filename):
+def main_read(filename, overwrite_config={}):
     """
     Reads from a YAML file, then un-nests the MD simulations by
     expanding any parameters specified as lists or ranges.
@@ -158,7 +271,10 @@ def main_read(filename):
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
     logger.debug("Format OK")
-    return get_files(unnest_simulation_parameters(all_simulations), filename)
+    return get_files(
+        unnest_simulation_parameters(all_simulations, overwrite_config), filename
+    )
+
 
 def get_files(simulations, config_file_path):
     """
@@ -171,7 +287,7 @@ def get_files(simulations, config_file_path):
     expanded_parameters = []
     config_dir = Path(config_file_path).parent
     for sim in simulations:
-        (name,val), = sim.items()
+        ((name, val),) = sim.items()
         crystal_params = val.get("CRYSTAL")
 
         if crystal_params.get("Filepath") is None:
@@ -193,7 +309,7 @@ def get_files(simulations, config_file_path):
 
         logger.debug("CRYSTAL input is path to folder")
         logger.debug(f"Searching folder at: {str(dir_path)}")
-        for file_path in map(str,dir_path.iterdir()):
+        for file_path in map(str, dir_path.iterdir()):
             if not Path(file_path).is_file():
                 continue
             logger.debug(f"Config file found: {file_path}")

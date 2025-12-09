@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 from mdse.visualizeDB.read_dataDB import read_data
 from mdse.parser.parse_yml import read_yaml_simulations
 from mdse.visualizeDB.make_plot import make_plot

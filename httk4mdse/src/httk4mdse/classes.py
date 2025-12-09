@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 #    Automatic Defect Analysis and Qualification (ADAQ)
 #    Copyright (C) 2016-2021 Joel Davidsson

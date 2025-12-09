@@ -23,8 +23,16 @@ The following material properties can be calculated with mdse:
 
 - Mean square displacement
 - Lindemann index
+- Density of states
+- Debye temperature
 - Self diffusion coefficient
-- Isobaric specific heat per atom
+- Isobaric specific heat
+- Isochoric heat capacity per atom
+- Elastic moduli and constants
+    - Shear modulus
+    - Bulk modulus
+    - Young's modulus
+- Coheseive energy (in the form of Atomization energy)
 
 Installation
 ============

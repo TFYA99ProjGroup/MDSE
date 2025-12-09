@@ -1,11 +1,18 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 from mdse.md.simulationmanager import SimulationManager
 import logging
+import uuid
 import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
 from mdse.md.resultMD import ResultMD
 from pathlib import Path
-from mdse.parser.httk_reader import get_defects, save_defects, setup_db
+from httk4mdse.httk_reader import get_defects, save_defects, setup_db
 from mdse.parser.parse_yml import get_files
 
 logger = logging.getLogger(__name__)
@@ -128,9 +135,9 @@ class RunManager:
                     config = list(item.values())[0]
                     if query.get("host") is None:
                         config["CRYSTAL"]["Defect"] = {
-                            "key": defects[i][0],
-                            "stoichiometry": defects[i][1],
-                            "configuration": defects[i][2],
+                            "defect_key": defects[i][0],
+                            "defect_stoichiometry": defects[i][1],
+                            "defect_configuration": defects[i][2],
                             "host_material": defects[i][3],
                         }
 
@@ -143,27 +150,6 @@ class RunManager:
             self.simulation_config.remove(None)
 
         logger.debug(f"simulations after database read: {self.simulation_config}")
-
-    def attach_output(self, **kwargs):
-        """Attaches output destinations to the RunManager.
-
-        Currently supports attaching file paths for writing results.
-
-        Keyword Args:
-            file (str, optional): Path to the file where simulation results should be
-                                    written.
-        """
-        for k, value in kwargs.items():
-            if k == "file":
-                self.outputs.append(value)
-
-    def write_results(self):
-        """Writes the results of simulations to the attached output destinations.
-
-        This method is a placeholder and should be implemented to handle writing
-        simulation results (e.g., to files or other storage).
-        """
-        pass
 
     def _add_property(self, property, propertie_values, func):
         value = func()
@@ -189,7 +175,7 @@ class RunManager:
             + str(ensamble["Temp"])
             + "K"
             + "_"
-            + "".join(final_frame.get_chemical_symbols()),
+            + str(uuid.uuid4())[:8],
             last_modified=datetime.now(),
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
@@ -201,7 +187,7 @@ class RunManager:
                 "debye": result.calc_debye_temperature(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
-                "defect": crystal.get("Defect", None),
+                **crystal.get("Defect", {}),
                 "simulation_parameters": {**ensamble, **simulation},
             },
             chemical_formula_reduced=final_frame.get_chemical_formula(mode="reduce"),
@@ -212,7 +198,7 @@ class RunManager:
         )
         return entry
 
-    def run_simulations(self, overwrite_ensamble=None):
+    def run_simulations(self):
         """
         Distribute simulations across MPI ranks using a work queue.
         Each rank (not including master) runs simulations.
@@ -229,8 +215,6 @@ class RunManager:
                 if sim is None:
                     logger.error("Simulation is None, skipping")
                     continue
-                if overwrite_ensamble is not None:
-                    sim.ensamble = overwrite_ensamble
                 res = sim.simulate()
                 config = self.simulation_config[index]
                 entry = self.run_results(res, config)
@@ -257,7 +241,10 @@ class RunManager:
                 logger.info(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
-                    if type(msg) is MongoDBEntry:
+                    if msg is None:
+                        logger.warning(f"[Master] Worker {src} reported no" +
+                                        "entry for last job (skipped/failed).")
+                    elif type(msg) is MongoDBEntry:
                         # self.MongoDBentriesAsJson.append(msg.to_dict())
                         DBManager.create_json_from_mongodbentries([msg.to_dict()])
 
@@ -286,6 +273,7 @@ class RunManager:
                     sim = SimulationManager(self.md_simulations[job])
                     if sim is None:
                         logger.error("Simulation is None, skipping")
+                        comm.send(None, dest=0, tag=TAG_DONE)
                         continue
                     res = sim.simulate()
                     #############################################

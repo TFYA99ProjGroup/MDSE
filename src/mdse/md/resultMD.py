@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 from matplotlib import pyplot as pl
 from scipy import constants
 import numpy as np
@@ -450,11 +456,16 @@ class ResultMD:
         """
         E_eV, V_A3 = [], []
 
-        p_au = self.frames[0].info["p_au"]
+        pressure = self.get_pressures()
+        p_au = np.mean(pressure)
 
         p_Pa = p_au * (constants.eV / (constants.angstrom**3))
 
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
+
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
+
         for frame in self.frames:
             E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
             V_A3.append(frame.get_volume())
@@ -514,6 +525,9 @@ class ResultMD:
             Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
         """
         E_eV, T_K = [], []
+
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
 
         for frame in self.frames:
             E_eV.append(frame.info["pot_energy"] + frame.get_kinetic_energy())
@@ -666,11 +680,17 @@ class ResultMD:
         ## Maybe fix mean over serveral equil frames
         logger.debug("Calculating shear moudulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C44 = self.calc_C44(crystal_equil, strain)
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C44, C11, C12 = [], [], []
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C44.append(self.calc_C44(crystal_equil, strain))
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C44 = np.mean(C44)
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         # Voight gives an upper bound of the shear modulus
         shear_modulus_voight = (3 * C44 + C11 - C12) / 5
@@ -698,10 +718,16 @@ class ResultMD:
         """
         logger.debug("Calculating bulk modulus")
         equil_frame = self.check_equilibrium()
-        crystal_equil = self.frames[equil_frame].copy()
 
-        C11 = self.calc_C11(crystal_equil, strain)
-        C12 = self.calc_C12(crystal_equil, strain)
+        C11, C12 = [], []
+
+        for frame in self.frames[equil_frame:]:
+            crystal_equil = frame.copy()
+            C11.append(self.calc_C11(crystal_equil, strain))
+            C12.append(self.calc_C12(crystal_equil, strain))
+
+        C11 = np.mean(C11)
+        C12 = np.mean(C12)
 
         bulk_modulus = (C11 + 2 * C12) / 3
 
@@ -737,6 +763,8 @@ class ResultMD:
         returns:
             list: Potential energy at each frame
         """
+        #Check if pot_energy is calculated. If not, calculates it
+        self._attach_pot_energy_to_frames()
         return [frame.info["pot_energy"] for frame in self.frames]
 
     def get_kin_energies(self):
@@ -754,8 +782,11 @@ class ResultMD:
             list: Total energy at each frame
         """
         logger.debug("Get total energies")
+
+        #Check if potential energy is saved. If not, calculate it
+        self._attach_pot_energy_to_frames()
         return [
-            frame.get_kinetic_energy() + frame.get_potential_energy()
+            frame.get_kinetic_energy() + frame.info["pot_energy"]
             for frame in self.frames
         ]
 
@@ -770,6 +801,89 @@ class ResultMD:
         times = np.arange(len(self.frames)) * dt
         return times
 
+    def _attach_pot_energy_to_frames(self):
+        """If there was no 'Calc_pot' flag in the .yaml config file, potential energy
+        wont be calculated and saved to frame.info["pot_energy"].
+
+        This function uses calculator to calculate and attach .info["pot_energy"] to
+        all frames, if no such information was saved in simulation manager.
+        """
+        logger.debug("Potential energy was needed, check if stored in frames")
+        #Check if SM saved potential energy
+        if "pot_energy" in self.frames[0].info:
+            logger.debug("Potential energy already saved in frames")
+            return
+
+        logger.debug("No potential energy was saved in frames, calc. it")
+        #No pot energy was saved, need to init calculator and re-calculate
+        calculator = self._check_calc_2()
+        for frame in self.frames:
+            frame.calc = calculator
+            frame.info["pot_energy"] = frame.get_potential_energy()
+        logger.debug("pot_energy was added to all frames")
+
+
+
+    def single_atom_energy(self):
+        """This function returns the energy of a single atom in the structure.
+        Used when calculating cohesive energy.
+
+        returns:
+            E_atom (float): The energy of one atom in the structure
+            int: How many atoms in formula. Ex MgCu2 gives 3
+        """
+        logger.debug("Start calculating single_atom energies")
+
+        # Get chemical formula of the "super" crystal
+        import re
+        from functools import reduce
+        import math
+        formula_super = self.frames[0].get_chemical_formula()
+
+        # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
+        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
+        counts = {el: int(n) if n else 1 for el, n in matches}
+
+        common_divider = reduce(math.gcd, counts.values())
+        formula_unit = {el: n // common_divider for el, n in counts.items()}
+        logger.debug(f"Found following formula: {formula_unit}")
+
+        # store the energy
+        E_atom = 0
+        calc = self._check_calc_2()
+
+        #If EMT with paramater, first attachment must be to compound,
+        #not single element.
+        #Will crash otherwise
+        if self.calculator == "EMT" and self.calc_params.get("use_glass"):
+            el_tot = list(formula_unit.keys())
+            dummy_atom = Atoms(
+                el_tot,
+                            positions = [(i*1,0,0) for i in range (len(el_tot))],
+                            cell = [5,5,5],
+                            pbc=False
+                            )
+            dummy_atom.calc = calc
+
+
+        # for each element  in the chemical formula, simulate it alone
+        for element, n in formula_unit.items():
+            atom = Atoms(
+                [element], #list(element): Cu -> ['C','u']
+                positions=[(0, 0, 0)],
+                cell=[15, 15, 15],
+                pbc=False,
+            )
+            atom.calc = calc
+
+            # add energy weighted by count
+            E_atom += atom.get_potential_energy()*n
+
+        # normalize so we return average energy per atom
+        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
+        return E_atom / tot_nr_of_atoms  #len(self.crystal)
+
+
     def get_cohesive_energy(self):
         """The cohesive energy, as E_single_atom - E_bulk_all_atoms / nr of atoms
 
@@ -782,7 +896,7 @@ class ResultMD:
         if not self.reached_equilibrium:
             equil_frame = 7
 
-        return self.frames[0].info["E_single_atom"] - (
+        return self.single_atom_energy() - (
             np.mean(pots[equil_frame:]) / len(self.frames[0])
         )
 
@@ -794,6 +908,38 @@ class ResultMD:
         """
         logger.debug("Get tempertures")
         return [frame.get_temperature() for frame in self.frames]
+
+    def get_pressures(self):
+        """Gets pressure for all frames
+
+        returns:
+            list : List of all pressures at each frame
+
+        """
+        pressure = []
+        for frame in self.frames:
+            pressure.append(self.get_pressure(frame))
+
+        return pressure
+
+
+    def get_pressure(self, frame):
+        """Gets pressure for a specified frame, specified by the average of the
+        normal stresses on the orthogonal planes.
+
+        parameters:
+            frame : int
+                The specified frame for which to calculate the pressure.
+
+        returns:
+            float : The pressure in the current frame
+
+        """
+        frame.calc = self._check_calc_2()
+        stress = frame.get_stress()
+        pressure = - (stress[0] + stress[1] + stress[2])/ 3
+
+        return pressure
 
     def check_equilibrium(self):
         """Checks whetever the simulation reached equilibrium.
@@ -915,6 +1061,16 @@ class ResultMD:
             crystal_equil.calc = MACECalculator()
 
         return crystal_equil
+
+    def _check_keys(self, name, d, keys):
+        """
+        STOLEN from simulationmanager. Used in _check_calc_2 to see so LJ
+        has correct parameters.
+        """
+        missing = [k for k in keys if k not in d]
+        if missing:
+            raise KeyError(f"Missing keys in {name}: {missing}")
+
 
     def _check_calc_2(self):
         """"

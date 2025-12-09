@@ -1,22 +1,25 @@
-Copper:
+# Config for simulating a 2D crystal.
+twod:
   CRYSTAL:
     TYPE: BULK
     Name: Cu
     Structure: fcc
     Lattice_a: 3.6149
     Cubic: True
+    PBC:
+      - 1
+      - 0
+      - 1
     Supercell:
-      - 3
-      - 3
-      - 3
+      - 10
+      - 1
+      - 10
   ENSAMBLE:
-    Ensamble: NVT
-    ThermoTime: 100
-    Temp_list: 
-      - 300
+    Ensamble: NVE
+    Temp: 300
   SIMULATION:
     Timestep: 2 #fs
-    Length: 20000
+    Length: 2000
     TrajInterval: 5
     Calculator: EMT
     Create_traj: True

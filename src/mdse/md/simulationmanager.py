@@ -1,18 +1,20 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import ase.io
 from ase import Atoms, units
 from asap3.md.verlet import VelocityVerlet
 from asap3 import LennardJones, Trajectory, EMT
 from ase.build import bulk
 from ase.visualize import view
-from ase.md.nose_hoover_chain import IsotropicMTKNPT
-from asap3.md.nose_hoover_chain import NoseHooverChainNVT
+from ase.md.nose_hoover_chain import IsotropicMTKNPT, NoseHooverChainNVT
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution, Stationary
 from ase.parallel import DummyMPI
 from asap3 import EMTMetalGlassParameters
 from pathlib import Path
-import re
-from functools import reduce
-import math
 
 import logging
 import numpy as np
@@ -180,6 +182,10 @@ class SimulationManager:
             else:
                 raise NotImplementedError()
 
+            if crystal_params.get("PBC") is not None:
+                self.crystal_conv.set_pbc(crystal_params.get("PBC"))
+                self.crystal.set_pbc(crystal_params.get("PBC"))
+
         except Exception as e:
             logger.error("Error while creating inital crystal:")
             logger.error(e)
@@ -199,6 +205,7 @@ class SimulationManager:
             self.calculator = simulation_params.get("Calculator")
             self.calc_params = simulation_params.get("CalculatorParams", {}).copy()
             self.create_trajectory = simulation_params.get("Create_traj", False)
+            self.save_potential_energy = simulation_params.get("Calc_pot",False)
 
         except Exception as e:
             logger.error("Error parameter values")
@@ -242,15 +249,16 @@ class SimulationManager:
             logger.error("Failed to check the calculator: {e}")
             raise RuntimeError(e)
         self.crystal.info["dt"] = self.timestep
-        logger.debug("Start saving single_atom_energy info to .info[]")
-        E_atom = self.single_atom_energy()
+        #logger.debug("Start saving single_atom_energy info to .info[]")
+        #E_atom = self.single_atom_energy()
         # E_atom, n_atoms = self.single_atom_energy()
-        self.crystal.info["E_single_atom"] = E_atom
+        #self.crystal.info["E_single_atom"] = E_atom
         # self.crystal.info["atoms_per_unit"] = n_atoms
-        logger.debug("Saved single_atom_energy info succesfull")
+        #logger.debug("Saved single_atom_energy info succesfull")
         self.result = [self.crystal.copy()]
 
-        self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
+        if self.save_potential_energy:
+            self.result[0].info["pot_energy"] = self.crystal.get_potential_energy()
         #self.result[0].info["lattice_frames"] = self.estimate_lattice()
         #self.result[0].info["Structure"] = self.crystal_struct
 
@@ -379,7 +387,8 @@ class SimulationManager:
 
     def _attach_frame(self):
         self.result.append(self.crystal.copy())
-        self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
+        if self.save_potential_energy:
+            self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
 
     def _attach_outputs(self, dyn, print):
         """Attach outputs to simulation."""
@@ -551,7 +560,6 @@ class SimulationManager:
         except Exception as e:
             logger.error(e)
             raise
-        self.result[0].info["p_au"] = self.pressure_au
         self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result, self.crystal_conv, self.calc_params)
 
@@ -602,52 +610,3 @@ class SimulationManager:
             raise
         self.result[0].info["calc"] = self.calculator
         return ResultMD(self.result, self.crystal_conv, self.calc_params)
-
-    def single_atom_energy(self):
-        """This function returns the energy of a single atom in the structure.
-        Used when calculating cohesive energy.
-
-        returns:
-            E_atom (float): The energy of one atom in the structure
-            int: How many atoms in formula. Ex MgCu2 gives 3
-        """
-        logger.debug("Start calculating single_atom energies")
-
-        # Get chemical formula of the "super" crystal
-        formula_super = self.crystal.get_chemical_formula()
-
-        # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
-        matches = re.findall(r"([A-Z][a-z]*)(\d*)", formula_super)
-        counts = {el: int(n) if n else 1 for el, n in matches}
-
-        common_divider = reduce(math.gcd, counts.values())
-        formula_unit = {el: n // common_divider for el, n in counts.items()}
-        logger.debug(f"Found following formula: {formula_unit}")
-
-        # store the energy
-        E_atom = 0
-
-        # for each element  in the chemical formula, simulate it alone
-        for element, n in formula_unit.items():
-            calc = self._check_calculator()
-            atom = ase.Atoms(
-                [element], #list(element): Cu -> ['C','u']
-                positions=[(0, 0, 0)],
-                cell=[15, 15, 15],
-                pbc=False,
-            )
-            atom.calc = calc
-
-            # add energy weighted by count
-            E_atom += atom.get_potential_energy()*n
-
-        # normalize so we return average energy per atom
-        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
-        return E_atom / tot_nr_of_atoms  #len(self.crystal)
-
-        logger.debug(
-            f"Could not calc single_atom_energy for {formula_unit}."
-            "Not implemented for that many atoms, yet"
-        )
-        return 0, 0
-
