@@ -10,7 +10,7 @@ This example showcases how to load a crystal structure from an sqlite
     Gets the crystal for the NV center in diamond.
 """
 
-from httklib.httk_reader import get_defects, save_to_cif, setup_db
+from httk4mdse.httk_reader import get_defects, save_to_cif, setup_db
 
 # This example needs a path to a sqlite database
 search = setup_db("../../../defects.sqlite")

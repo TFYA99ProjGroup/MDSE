@@ -8,7 +8,7 @@ import logging
 import re
 
 from mdse.rm.dbmanager import DBManager
-from httklib.httk_reader import (
+from httk4mdse.httk_reader import (
     get_chemical_potential,
     get_defect_formation_energy,
     setup_db,
