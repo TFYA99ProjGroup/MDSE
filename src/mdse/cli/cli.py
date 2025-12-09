@@ -15,6 +15,7 @@ from mdse.rm.dbmanager import DBManager
 from mdse.logging.logging_config import setup_logging
 from mdse.md.resultMD import ResultMD
 from mdse.visualizeDB.run_visDB import run_visualize_db
+from mdse.utils import defect_formation_energy
 
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,19 @@ def write_to_database(args):
         logger.info(f"Writing data from {path} to {args.address}")
         writer.write_jsonfiles_to_db(path)
 
+def calculate_defect_formation_energy(args):
+    """
+    From an existing database calculate the defect formation energies
+
+    Parameters
+    ----------
+    args : argparse.address
+        Command-line arguments. Should contain:
+
+        - filepath (str): Path to database
+    """
+    db = DBManager(args.address)
+    defect_formation_energy(db)
 
 def visualize_DB(args):
     path = args.filepath
@@ -453,6 +467,21 @@ def create_parser():
     )
 
     visualize_db.set_defaults(func=visualize_DB)
+
+    formation_energy_db = subparsers.add_parser(
+        "calc_defect_formation_energy", help="guess"
+    )
+
+    formation_energy_db.add_argument(
+        "-a",
+        "--address",
+        metavar="ADDRESS",
+        help="The address of the db, we modify",
+        required=True,
+    )
+
+    formation_energy_db.set_defaults(func=calculate_defect_formation_energy)
+
     return parser
 
 
