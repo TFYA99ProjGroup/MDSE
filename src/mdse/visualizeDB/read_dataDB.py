@@ -79,30 +79,29 @@ def read_data(config_data):
         for mace_entry in all_mace_entries:
             def_id = mace_entry["defect_key"]
 
-            dft_entry = DFT_data.find_one({"defect_key" : def_id})
+            dft_entries = list(DFT_data.find({"defect_key" : def_id}))
             #Will get multiple entries, because diferent spins.
             #Compare Mace to multiple DFT-spins
 
-        
-            if dft_entry:
+            for dft_entry in dft_entries:
+                mace_copy = mace_entry.copy()
                 # Extract fields we need
-                mace_entry["DFT_defect_formation_energy"] = dft_entry.get("defect_formation_energy")
-                mace_entry["DefectInfo"] = {"defect_type" : dft_entry.get("defect_type")}
-                mace_entry["spin"] = dft_entry.get("spin")
-            else:
-                print("SOMETINH BAD HAPPENED!")
+                mace_copy["DFT_defect_formation_energy"] = dft_entry.get("defect_formation_energy")
+                mace_copy["delta_E"] = mace_copy["DFT_defect_formation_energy"] - mace_copy["formation_energy"]
+                mace_copy["DefectInfo"] = {"defect_type" : dft_entry.get("defect_type")}
+                mace_copy["spin"] = dft_entry.get("spin")
+                final_data.append(mace_copy)
                 
-        for entry in all_mace_entries:
-            #Calculate energy diff, and fix format
-            entry["delta_E"] = abs(entry["DFT_defect_formation_energy"] - entry["formation_energy"])
-
+        for entry in final_data:
+            #Fix some data
             def_type = entry["DefectInfo"]["defect_type"]
 
             entry["DefectInfo"]["defect_size"] = get_def_size(def_type)
             entry["DefectInfo"]["vacancy"] = get_vacancy(def_type)
 
         print(f"Found {len(all_mace_entries)} entries")
-        return all_mace_entries
+        print(f"Found total {len(final_data)} data points (spins incl.)")
+        return final_data
      
 
 

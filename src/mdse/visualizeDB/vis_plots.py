@@ -193,7 +193,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc1 = ax1.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
+        sc1 = ax1.scatter([value]*lenght, energies, c = spins, vmin = -1, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax1,value,energies)
@@ -240,7 +240,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc2 = ax2.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
+        sc2 = ax2.scatter([value]*lenght, energies, c = spins, vmin = -1, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax2,value,energies)
@@ -287,7 +287,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc3 = ax3.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
+        sc3 = ax3.scatter([value]*lenght, energies, c = spins, vmin = -1, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax3,value,energies)
@@ -334,7 +334,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
         spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc4 = ax4.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
+        sc4 = ax4.scatter([value]*lenght, energies, c = spins, vmin = -1, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax4,value,energies)
@@ -354,6 +354,108 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     plt.gcf().savefig(f"{plot_name}.png")
     plt.close()
     logger.debug(f"Saved doping plot for {plot_name}")
+
+def sub_sub_plot(plot_name, plot_data, sim_data):
+    """The heatmap is not too informative for diagonal (sub-sub).
+    This investigates furhter, by seperating into spins
+
+    """
+    fig, axs = plt.subplots(nrows = 1, figsize = (10,10),
+                            sharex = False, constrained_layout = True)
+    ax1 = axs
+    #fig.tight_layout()
+
+    avg = plot_data.get("average")
+    fix_y = plot_data.get("fix_y")
+    
+
+    ax1.set_xlabel("Element")
+    ax1.set_ylabel("ΔE (eV)")
+    ax1.axhline(y=0, color='gray', linestyle='--', linewidth=1)
+    if fix_y:
+        ax1.set_ylim(-1,11)
+        ax1.set_yticks([0,10])
+
+    data_points = []
+    how_many_points = 0
+    for sim in sim_data:
+        #Pick out sub-sub when SAME element
+        amount = sim.get("DefectInfo")["defect_size"]
+        def_type = sim.get("DefectInfo")["defect_type"]
+        if amount != 2:
+            continue
+
+        types = def_type.split(":")
+        cat1, el1 = get_defect_cat(types[0])
+        cat2, el2 = get_defect_cat(types[1])
+
+        if cat1 == "substitution" and cat2 == "substitution" and el1 == el2:
+            data_points.append({"element" : el1,
+                                "Energy" : sim.get("delta_E"),
+                                "spin" : sim.get("spin")})
+            how_many_points+=1
+            continue
+
+    s_elements = [""] + ["Li","Na","K","Rb","Cs","Fr",
+                "Be","Mg","Ca","Sr","Ba","Ra"]
+
+    p_elements = ["B","Al","Ga","In","Tl","Nh",
+                "C","Si","Ge","Sn","Pb","Fl",
+                "N","P","As","Sb","Bi","Mc",
+                "O","S","Se","Te","Po","Lv",
+                "F","Cl","Br","I","At","Ts",
+                "He","Ne","Ar","Kr","Xe","Rn","Og"] + [""]
+    all_elements = sorted(s_elements+p_elements)
+      #----------------
+    logger.debug("Start generating sub-sub diagonal subplot")
+
+    x_pos = range(0,51)
+    ax1.set_xticks(x_pos,all_elements)
+    ax1.set_title("Double substitution")
+
+    sc1 = None
+    first_label = True
+    avg_x = []
+    avg_y = []
+
+    #Map each element to a x-position
+    elements = {el: idx for idx, el in enumerate(all_elements) if el != ""}
+
+    for key,value in elements.items():
+        #Extract the data with this key(element). Value is position in plot
+        positions = [p for p in data_points if p["element"] == key]
+        if not positions:
+            if avg_x:
+                ax1.plot(avg_x,avg_y, linestyle = "--", color="orange")
+                avg_x = []
+                avg_y = []
+            continue
+
+        energies = [sim["Energy"] for sim in positions]
+        spins = [sim["spin"] for sim in positions]
+        lenght = len(energies)
+
+        sc1 = ax1.scatter([value]*lenght, energies, c = spins, vmin = -1, vmax=2.5)
+
+        if avg:
+            avg_temp = plot_avg(ax1,value,energies)
+            avg_y.append(avg_temp)
+            avg_x.append(value)
+            if first_label:
+                ax1.legend(loc="upper right")
+                first_label = False
+
+    if sc1 is not None:
+        fig.colorbar(sc1,ax=ax1, label = "Spin")
+    if avg and avg_x:
+        ax1.plot(avg_x,avg_y, linestyle = "--", color="orange")
+    logger.debug("Done generating forth subplot")
+
+    logger.debug(f"Sucesfully created all subplots for {plot_name}")
+    plt.gcf().savefig(f"{plot_name}.png")
+    plt.close()
+    logger.debug(f"Saved plot for {plot_name}")
+
 
 
 
