@@ -82,6 +82,9 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                                      "avg_a": []},
      "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a" : []}}
     logger.debug("Start to loop trough simulations")
+
+    how_many_data_points = 0
+
     for sim in sim_data:
         #Pick out single defect
         amount = sim.get("DefectInfo")["defect_size"]
@@ -95,30 +98,35 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             types = def_type.split(":")
             cat1, el1 = get_defect_cat(types[0])
             cat2, el2 = get_defect_cat(types[1])
+            if cat1 == cat2 == "vacancy": #So skip this edge case in this plot
+                continue
             #One vacant, one either sub or inter
             if cat1 == "vacancy":
                 defect = sorted_data.get(cat2)
                 defect["element"].append(el2)
-                defect["energy"].append(sim.get("formation_energy"))
+                defect["energy"].append(sim.get("delta_E"))
                 defect["avg_a"].append(sim.get("avg_a"))
                 defect["vacancy"].append(True)
+                how_many_data_points+=1
                 continue
 
             if cat2 == "vacancy":
                 defect = sorted_data.get(cat1)
                 defect["element"].append(el1)
-                defect["energy"].append(sim.get("formation_energy"))
+                defect["energy"].append(sim.get("delta_E"))
                 defect["avg_a"].append(sim.get("avg_a"))
                 defect["vacancy"].append(True)
+                how_many_data_points+=1
                 continue
 
         if amount == 1 and not vacant: #A single defect. Skip edge case of single vacant
             cat, el = get_defect_cat(def_type)
             defect = sorted_data.get(cat)
             defect["element"].append(el)
-            defect["energy"].append(sim.get("formation_energy"))
+            defect["energy"].append(sim.get("delta_E"))
             defect["avg_a"].append(sim.get("avg_a"))
             defect["vacancy"].append(False)
+            how_many_data_points+=1
             continue
 
     logger.debug("Done looping over simulations.")
@@ -128,7 +136,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     #fig.tight_layout()
 
     #Fix axis of all subplots.
-
+    print(how_many_data_points)
     avg = plot_data.get("average")
     fix_y = plot_data.get("fix_y")
 
@@ -363,7 +371,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     #What to plot. Get from sim_data later
     prop1 = plot_data.get("x")
     prop2 = plot_data.get("y")
-
+    how_many_points = 0
     if not prop1 or not prop2:
         raise ValueError("Config is missing x or y field in config file")
 
@@ -383,20 +391,25 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                 el_sorted = sorted([el1, el2])
                 data_points.append({"interstitial1" : el_sorted[0],
                                     "interstitial2" : el_sorted[1],
-                                    "Energy" : sim.get("formation_energy")})
+                                    "Energy" : sim.get("delta_E")})
+                how_many_points+=1
+                continue
 
             if cat1 == "substitution" and cat2 == "substitution":
                 el_sorted = sorted([el1, el2])
                 data_points.append({"substitution1" : el_sorted[0],
                                     "substitution2" : el_sorted[1],
-                                    "Energy" : sim.get("formation_energy")})
-
+                                    "Energy" : sim.get("delta_E")})
+                how_many_points+=1
+                continue
+            
             continue
 
         if {cat1,cat2} == {"substitution", "interstitial"}:
             data_points.append({cat1 : el1,
                                 cat2 : el2,
-                                "Energy" : sim.get("formation_energy")})
+                                "Energy" : sim.get("delta_E")})
+            how_many_points+=1
             continue
 
 
@@ -414,7 +427,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     dataframe = pd.DataFrame(data_points)
     #heatmap_data = dataframe.pivot(index="interstitial",
     #columns="substitution", values="Energy")
-
+    print(how_many_points)
     if prop1 == prop2:
         #So a single heatmap, that combines inter-inter with sub-sub
 
@@ -422,11 +435,16 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                             if "substitution" in c or c=="Energy"]]
         df_int = dataframe[[c for c in dataframe.columns
                             if "interstitial" in c or c=="Energy"]]
-
-        heatmap_sub = df_sub.groupby(['substitution1',
-                                      'substitution2'])['Energy'].mean().unstack()
-        heatmap_int = df_int.groupby(['interstitial1',
-                                      'interstitial2'])['Energy'].mean().unstack()
+        if "interstitial1" in df_int and "interstitial2" in df_int:
+            heatmap_int = df_int.groupby(['interstitial1',
+                            'interstitial2'])['Energy'].mean().unstack()
+        else:
+            heatmap_int = pd.DataFrame(index=all_elements, columns=all_elements)
+        if "substitution1" in df_sub and "substitution2" in df_sub:
+            heatmap_sub = df_sub.groupby(['substitution1',
+                                        'substitution2'])['Energy'].mean().unstack()
+        else:
+            heatmap_sub = pd.DataFrame(index=all_elements, columns=all_elements)
 
         #Symmetrize so both halves are filled
         heatmap_sub = symmetrize(heatmap_sub).reindex(index=all_elements,
@@ -493,7 +511,6 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
     else:
         #If inter-sub
-
         heatmap_data = dataframe.groupby(["interstitial",
                                           "substitution"])["Energy"].mean().unstack()
         x_label = "interstitial"
