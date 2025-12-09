@@ -1,0 +1,8 @@
+data:
+  data_source: "jsonl" #mongo when using mongoDB
+  path: "all_results_v2.jsonl" #Path to .json or mongo
+plots:
+  plot_test:
+    type: heatmap
+    x: "combined"
+    y: "combined"

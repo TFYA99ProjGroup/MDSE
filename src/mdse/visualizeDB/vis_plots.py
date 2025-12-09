@@ -360,37 +360,38 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
     if not prop1 or not prop2:
         raise ValueError("Config is missing x or y field in config file")
-
     for sim in sim_data:
         #Pick out double defect,
+        definf = sim.get("DefectInfo")
+        if not definf:
+            continue
         amount = sim.get("DefectInfo")["defect_size"]
+
         def_type = sim.get("DefectInfo")["defect_type"]
         if amount != 2:
             continue
-
         types = def_type.split(":")
         cat1, el1 = get_defect_cat(types[0])
         cat2, el2 = get_defect_cat(types[1])
-
         if prop1==prop2:
             if cat1 == "interstitial" and cat2 == "interstitial":
                 el_sorted = sorted([el1, el2])
                 data_points.append({"interstitial1" : el_sorted[0],
                                     "interstitial2" : el_sorted[1],
-                                    "Energy" : sim.get("formation_energy")})
+                                    "Energy" : sim.get("total_energy")})
 
             if cat1 == "substitution" and cat2 == "substitution":
                 el_sorted = sorted([el1, el2])
                 data_points.append({"substitution1" : el_sorted[0],
                                     "substitution2" : el_sorted[1],
-                                    "Energy" : sim.get("formation_energy")})
+                                    "Energy" : sim.get("total_energy")})
 
             continue
 
         if {cat1,cat2} == {"substitution", "interstitial"}:
             data_points.append({cat1 : el1,
                                 cat2 : el2,
-                                "Energy" : sim.get("formation_energy")})
+                                "Energy" : sim.get("total_energy")})
             continue
 
 
