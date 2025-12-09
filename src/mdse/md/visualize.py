@@ -178,3 +178,28 @@ class VisualizeResult:
         plt.ylabel("Temperature")
         plt.title(f"Temperature for {len(self.results)} simulations")
         plt.show()
+
+    def plot_pressure(self):
+        """Calls the get_pressure on result object to get pressure over all frames.
+        Generates plot with pressure vs time.
+        """
+        presures = []
+        times = []
+        for res in self.results:
+            times.append(res.get_time_axis())
+
+        names = [res.name for res in self.results]
+        for res in self.results:
+            presures.append(res.get_pressures())
+
+
+
+
+        for time, pres, name in zip(times,presures, names):
+            plt.plot(time,pres)
+            plt.text(time[-1],pres[-1], f"{name}")
+        logger.debug("Energy and time where succsesfully fetched")
+        plt.xlabel("Time (fs)")
+        plt.ylabel("Pressure")
+        plt.title(f"Pressure for {len(self.results)} simulations")
+        plt.show()
