@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt

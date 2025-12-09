@@ -1,5 +1,18 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import logging
 import re
+
+from mdse.rm.dbmanager import DBManager
+from httklib.httk_reader import (
+    get_chemical_potential,
+    get_defect_formation_energy,
+    setup_db,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,3 +82,18 @@ def get_nelements(stoichiometry):
     logger.debug(f"Element counts: {element_counts}")
 
     return element_counts
+
+
+def transfer_chemical_potential(sqlite_path, mongodb_adress):
+    store = setup_db(sqlite_path)
+
+    mongodb = DBManager(mongodb_adress)
+    mongodb.clear_collection("Chemical_potential")
+    mongodb.write_dict_to_db(**get_chemical_potential(store))
+
+def transfer_defect_formation_energy(sqlite_path, mongodb_adress):
+    store = setup_db(sqlite_path)
+
+    mongodb = DBManager(mongodb_adress)
+    mongodb.clear_collection("DFT_data")
+    mongodb.write_dict_to_db(**get_defect_formation_energy(store))
