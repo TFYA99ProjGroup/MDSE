@@ -13,7 +13,7 @@ from mdse.rm.dbmanager import MongoDBEntry, DBManager
 from datetime import datetime
 from mdse.md.resultMD import ResultMD
 from pathlib import Path
-from httklib.httk_reader import get_defects, save_defects, setup_db
+from httk4mdse.httk_reader import get_defects, save_defects, setup_db
 from mdse.parser.parse_yml import get_files
 
 logger = logging.getLogger(__name__)

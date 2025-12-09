@@ -4,7 +4,7 @@
 This repository is primarily licensed under the MIT License. See root LICENSE for full details.
 
 ### **Important License Exception**
-The code and files contained within **`httklib/`** are governed by the GNU Affero General Public License. A copy of this license can be found within that directory at `httklib/LICENSE`.
+The code and files contained within **`httk4mdse/`** are governed by the GNU Affero General Public License. A copy of this license can be found within that directory at `httk4mdse/LICENSE`.
 
 ## Install dependencies
 Use your virtual environment of choice, either venv or Anaconda, then run:

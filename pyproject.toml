@@ -22,7 +22,7 @@ dependencies = [
     "mace-torch",
     "pandas",
     "seaborn",
-    "httk4mdse @ file:httklib/"
+    "httk4mdse @ file:./httk4mdse/"
 ]
 
 [tool.ruff]

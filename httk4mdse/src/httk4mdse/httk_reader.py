@@ -17,7 +17,7 @@
 from pathlib import Path
 import re
 from httk.atomistic.atomisticio import struct_to_cif
-from httklib.classes import (
+from httk4mdse.classes import (
     DefectCell,
     DefectInfo,
     ChemicalPotential,
