@@ -81,16 +81,17 @@ def read_data(config_data):
 
             dft_entry = DFT_data.find_one({"defect_key" : def_id})
             #Will get multiple entries, because diferent spins.
+            #Compare Mace to multiple DFT-spins
+
         
             if dft_entry:
                 # Extract fields we need
                 mace_entry["DFT_defect_formation_energy"] = dft_entry.get("defect_formation_energy")
                 mace_entry["DefectInfo"] = {"defect_type" : dft_entry.get("defect_type")}
-                mace_entry["DefectInfo"]["spin"] = dft_entry.get("spin")
+                mace_entry["spin"] = dft_entry.get("spin")
             else:
                 print("SOMETINH BAD HAPPENED!")
                 
-        temp = True
         for entry in all_mace_entries:
             #Calculate energy diff, and fix format
             entry["delta_E"] = abs(entry["DFT_defect_formation_energy"] - entry["formation_energy"])
@@ -99,12 +100,6 @@ def read_data(config_data):
 
             entry["DefectInfo"]["defect_size"] = get_def_size(def_type)
             entry["DefectInfo"]["vacancy"] = get_vacancy(def_type)
-            if temp:
-                entry["avg_a"] = 1
-                temp = False
-            else:
-                entry["avg_a"] = 2
-                temp = True
 
         print(f"Found {len(all_mace_entries)} entries")
         return all_mace_entries

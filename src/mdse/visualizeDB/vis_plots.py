@@ -79,8 +79,8 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     all_elements = sorted(s_elements+p_elements)
 
     sorted_data = {"interstitial" : {"element" : [], "energy" : [], "vacancy" : [],
-                                     "avg_a": []},
-     "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "avg_a" : []}}
+                                     "spin": []},
+     "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "spin" : []}}
     logger.debug("Start to loop trough simulations")
 
     how_many_data_points = 0
@@ -105,7 +105,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 defect = sorted_data.get(cat2)
                 defect["element"].append(el2)
                 defect["energy"].append(sim.get("delta_E"))
-                defect["avg_a"].append(sim.get("avg_a"))
+                defect["spin"].append(sim.get("spin"))
                 defect["vacancy"].append(True)
                 how_many_data_points+=1
                 continue
@@ -114,7 +114,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 defect = sorted_data.get(cat1)
                 defect["element"].append(el1)
                 defect["energy"].append(sim.get("delta_E"))
-                defect["avg_a"].append(sim.get("avg_a"))
+                defect["spin"].append(sim.get("spin"))
                 defect["vacancy"].append(True)
                 how_many_data_points+=1
                 continue
@@ -124,7 +124,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             defect = sorted_data.get(cat)
             defect["element"].append(el)
             defect["energy"].append(sim.get("delta_E"))
-            defect["avg_a"].append(sim.get("avg_a"))
+            defect["spin"].append(sim.get("spin"))
             defect["vacancy"].append(False)
             how_many_data_points+=1
             continue
@@ -190,10 +190,10 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             continue
 
         energies = [candidates["energy"][i] for i in idxs]
-        avg_a = [candidates["avg_a"][i] for i in idxs]
+        spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc1 = ax1.scatter([value]*lenght, energies, c = avg_a)
+        sc1 = ax1.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax1,value,energies)
@@ -204,7 +204,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 first_label = False
 
     if sc1 is not None:
-        fig.colorbar(sc1,ax=ax1, label = "Mean a")
+        fig.colorbar(sc1,ax=ax1, label = "Spin")
     if avg and avg_x:
         ax1.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug("Done generarating first subplot")
@@ -237,10 +237,10 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             continue
 
         energies = [candidates["energy"][i] for i in idxs]
-        avg_a = [candidates["avg_a"][i] for i in idxs]
+        spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc2 = ax2.scatter([value]*lenght, energies, c = avg_a)
+        sc2 = ax2.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax2,value,energies)
@@ -251,7 +251,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 first_label = False
 
     if sc2 is not None:
-        fig.colorbar(sc2,ax=ax2, label = "Mean a")
+        fig.colorbar(sc2,ax=ax2, label = "Spin")
     if avg and avg_x:
         ax2.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug("Done generating second subplot")
@@ -284,10 +284,10 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             continue
 
         energies = [candidates["energy"][i] for i in idxs]
-        avg_a = [candidates["avg_a"][i] for i in idxs]
+        spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc3 = ax3.scatter([value]*lenght, energies, c = avg_a)
+        sc3 = ax3.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax3,value,energies)
@@ -298,7 +298,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 first_label = False
 
     if sc3 is not None:
-        fig.colorbar(sc3,ax=ax3, label = "Mean a")
+        fig.colorbar(sc3,ax=ax3, label = "Spin")
     if avg and avg_x:
         ax3.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug("Done generating third subplot")
@@ -331,10 +331,10 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             continue
 
         energies = [candidates["energy"][i] for i in idxs]
-        avg_a = [candidates["avg_a"][i] for i in idxs]
+        spins = [candidates["spin"][i] for i in idxs]
         lenght = len(energies)
 
-        sc4 = ax4.scatter([value]*lenght, energies, c = avg_a)
+        sc4 = ax4.scatter([value]*lenght, energies, c = spins, vmin = -0.5, vmax=2.5)
 
         if avg:
             avg_temp = plot_avg(ax4,value,energies)
@@ -345,7 +345,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 first_label = False
 
     if sc4 is not None:
-        fig.colorbar(sc4,ax=ax4, label = "Mean a")
+        fig.colorbar(sc4,ax=ax4, label = "Spin")
     if avg and avg_x:
         ax4.plot(avg_x,avg_y, linestyle = "--", color="orange")
     logger.debug("Done generating forth subplot")
