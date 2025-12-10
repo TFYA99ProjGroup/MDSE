@@ -4,6 +4,13 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 
+"""This module handles reading simulation data for visualization.
+
+It supports reading data from different sources, such as JSON files or a
+MongoDB database, based on the provided configuration.
+"""
+
+
 import json
 from pathlib import Path
 import logging
@@ -11,22 +18,25 @@ from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
-"""
-Should return a dictionary.
-Later, adapt so can read from mongoDB.
-But still should return a dictionary
-
-"""
-
 
 def read_data(config_data):
-    """Reads the data we whant to plot. Stored in .json or mongoDB.
+    """Reads simulation data from a specified source (.json or mongoDB).
 
-    arg:
-        config_data(str): Information about data, such as location, what type etc.
+    This function dispatches to the correct data reading method based on the
+    'data_source' key in the configuration dictionary.
 
-    returns:
-        data(dic): Dictionary containing the data about simulations
+    Args:
+        config_data (dict): Configuration specifying the data source, location,
+            and other necessary parameters.
+
+    Returns:
+        list[dict]: A list of dictionaries, where each dictionary contains
+            the data for a single simulation.
+
+    Raises:
+        RuntimeError: If the configuration is invalid, the specified file is
+            not found, or the data cannot be parsed.
+        NotImplementedError: If the 'mongo' data source is selected.
     """
     logger.debug("Start getting data to visualize on")
     source = config_data.get("data_source")
@@ -73,5 +83,4 @@ def read_data(config_data):
         if dum:
             return table
 
-        raise RuntimeError("Not implemented for mongoDB yet")
-
+        raise NotImplementedError("Reading from mongoDB is not implemented yet")

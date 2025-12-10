@@ -4,7 +4,17 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 """
-Module for parsing simulation configs.
+YAML configuration file parser for MDSE.
+
+This module is responsible for reading and interpreting YAML files that define
+molecular dynamics simulations. It provides functionalities to:
+
+1.  Read a base YAML configuration file.
+2.  "Un-nest" or expand simulation parameters. If a parameter like temperature
+    is defined as a list or a range, this module generates a separate, complete
+    simulation configuration for each value.
+3.  Handle command-line overwrites for specific configuration values.
+4.  Expand file paths, creating multiple simulations if a path points to a directory.
 
 The simulation configuration files have a specific format that need to be followed, the structure looks like
 
@@ -90,12 +100,16 @@ def read_yaml_simulations(filename):
     Reads a YAML file containing MD simulation configurations and
     returns it as a dictionary.
 
-    Args:
-        filename (str): Name of the config YAML file.
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the configuration YAML file.
 
-    Returns:
-        dict: Dictionary where each key is a simulation name and
-        each value is its parameter dictionary.
+    Returns
+    -------
+    dict
+        A dictionary containing the simulation configurations parsed from the
+        YAML file.
     """
     logger.debug(f"Reading from {filename}")
     with open(filename, "r") as f:
@@ -106,19 +120,28 @@ def read_yaml_simulations(filename):
 def unnest_simulation_parameters(all_simulations, overwrite_config={}):
     """
     Expands nested parameters (lists or ranges) in the
-    simulations_config dictionary for each simulation.
+    simulation configurations and applies command-line overwrites.
 
-    For each simulation, if a parameter is specified as a list or
-    a range, it creates multiple simulation configs,
-    one for each value in the list or range.
-    This is repeated for all parameters in parameters_to_expand.
+    This function iterates through each simulation defined in the input
+    dictionary. For parameters specified as a list (e.g., `Temp_list`) or a
+    range (e.g., `Pressure_range`), it generates distinct simulation
+    configurations for each value.
 
-    Args:
-        all_simulations (dict): Dictionary of all simulations from the YAML file.
+    After expansion, it applies any `overwrite_config` values, modifying the
+    generated configurations.
 
-    Returns:
-        list: List of dictionaries, each representing
-        a fully un-nested simulation configuration.
+    Parameters
+    ----------
+    all_simulations : dict
+        A dictionary of simulation configurations, as read from the YAML file.
+    overwrite_config : dict, optional
+        A dictionary of parameters to overwrite in the configurations.
+        Defaults to an empty dictionary.
+
+    Returns
+    -------
+    list[dict]
+        A list of fully expanded and overwritten simulation configurations.
     """
     logger.debug("Beginning unnesting parameters")
     parameters_to_expand = [
@@ -206,17 +229,64 @@ def unnest_simulation_parameters(all_simulations, overwrite_config={}):
 
 
 def nest_lennard_jones(og_config, overwrite_config):
-    """
+    """Special handler to overwrite nested Lennard-Jones parameters.
 
-    Args:
-        og_config (_type_): _description_
-        overwrite_config (_type_): _description_
+    The LennardJones calculator can have parameters like `epsilon` and `sigma`
+    defined as nested lists (matrices). This function correctly applies
+    overwrites to specific elements within these nested structures.
 
-    Example:
-    mdse .... -c CalcParams.epsilon=0.3
-    mdse ... -c CalcParams.epsilon.0
-    {"elements": [0], "epsilon": [[0.226738]], "sigma": [[0.70641]], "rCut": [[1.3]]} ->
-    {"elements": [0], "epsilon": [[0.3]], "sigma": [[0.70641]], "rCut": [[1.3]]}
+    Examples
+    --------
+    To overwrite the first row of the ``epsilon`` matrix for a Lennard-Jones
+    potential, you can target a specific index in the ``CalculatorParams``.
+
+    **Command:**
+
+    .. code-block:: bash
+
+        mdse simulate ... -c CalculatorParams.epsilon.0=0.3
+
+    **Effect on Configuration:**
+
+    This command transforms the ``CalculatorParams`` from:
+
+    .. code-block:: json
+
+        {
+            "elements": [0],
+            "epsilon": [[0.226738]],
+            "sigma": [[0.70641]],
+            "rCut": [[1.3]]
+        }
+
+    to:
+
+    .. code-block:: json
+
+        {
+            "elements": [0],
+            "epsilon": [[0.3]],
+            "sigma": [[0.70641]],
+            "rCut": [[1.3]]
+        }
+
+    Parameters
+    ----------
+    og_config : dict
+        The original Lennard-Jones parameter dictionary from the simulation
+        configuration.
+    overwrite_config : dict
+        The overwrite values for the Lennard-Jones parameters, typically
+        parsed from the command line.
+
+    Returns
+    -------
+    dict
+        The updated Lennard-Jones parameter dictionary.
+
+    Notes
+    -----
+    This function modifies a copy of the original config and returns it.
     """
     logger.debug("in nest_lennard_jones!")
     new_config = {}
@@ -242,25 +312,27 @@ def nest_lennard_jones(og_config, overwrite_config):
 
 def expand_parameter(simulation_to_expand, parameter, overwrite_config={}):
     """
-    Expands a single parameter for a given simulation if
-    it is specified as a list or a range.
+    Expands a simulation based on a single parameter specified as a list or range.
 
-    If the parameter is a list, creates a new simulation for
-    each value in the list.
+    If the specified `parameter` is found in the simulation configuration as a
+    list (e.g., `Temp_list`) or a range (e.g., `Temp_range`), this function
+    generates a new simulation configuration for each value. If the parameter
+    is a single value or not present, it returns the original simulation.
 
-    If the parameter is a range, creates a new simulation for
-    each value in the range.
+    Parameters
+    ----------
+    simulation_to_expand : tuple[str, dict]
+        A tuple containing the simulation name and its configuration dictionary.
+    parameter : str
+        The base name of the parameter to expand (e.g., 'Temp', 'Pressure').
+    overwrite_config : dict, optional
+        A dictionary of command-line overwrites that may apply to the list or
+        range itself. Defaults to an empty dictionary.
 
-    If the parameter is a single value or not present,
-    returns the simulation unchanged.
-
-    Args:
-        simulation_to_expand (tuple): (simulation_name, simulation_config)
-        parameter (str): The parameter to expand (e.g., 'Temp', 'Type', 'Time')
-
-    Returns:
-        list: List of (simulation_name, simulation_config) tuples,
-        one for each expanded value.
+    Returns
+    -------
+    list[tuple[str, dict]]
+        A list of expanded simulations, each as a (name, config) tuple.
     """
     result = []
     sim_name, sim_params = simulation_to_expand
@@ -326,14 +398,21 @@ def main_read(filename, overwrite_config={}):
     Reads from a YAML file, then un-nests the MD simulations by
     expanding any parameters specified as lists or ranges.
 
-    Returns a list where each element is a fully expanded
-    MD simulation configuration as a dictionary.
+    This is the main entry point for parsing. It orchestrates reading the YAML
+    file, expanding parameter lists/ranges, applying overwrites, and finally
+    expanding directory paths into individual file paths.
 
-    Args:
-        filename (str): Name of the .yaml config file
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the main YAML configuration file.
+    overwrite_config : dict, optional
+        A dictionary of parameters to overwrite. Defaults to an empty dict.
 
-    Returns:
-        list: List of expanded MD simulation configurations (dicts)
+    Returns
+    -------
+    list[dict]
+        A final list of fully specified, individual simulation configurations.
     """
     all_simulations = read_yaml_simulations(filename)
     logger.debug(f"Read from {filename} done!")
@@ -345,11 +424,26 @@ def main_read(filename, overwrite_config={}):
 
 def get_files(simulations, config_file_path):
     """
-    Expand simulations: if CRYSTAL.TYPE == 'FILE' and Filepath is a directory,
-    create separate simulations for all files in that folder.
+    Expand simulations where the crystal source is a directory.
 
-    Currently this does not work recursively, so all the relvant files must be
-    in the uppermost level of the specified directory
+    If a simulation's `CRYSTAL.Filepath` points to a directory, this function
+    creates a new, separate simulation configuration for each file found
+    within that directory. If the path is a single file or not a file-based
+    crystal source, the simulation is passed through unchanged.
+
+    Parameters
+    ----------
+    simulations : list[dict]
+        A list of simulation configurations (potentially with directory paths).
+    config_file_path : str or Path
+        The path to the original YAML config file, used to resolve relative
+        directory paths.
+
+    Returns
+    -------
+    list[dict]
+        An expanded list of simulation configurations where all directory
+        paths have been resolved to individual files.
     """
     expanded_parameters = []
     config_dir = Path(config_file_path).parent

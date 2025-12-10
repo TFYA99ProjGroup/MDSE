@@ -4,6 +4,19 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 
+"""
+Manages interactions with a MongoDB database for MDSE simulation results.
+
+This module provides the `MongoDBEntry` dataclass for structuring simulation
+data in an OPTIMADE-compliant format, and the `DBManager` class for handling
+database connections, writing and reading data, and performing analytical tasks
+such as outlier detection.
+
+It facilitates the storage of detailed simulation outputs, including structural,
+chemical, and calculated physical properties, into a MongoDB instance, making
+them queryable and accessible for further analysis or sharing via an OPTIMADE
+API.
+"""
 import glob
 import bson
 import json
@@ -19,8 +32,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MongoDBEntry:
     """
-    Minimal dataclass representing a MongoDB structure entry
-    complient with the OPTIMADE schema.
+    Dataclass representing a MongoDB document for a simulation result.
+
+    This class structures simulation data to be compliant with the OPTIMADE
+    schema for materials science databases. It includes fields for essential
+    structural and chemical information, as well as a flexible `mdse_fields`
+    dictionary for custom simulation-specific data.
+    Fields are categorized into 'must', 'should', and 'optional' according to OPTIMADE.
     """
     # Must fields
     id: str
@@ -54,6 +72,15 @@ class MongoDBEntry:
     space_group_symbol_hermann_mauguin_extended: str = None
     space_group_it_number: int = None
     assemblies: list[dict] = None
+
+    def __post_init__(self):
+        """
+        Post-initialization hook to ensure `last_modified` is set if not provided.
+        """
+        if self.last_modified is None:
+            self.last_modified = datetime.now()
+        if self.type != "structures":
+            logger.warning(f"MongoDBEntry type '{self.type}' is not 'structures'.")
 
     def to_dict(self) -> dict:
         base = {
@@ -93,7 +120,17 @@ class MongoDBEntry:
         base.update(self.mdse_fields)
         return base
 
-    def to_file(self):
+    def to_file(self) -> None:
+        """
+        Saves the `MongoDBEntry` instance as a JSON file.
+
+        The file is named after the entry's `id` and stored in a `results/`
+        subdirectory. Directories are created if they do not exist.
+
+        Returns
+        -------
+        None
+        """
         path = Path(f"results/{self.id}.json")
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
@@ -102,17 +139,17 @@ class MongoDBEntry:
 
 
 class DBManager:
-    """
-    Handles writing JSON result files to a MongoDB database.
+    """Manages connections to a MongoDB database and provides methods for
+    interacting with collections.
 
-    This class establishes a MongoDB connection, searches a given directory
-    for result files (JSON), and uploads their contents into a
-    predefined MongoDB collection.
+    This class establishes a MongoDB connection and offers functionalities
+    for writing simulation results from JSON files, querying data, and
+    performing advanced analytics such as outlier detection.
 
     Attributes
     ----------
     client : MongoClient
-        The MongoDB client used to communicate with the database.
+        The PyMongo client used to communicate with the MongoDB server.
     path : str
         Filesystem path to the directory containing result files.
     """
@@ -123,8 +160,6 @@ class DBManager:
 
         Parameters
         ----------
-        resultpath : str
-            Path to the directory containing result files (JSON).
         adress : str
             MongoDB connection string or address (e.g. "mongodb://localhost:27017/").
 
@@ -145,7 +180,22 @@ class DBManager:
             logger.error(f"MongoClient is not connected: {e}")
 
     @staticmethod
-    def create_json_from_mongodbentries(entries: list[MongoDBEntry]):
+    def create_json_from_mongodbentries(entries: list[dict]) -> None:
+        """
+        Appends a list of MongoDB document dictionaries to a single JSON file.
+
+        If the target file (`results/all_results_v2.json`) already exists,
+        it loads the existing content and appends the new entries.
+        The file is created if it does not exist.
+
+        Parameters
+        ----------
+        entries : list[dict]
+            A list of dictionaries, where each dictionary represents a MongoDB
+            document (e.g., converted from `MongoDBEntry.to_dict()`).
+        """
+        logger.debug("Creating/appending to all_results_v2.json")
+
         path = Path("results/all_results_v2.json")
         path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -165,14 +215,33 @@ class DBManager:
                       if hasattr(o, 'isoformat') else o)
         return
 
-    def write_jsonfiles_to_db(
-        self, path, db_str="materials_db", collection_str="structures"
-    ):
+    def write_jsonfiles_to_db(self, path: str, db_str: str = "materials_db",
+                              collection_str: str = "structures") -> None:
         """
-        Upload all JSON files from `path` to the MongoDB collection
-        `structures`.
+        Uploads all JSON files from a specified directory to a MongoDB collection.
 
-        The method:
+        This method scans the given `path` for `.json` files, reads their
+        contents, and inserts them as documents into the specified MongoDB
+        database and collection. It handles `datetime` objects by converting
+        them from ISO format strings.
+
+        Parameters
+        ----------
+        path : str
+            The filesystem path to the directory containing the JSON files.
+        db_str : str, optional
+            The name of the MongoDB database to connect to.
+            Defaults to "materials_db".
+        collection_str : str, optional
+            The name of the collection within the database.
+            Defaults to "structures".
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
         1. Scans the directory specified by `path` for `.json` files.
         2. Reads each file into a Python dictionary.
         3. Inserts all documents into the MongoDB collection.
@@ -202,9 +271,30 @@ class DBManager:
         else:
             logger.info("No documents to insert")
 
-    def write_dict_to_db(
-        self, data, db_str="materials_db", collection_str="structures"
-    ):
+    def write_dict_to_db(self, data: dict, db_str: str = "materials_db",
+                         collection_str: str = "structures") -> None:
+        """
+        Inserts a dictionary of documents into a specified MongoDB collection.
+
+        This method takes a dictionary where values are the documents to be
+        inserted. It's suitable for inserting multiple documents at once.
+
+        Parameters
+        ----------
+        data : dict
+            A dictionary where values are the documents to be inserted into
+            the collection.
+        db_str : str, optional
+            The name of the MongoDB database to connect to.
+            Defaults to "materials_db".
+        collection_str : str, optional
+            The name of the collection within the database.
+            Defaults to "structures".
+
+        Returns
+        -------
+        None
+        """
         db = self.client[db_str]
         collection = db[collection_str]
         if data:
@@ -213,7 +303,22 @@ class DBManager:
         else:
             logger.info("No documents to insert")
 
-    def _write_jsonfiles_to_db_bson(self, resultpath):
+    def _write_jsonfiles_to_db_bson(self, resultpath: str) -> None:
+        """
+        Uploads all BSON files from `resultpath` to the MongoDB collection.
+
+        This method is currently not in use but demonstrates how BSON files
+        could be handled.
+
+        Parameters
+        ----------
+        resultpath : str
+            The filesystem path to the directory containing the BSON files.
+
+        Returns
+        -------
+        None
+        """
         """Bson variant, not in use right now."""
         db = self.client["materials_db"]
         examples = db["structures"]
@@ -231,7 +336,7 @@ class DBManager:
         else:
             logger.info("No documents to insert")
 
-    def _get_nested(self, doc, key):
+    def _get_nested(self, doc: dict, key: str):
         """
         Safely retrieve a nested value from a dictionary using dot notation.
 
@@ -257,7 +362,8 @@ class DBManager:
                 return None
         return val
 
-    def read_from_db(self, conditions, outputs,collection_str="structures"):
+    def read_from_db(self, conditions: dict, outputs: list[str],
+                     collection_str: str = "structures") -> dict:
         """
         Query the MongoDB collection and extract selected fields.
 
@@ -273,8 +379,8 @@ class DBManager:
         outputs : list of str
             List of fields to extract from each document. Supports dotted
             paths for nested fields (e.g. ``"properties.lindemann"``).
-        collection_str : str
-            String that defines what collection to query, default value perserver
+        collection_str : str, optional
+            The name of the collection to query. Default value preserves
             legacy behavior
 
         Returns
@@ -321,10 +427,26 @@ class DBManager:
 
         return result
 
-    def get_all_values(self, field, collection_str="structures"):
+    def get_all_values(self, field: str, collection_str: str = "structures") -> list:
         """
-        Return a list of all values that appear for a given field in a collection.
-        Supports nested fields via dot notation (e.g. 'properties.lindemann').
+        Retrieve all unique values for a given field across documents in a collection.
+
+        This method queries the specified MongoDB collection and extracts all
+        values associated with a particular field. It supports nested fields
+        using dot notation (e.g., 'mdse_fields.lindemann') and flattens lists
+        of values.
+
+        Parameters
+        ----------
+        field : str
+            The name of the field to retrieve values from. Supports dot notation.
+        collection_str : str, optional
+            The name of the collection to query. Defaults to "structures".
+
+        Returns
+        -------
+        list
+            A list containing all retrieved values for the specified field.
         """
         db = self.client["materials_db"]
         coll = db[collection_str]
@@ -345,9 +467,24 @@ class DBManager:
 
         return values
 
-    def clear_collection(self, collection_str):
+    def clear_collection(self, collection_str: str) -> None:
         """
-        Deletes all elements in a collection.
+        Deletes all documents from a specified MongoDB collection.
+
+        This operation is irreversible.
+
+        Parameters
+        ----------
+        collection_str : str
+            The name of the collection from which to delete all documents.
+
+        Returns
+        -------
+        None
+
+        Warning
+        -------
+        This function permanently removes all data from the specified collection.
         """
         db = self.client["materials_db"]
         collection = db[collection_str]

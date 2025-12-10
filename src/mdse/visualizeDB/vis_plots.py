@@ -16,12 +16,16 @@ import seaborn as sns
 logger = logging.getLogger(__name__)
 
 def get_label_name(property):
-    """For a property, like "MSD", get the correct label we can use in scatter plot.
+    """Gets a display-friendly label for a given property key.
 
-    args:
-        propery(str): The property, in config format.
-    returns:
-        (str): The property in nice label format.
+    Args:
+        property (str): The property key from the configuration (e.g., "MSD").
+
+    Returns:
+        str: Human-readable label for use in plots (e.g., "Means square displacement").
+
+    Raises:
+        ValueError: If no label is defined for the given property.
     """
     labels = {"MSD": "Means square displacement", "temperature": "Temperapure (K)",
               "Lindeman":"Lindeman",
@@ -35,15 +39,19 @@ def get_label_name(property):
     return prop_label
 
 def get_defect_cat(defect_name):
-    """Takes defect name, like "Int_Na" or "Na_C" and extracts what type(s)
-    of defect it is, and what element(s)
+    """Parses a defect name to determine its category and element.
 
-    args:
-        defect_name(str): The defect name
+    Examples:
+        - "Int_Na" -> ("interstitial", "Na")
+        - "Na_C"   -> ("substitution", "Na")
+        - "Vac_C"  -> ("vacancy", "C")
 
-    returns:
-        (str): Name of the defect
-        (str): Name of the element
+    Args:
+        defect_name (str): The defect name string.
+
+    Returns:
+        tuple[str, str] or str: A tuple containing the defect category and the
+            associated element, or the string "BAD defect" if parsing fails.
     """
     if defect_name.startswith("Int_"):
         return "interstitial", defect_name[len("Int_"):]
@@ -55,16 +63,22 @@ def get_defect_cat(defect_name):
     return "BAD defect"
 
 def single_defect_plot(plot_name, plot_data, sim_data):
-    """
-    Plots 4 subplots, one for each defect.
-    Each subplot should contain all the elements.
-    Will get multiple points per element, because of starting positioning differs.
-    4 plots because inter and sub, then these 2 but with vacancy added.
+    """Generates a figure with four subplots for single defect formation energies.
 
-    args:
-        plot_name(str): Name of the plot
-        plot_data(dic): Data about the plot. What axis etc.
-        sim_data(dic): Where the data we plot is.
+    The figure consists of four scatter plots organized by defect type:
+    1. Interstitial defects.
+    2. Interstitial defects paired with a vacancy.
+    3. Substitutional defects.
+    4. Substitutional defects paired with a vacancy.
+
+    Each subplot shows formation energy vs. element. Points are colored by the
+    'avg_a' property.
+
+    Args:
+        plot_name (str): The base name for the output plot file.
+        plot_data (dict): A dictionary containing plot configuration, such as
+            'average' to plot mean values or 'fix_y' to set y-axis limits.
+        sim_data (list[dict]): A list of simulation result dictionaries.
     """
     logger.debug(f"Start to make single_defect_plot for {plot_name}")
     s_elements = ["Li","Na","K","Rb","Cs","Fr",
@@ -350,13 +364,35 @@ def single_defect_plot(plot_name, plot_data, sim_data):
 
 
 def symmetrize(df):
-    """Make a symmetric matrix from a grouped DataFrame."""
+    """Makes a DataFrame symmetric by combining it with its transpose.
+
+    For a matrix M, this computes M.combine_first(M.T), which fills NaN values
+    in M with corresponding values from M.T.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame, typically the upper or lower
+            triangle of a matrix.
+
+    Returns:
+        pd.DataFrame: A symmetric DataFrame.
+    """
     return df.combine_first(df.T)
 
 def heatmap_plot(plot_name,plot_data,sim_data):
-    """
-    Heatmap of substitution-interstition or
-    substitution-substition + interstition-interstion defect.
+    """Generates heatmaps for double defect formation energies.
+
+    This function can generate two types of heatmaps based on the configuration:
+    1. A combined heatmap for substitution-substitution (upper triangle) and
+       interstitial-interstitial (lower triangle) defects. This also produces
+       bar plots for the diagonal values.
+    2. A single heatmap for substitution-interstitial defects.
+
+    Args:
+        plot_name (str): The base name for the output plot file.
+        plot_data (dict): A dictionary containing plot configuration, specifying
+            the properties for the 'x' and 'y' axes of the heatmap.
+        sim_data (list[dict]): A list of simulation result dictionaries
+            containing double defect data.
     """
     data_points = []
 
@@ -515,14 +551,21 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
 
 def scatter_plot(plot_name, plot_data,sim_data):
-    """Function to make a scatter plot.
-    Plot_data specifies what properties to put on x,y and z axis.
-    z-axis is color coded onto the points. If missing, then only x and y is plotted.
+    """Generates a 2D or 3D scatter plot from simulation data.
 
-    args:
-        plot_name(str): Name of the plot
-        plot_data(dic): Data about the plot. What axis etc.
-        sim_data(dic): Where the data we plot is.
+    This function creates a scatter plot where the x and y axes are determined
+    by properties specified in `plot_data`. An optional third property can be
+    used for color-coding the points (z-axis).
+
+    Args:
+        plot_name (str): The base name for the output plot file.
+        plot_data (dict): A dictionary containing plot configuration, requiring
+            'x' and 'y' keys for the axes, and an optional 'z' key for color.
+        sim_data (list[dict]): A list of simulation result dictionaries.
+
+    Raises:
+        ValueError: If required properties are missing from `plot_data` or if
+            property values are missing from `sim_data`.
     """
     logger.debug(f"Starting to create scatter plot for {plot_name}")
     #Check what we whant to plot on axis
@@ -560,19 +603,22 @@ def scatter_plot(plot_name, plot_data,sim_data):
     plt.close()
 
 def doping_plot(plot_name, plot_data,sim_data):
-    """Does a plot where:
-        x-axis is what element we are doping with.
-        y-axis is energy difference (formation energy?).
-        z-axis is "mean a" (use avg_a here).
+    """Generates a figure with five subplots for doping formation energies.
 
-        If config containts "average" field, will
-        plot the average for each element also.
+    The figure shows formation energy vs. doping element, organized by rows of
+    the periodic table across five subplots. Each point represents a
+    simulation, with its color determined by the 'avg_a' property.
 
-    args:
-        plot_name(str): Name of the plot, from config file.
-        Used as naming when plot is saved.
-        plot_data(dic): Info about the plot. Empty when doping plot, and not used.
-        sim_data(dic): Data about the simulations.
+    Args:
+        plot_name (str): The base name for the output plot file.
+        plot_data (dict): A dictionary containing plot configuration, such as
+            'average' to plot mean values or 'fix_y' to set y-axis limits.
+        sim_data (list[dict]): A list of simulation result dictionaries, where
+            each dictionary must contain 'doping', 'formation_energy', and
+            'avg_a' keys.
+
+    Raises:
+        ValueError: If required keys are missing from any simulation data entry.
     """
     logger.debug(f"Starting to create doping plot for {plot_name}")
     sorted_data = {}
@@ -839,17 +885,18 @@ def doping_plot(plot_name, plot_data,sim_data):
 
 
 def plot_avg(axial, x_pos, y_values):
-    """Plots a orange square to mark average of the y values.
-    Returns the average value, so can draw line between them all laters
+    """Plots a marker for the average of a set of y-values on a given axis.
 
-    args:
-        axial: The axis (ax1,ax2) returned from when we created the subplot. Axial
-               is the subplot we whant to attach this average.
-        x_pos(int): What x position to place the average on.
-        y_values(list): The values we calc. average of and mark.
+    This helper function calculates the mean of `y_values` and plots it as a
+    distinctive square marker on the provided matplotlib axis.
 
-    returns:
-        average(float): The average of y_values
+    Args:
+        axial (plt.Axes): The matplotlib Axes object on which to plot.
+        x_pos (int or float): The x-coordinate for the average marker.
+        y_values (list[float]): A list of numerical values to average.
+
+    Returns:
+        float: The calculated average of `y_values`.
     """
     average = np.mean(y_values)
     axial.scatter([x_pos], average, color = "orange",
