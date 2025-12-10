@@ -55,15 +55,13 @@ def read_data(config_data):
 
 
     elif (source == "mongo"):
+        logger.debug(f"Creating plots from DB")
 
         uri = config_data.get("uri")
-        db_name = config_data.get("database")
-        table_name = config_data.get("table")
 
-        #if not uri or not db_name or not table_name:
-        #    raise RuntimeError("Config for mongo lacks uri or database or table field")
-        
+        #Create the client
         client = DBManager(uri)
+        #Get mace entries
         mace_entries = client.read_from_db(
             conditions={},
             outputs=[
@@ -72,6 +70,7 @@ def read_data(config_data):
             ],
             collection_str="MACE_results"
         )
+        #Get DFT entries
         dft_entries = client.read_from_db(
             conditions={},
             outputs=[
@@ -83,11 +82,26 @@ def read_data(config_data):
             collection_str="DFT_data"
         )
 
+        #Get structure entries (where properties and results are stored)
+        structure_entries = client.read_from_db(
+            conditions={},
+            outputs=[
+                "lindemann",
+                "self_diffusion",
+                "debye",
+                "total_energy",
+                "defect_key"
+            ],
+            collection_str="structures"
+        )
+        logger.debug("Sucsesfully connected to collections in DB")
 
-
+        #Convert to list, for easy handling
         all_mace_entries = list(mace_entries.values())
         all_dft_entries = list(dft_entries.values())
-        print(all_dft_entries)
+        all_structure_entries = list(structure_entries.values())
+
+
         final_data = []
         for mace_entry in all_mace_entries:
             def_id = mace_entry["defect_key"]
@@ -100,7 +114,16 @@ def read_data(config_data):
                 if dft_ent["defect_key"] == def_id:
                     matching_dft.append(dft_ent)
 
+            #Add structure data to mace data (Should be 1:1 match)
+            for struct_match in all_structure_entries:
+                if struct_match.get("defect_key") == def_id:
+                   mace_entry["lindemann"] = struct_match["lindemann"]
+                   mace_entry["energy"] = struct_match["total_energy"]
+                   mace_entry["self_diffusion"] = struct_match["self_diffusion"]
+                   mace_entry["debye"] = struct_match["debye"]
 
+            logger.debug("Added structure data to mace entries")
+            #Collect dft data (Different spins, not 1:1 match)
             for dft_entry in matching_dft:
                 mace_copy = mace_entry.copy()
                 # Extract fields we need
@@ -109,6 +132,7 @@ def read_data(config_data):
                 mace_copy["DefectInfo"] = {"defect_type" : dft_entry.get("defect_type")}
                 mace_copy["spin"] = dft_entry.get("spin")
                 final_data.append(mace_copy)
+            logger.debug("Added DFT data to entries")
                 
         for entry in final_data:
             #Fix some data
@@ -117,8 +141,7 @@ def read_data(config_data):
             entry["DefectInfo"]["defect_size"] = get_def_size(def_type)
             entry["DefectInfo"]["vacancy"] = get_vacancy(def_type)
 
-        print(f"Found {len(all_mace_entries)} entries")
-        print(f"Found total {len(final_data)} data points (spins incl.)")
+        logger.debug(f"Sucsesfully created {len(final_data)} data points.")
         return final_data
 
 

@@ -25,16 +25,16 @@ def make_plot(plot_name, plot_info, sim_data):
     """
 
 
-    #try:
-    plot_func = valid_plot(plot_info.get("type"))
+    try:
+        plot_func = valid_plot(plot_info.get("type"))
 
-    plot_func(plot_name, plot_info,sim_data)
+        plot_func(plot_name, plot_info,sim_data)
 
 
 
-    #except Exception as e:
-        #print(f"Could not plot {plot_name} due to: {str(e)}")
-        #logger.debug(f"Could not plot {plot_name} due to: {str(e)}")
+    except Exception as e:
+        print(f"Could not plot {plot_name} due to: {str(e)}")
+        logger.debug(f"Could not plot {plot_name} due to: {str(e)}")
 
 
 def valid_plot(plot_type):

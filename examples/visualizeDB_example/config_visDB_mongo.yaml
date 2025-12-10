@@ -10,10 +10,15 @@ plots:
     type: "heatmap"
     x: "interstitial"
     y: "substitution"
-  plot_3_defect: #To get sub-sub. Dont think we have int-int
-    type: "heatmap"
-    x: "combined"
-    y: "combined"
+  #plot_3_defect: #To get sub-sub. Dont think we have int-int
+  #  type: "heatmap"
+  #  x: "combined"
+  #  y: "combined"
   plot_4_defect: #To get sub-sub. Dont think we have int-int
     type: "sub-sub"
     average: False
+  plot_scatt:
+    type: scatter
+    x: lindemann
+    y: self_diffusion
+    z: debye

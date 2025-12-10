@@ -24,8 +24,9 @@ def get_label_name(property):
         (str): The property in nice label format.
     """
     labels = {"MSD": "Means square displacement", "temperature": "Temperapure (K)",
-              "Lindeman":"Lindeman",
-              "self_diff":"Self diffusion", "energy": "Energy"}
+              "lindemann":"Lindeman",
+              "self_diffusion":"Self diffusion", "total_energy": "Energy (eV)",
+              "debye" : "Debye temperature (K)"}
 
     prop_label = labels.get(property)
 
@@ -83,7 +84,6 @@ def single_defect_plot(plot_name, plot_data, sim_data):
      "substitution" : {"element" : [], "energy" : [], "vacancy" : [], "spin" : []}}
     logger.debug("Start to loop trough simulations")
 
-    how_many_data_points = 0
 
     for sim in sim_data:
         #Pick out single defect
@@ -107,7 +107,6 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 defect["energy"].append(sim.get("delta_E"))
                 defect["spin"].append(sim.get("spin"))
                 defect["vacancy"].append(True)
-                how_many_data_points+=1
                 continue
 
             if cat2 == "vacancy":
@@ -116,7 +115,6 @@ def single_defect_plot(plot_name, plot_data, sim_data):
                 defect["energy"].append(sim.get("delta_E"))
                 defect["spin"].append(sim.get("spin"))
                 defect["vacancy"].append(True)
-                how_many_data_points+=1
                 continue
 
         if amount == 1 and not vacant: #A single defect. Skip edge case of single vacant
@@ -126,7 +124,6 @@ def single_defect_plot(plot_name, plot_data, sim_data):
             defect["energy"].append(sim.get("delta_E"))
             defect["spin"].append(sim.get("spin"))
             defect["vacancy"].append(False)
-            how_many_data_points+=1
             continue
 
     logger.debug("Done looping over simulations.")
@@ -136,7 +133,6 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     #fig.tight_layout()
 
     #Fix axis of all subplots.
-    print(how_many_data_points)
     avg = plot_data.get("average")
     fix_y = plot_data.get("fix_y")
 
@@ -377,7 +373,7 @@ def sub_sub_plot(plot_name, plot_data, sim_data):
         ax1.set_yticks([0,10])
 
     data_points = []
-    how_many_points = 0
+
     for sim in sim_data:
         #Pick out sub-sub when SAME element
         amount = sim.get("DefectInfo")["defect_size"]
@@ -393,7 +389,7 @@ def sub_sub_plot(plot_name, plot_data, sim_data):
             data_points.append({"element" : el1,
                                 "Energy" : sim.get("delta_E"),
                                 "spin" : sim.get("spin")})
-            how_many_points+=1
+
             continue
 
     s_elements = [""] + ["Li","Na","K","Rb","Cs","Fr",
@@ -473,7 +469,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     #What to plot. Get from sim_data later
     prop1 = plot_data.get("x")
     prop2 = plot_data.get("y")
-    how_many_points = 0
+
     if not prop1 or not prop2:
         raise ValueError("Config is missing x or y field in config file")
 
@@ -494,7 +490,6 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                 data_points.append({"interstitial1" : el_sorted[0],
                                     "interstitial2" : el_sorted[1],
                                     "Energy" : sim.get("delta_E")})
-                how_many_points+=1
                 continue
 
             if cat1 == "substitution" and cat2 == "substitution":
@@ -502,7 +497,6 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                 data_points.append({"substitution1" : el_sorted[0],
                                     "substitution2" : el_sorted[1],
                                     "Energy" : sim.get("delta_E")})
-                how_many_points+=1
                 continue
             
             continue
@@ -511,7 +505,6 @@ def heatmap_plot(plot_name,plot_data,sim_data):
             data_points.append({cat1 : el1,
                                 cat2 : el2,
                                 "Energy" : sim.get("delta_E")})
-            how_many_points+=1
             continue
 
 
@@ -529,7 +522,6 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     dataframe = pd.DataFrame(data_points)
     #heatmap_data = dataframe.pivot(index="interstitial",
     #columns="substitution", values="Energy")
-    print(how_many_points)
     if prop1 == prop2:
         #So a single heatmap, that combines inter-inter with sub-sub
 
@@ -706,15 +698,15 @@ def doping_plot(plot_name, plot_data,sim_data):
             raise ValueError("Some simulation doesnt have doping field")
 
         if element not in sorted_data:
-            sorted_data[element] = {"formation_energy" : [], "avg_a" : [ ]}
+            sorted_data[element] = {"delta_E" : [], "avg_a" : [ ]}
 
-        if "formation_energy" not in sim:
+        if "delta_E" not in sim:
             raise ValueError("Some simulation doesnt have formation_energy field")
 
         if "avg_a" not in sim:
             raise ValueError("Some simulation doesnt have avg_a field")
 
-        sorted_data[element]["formation_energy"].append(sim["formation_energy"])
+        sorted_data[element]["delta_E"].append(sim["delta_E"])
         sorted_data[element]["avg_a"].append(sim["avg_a"])
 
     fig, axs = plt.subplots(nrows = 5, figsize = (10,12), sharex = False)
@@ -746,11 +738,11 @@ def doping_plot(plot_name, plot_data,sim_data):
     sc1 = None
 
     if "H" in sorted_data:
-        sc1 = ax1.scatter([1]*len(sorted_data["H"]["formation_energy"]),
-                    sorted_data["H"]["formation_energy"],
+        sc1 = ax1.scatter([1]*len(sorted_data["H"]["delta_E"]),
+                    sorted_data["H"]["delta_E"],
                     c = sorted_data["H"]["avg_a"])
         if avg:
-            avg_temp = plot_avg(ax1,1,sorted_data["H"]["formation_energy"])
+            avg_temp = plot_avg(ax1,1,sorted_data["H"]["delta_E"])
             avg_y.append(avg_temp)
             avg_x.append(1)
             if first_label:
@@ -759,11 +751,11 @@ def doping_plot(plot_name, plot_data,sim_data):
 
 
     if "He" in sorted_data:
-        sc1 = ax1.scatter([18]*len(sorted_data["He"]["formation_energy"]),
-                    sorted_data["He"]["formation_energy"],
+        sc1 = ax1.scatter([18]*len(sorted_data["He"]["delta_E"]),
+                    sorted_data["He"]["delta_E"],
                     c = sorted_data["He"]["avg_a"])
         if avg:
-            plot_avg(ax1,18,sorted_data["He"]["formation_energy"])
+            plot_avg(ax1,18,sorted_data["He"]["delta_E"])
             avg_y.append(avg_temp)
             avg_x.append(18)
             if first_label:
@@ -798,8 +790,8 @@ def doping_plot(plot_name, plot_data,sim_data):
                 avg_x = []
                 avg_y = []
             continue
-        lenght = len(sorted_data[key]["formation_energy"])
-        energy = sorted_data[key]["formation_energy"]
+        lenght = len(sorted_data[key]["delta_E"])
+        energy = sorted_data[key]["delta_E"]
         avg_a = sorted_data[key]["avg_a"]
 
         sc2 = ax2.scatter([value]*lenght, energy, c = avg_a)
@@ -840,8 +832,8 @@ def doping_plot(plot_name, plot_data,sim_data):
                 avg_x = []
                 avg_y = []
             continue
-        lenght = len(sorted_data[key]["formation_energy"])
-        energy = sorted_data[key]["formation_energy"]
+        lenght = len(sorted_data[key]["delta_E"])
+        energy = sorted_data[key]["delta_E"]
         avg_a = sorted_data[key]["avg_a"]
 
         sc3 = ax3.scatter([value]*lenght, energy, c = avg_a)
@@ -884,8 +876,8 @@ def doping_plot(plot_name, plot_data,sim_data):
                 avg_x = []
                 avg_y = []
             continue
-        lenght = len(sorted_data[key]["formation_energy"])
-        energy = sorted_data[key]["formation_energy"]
+        lenght = len(sorted_data[key]["delta_E"])
+        energy = sorted_data[key]["delta_E"]
         avg_a = sorted_data[key]["avg_a"]
 
         sc4 = ax4.scatter([value]*lenght, energy, c = avg_a)
@@ -929,8 +921,8 @@ def doping_plot(plot_name, plot_data,sim_data):
                 avg_x = []
                 avg_y = []
             continue
-        lenght = len(sorted_data[key]["formation_energy"])
-        energy = sorted_data[key]["formation_energy"]
+        lenght = len(sorted_data[key]["delta_E"])
+        energy = sorted_data[key]["delta_E"]
         avg_a = sorted_data[key]["avg_a"]
 
         sc5 = ax5.scatter([value]*lenght, energy, c = avg_a)
