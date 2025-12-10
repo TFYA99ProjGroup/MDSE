@@ -32,8 +32,9 @@ def validate_rm(file_path, sim_list, address):
         if jsonfile.suffix == ".jsonl":
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
-                for data in json.load(f):
-                    validate_db_document(data)
+                for line in f:
+                    for data in json.loads(line):
+                        validate_db_document(data)
 
     db_str = "test_db"
     collection_str = "test_collection"
