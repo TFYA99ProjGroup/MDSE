@@ -33,8 +33,7 @@ def validate_rm(file_path, sim_list, address):
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
                 for line in f:
-                    for data in json.loads(line):
-                        validate_db_document(data)
+                    validate_db_document(json.loads(line))
 
     db_str = "test_db"
     collection_str = "test_collection"
