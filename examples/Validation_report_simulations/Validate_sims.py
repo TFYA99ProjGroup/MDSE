@@ -162,9 +162,8 @@ def rel_error(value1,ref):
     return abs(value1 - ref)/abs(ref)*100
 
 if __name__ == "__main__":
-    main()
-    print(rel_error(3.48229663,  3.49))
-    print(rel_error(274.24, 310))
-    print(rel_error(320.26, 315.7))
-    print(rel_error(137.12, 178))
-    print(rel_error(213.20, 237))
+    #main()
+    print(rel_error(53.744,  48))
+    print(rel_error(65.384, 48))
+    print(rel_error(25.609, 30.53))
+    print(rel_error(46.751, 27))
