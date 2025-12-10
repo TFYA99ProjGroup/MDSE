@@ -83,6 +83,18 @@ class MongoDBEntry:
             logger.warning(f"MongoDBEntry type '{self.type}' is not 'structures'.")
 
     def to_dict(self) -> dict:
+        """
+        Converts the `MongoDBEntry` instance to a dictionary.
+
+        This method serializes the dataclass into a dictionary suitable for
+        insertion into a MongoDB collection or for JSON serialization. It
+        combines the standard OPTIMADE fields with the custom `mdse_fields`.
+
+        Returns
+        -------
+        dict
+            A dictionary representation of the `MongoDBEntry` instance.
+        """
         base = {
             "id": self.id, #must
             # "immutable_id": None, #optional (handled by alias of MongoDB's _id)
@@ -240,16 +252,11 @@ class DBManager:
         -------
         None
 
-        Notes
+        Note
         -----
         1. Scans the directory specified by `path` for `.json` files.
         2. Reads each file into a Python dictionary.
         3. Inserts all documents into the MongoDB collection.
-
-        Logs
-        ----
-        - Debug: Lists found files and their contents before insertion.
-        - Info: Number of successfully inserted documents.
         """
         db = self.client[db_str]
         examples = db[collection_str]

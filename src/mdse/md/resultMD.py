@@ -18,23 +18,27 @@ loaded from a `.traj` file using the `from_file` classmethod.
 Key functionalities include the calculation of:
 
 - **Structural and Transport Properties**:
+
   - Mean Squared Displacement (MSD)
   - Self-diffusion coefficient
   - Lindemann index
   - Nearest-neighbor distance
 
 - **Thermodynamic Properties**:
+
   - Isochoric heat capacity
   - Isobaric specific heat and enthalpy
   - Cohesive energy
   - Temperature, pressure, and energy evolution over time
 
 - **Vibrational Properties**:
+
   - Velocity Autocorrelation Function (VACF)
   - Density of States (DOS)
   - Debye temperature
 
 - **Mechanical Properties**:
+
   - Elastic constants (C11, C12, C44)
   - Bulk, Shear, and Young's moduli
 """
@@ -130,6 +134,7 @@ class ResultMD:
         -------
         tuple
             A tuple containing:
+
             - taus_fs (list): Time lags in femtoseconds.
             - MSD_at_tau_x (list): MSD values in the x-direction (Å²).
             - MSD_at_tau_y (list): MSD values in the y-direction (Å²).
@@ -378,9 +383,10 @@ class ResultMD:
         -------
         tuple
             A tuple of `(dos, omega)`:
-            - **dos** (numpy.ndarray): The 1D array of the normalized
+
+            - **dos** (numpy.ndarray): The 1D array of the normalized\
               density of states.
-            - **omega** (numpy.ndarray): The 1D array of the corresponding
+            - **omega** (numpy.ndarray): The 1D array of the corresponding\
               angular frequencies (in rad/s).
         """
         self.check_equilibrium()
@@ -457,8 +463,8 @@ class ResultMD:
         3. Finds the index where this cumulative integral first matches or \
             exceeds the target degrees of freedom (3N).
         4. The frequency at this index is taken as the Debye frequency.
-        5. Converts the Debye frequency to the Debye temperature using the \
-            relation
+        5. Converts the Debye frequency to the Debye temperature using the relation
+
             .. math::
                 \\Theta_D = \\frac{\\hbar \\omega_D}{k_B}.
 
@@ -573,7 +579,8 @@ class ResultMD:
         numpy.ndarray
             An array of enthalpy values for each frame in Joules.
 
-        Note:
+        Note
+        -------
             Developers, you need a calc to get the total energy. Btw,
             if you just began reading theese docs, calc stands for calculator.
         """
@@ -1177,6 +1184,7 @@ class ResultMD:
 
         This method attempts to identify the frame at which the system
         equilibrates by checking for three conditions in order:
+
         1. Total energy becomes constant.
         2. Temperature becomes constant.
         3. Total energy begins to oscillate around a stable mean.
@@ -1623,6 +1631,7 @@ class ResultMD:
         -------
         tuple
             A tuple containing:
+
             - cov_structure (str): The name of the crystal structure type.
             - list: The optimal lattice constants `[a, b, c]` in Angstroms.
         """

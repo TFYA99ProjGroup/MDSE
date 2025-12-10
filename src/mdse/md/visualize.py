@@ -178,6 +178,7 @@ class VisualizeResult:
         ----------
         energy_type : str, optional
             The type of energy to plot. Valid options are:
+
             - "kin": Kinetic energy (default)
             - "pot": Potential energy
             - "tot": Total energy

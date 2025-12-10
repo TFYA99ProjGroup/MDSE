@@ -51,7 +51,7 @@ def get_defect_cat(defect_name):
 
     Returns:
         tuple[str, str] or str: A tuple containing the defect category and the
-            associated element, or the string "BAD defect" if parsing fails.
+        associated element, or the string "BAD defect" if parsing fails.
     """
     if defect_name.startswith("Int_"):
         return "interstitial", defect_name[len("Int_"):]
@@ -66,6 +66,7 @@ def single_defect_plot(plot_name, plot_data, sim_data):
     """Generates a figure with four subplots for single defect formation energies.
 
     The figure consists of four scatter plots organized by defect type:
+
     1. Interstitial defects.
     2. Interstitial defects paired with a vacancy.
     3. Substitutional defects.
@@ -382,6 +383,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
     """Generates heatmaps for double defect formation energies.
 
     This function can generate two types of heatmaps based on the configuration:
+
     1. A combined heatmap for substitution-substitution (upper triangle) and
        interstitial-interstitial (lower triangle) defects. This also produces
        bar plots for the diagonal values.

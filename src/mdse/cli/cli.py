@@ -15,25 +15,30 @@ interface with multiple subcommands.
 The CLI supports a wide range of functionalities, including:
 
 - **Simulation Management**:
-  - `simulate`: Run molecular dynamics simulations from a YAML configuration file,
+
+  - `simulate`: Run molecular dynamics simulations from a YAML configuration file,\
     with support for MPI for parallel execution.
 
 - **Data Analysis**:
+
   - `msd`: Calculate and visualize the Mean Square Displacement.
   - `lindemann`: Calculate the Lindemann index.
   - `self_diff`: Calculate the self-diffusion coefficient.
   - `ish`: Calculate the isobaric specific heat.
 
 - **Database Interaction**:
+
   - `write_db`: Write simulation results from JSON files to a MongoDB database.
   - `visualize`: Generate plots from data stored in the database.
   - `outliers`: Detect and report outlier data points in the database.
 
 - **Visualization and File Management**:
+
   - `view`: Open and inspect crystal structure files (`.traj`) using ASE's GUI.
   - `clean`: Remove simulation trajectory files (`.traj`) from a directory.
 
 - **Documentation**:
+
   - `build_docs`: Build the project's Sphinx documentation locally.
   - `view_docs`: Open the locally built documentation in a web browser.
 
@@ -306,8 +311,8 @@ def parse_config(items):
     Parse a list of 'key=value' strings into a nested dictionary.
 
     Keys can be dot-separated to create nested structures. For example,
-    `["sim.steps=1000", "potential.name=EAM"]` becomes
-    `{'sim': {'steps': 1000}, 'potential': {'name': 'EAM'}}`.
+    ``["sim.steps=1000", "potential.name=EAM"]`` becomes
+    ``{'sim': {'steps': 1000}, 'potential': {'name': 'EAM'}}``.
 
     Parameters
     ----------
@@ -771,21 +776,27 @@ def main():
     """Main entry point for the MDSE command-line interface.
 
     This function orchestrates the CLI by:
+
     1. Creating the argument parser.
     2. Parsing the command-line arguments provided by the user.
-    3. Setting up the logging configuration (e.g., setting the level to DEBUG
+    3. Setting up the logging configuration (e.g., setting the level to DEBUG\
        if `--debug` is specified).
-    4. Dispatching the command to the appropriate handler function based on the
+    4. Dispatching the command to the appropriate handler function based on the\
        subcommand provided.
     5. If no subcommand is given, it prints the help message.
 
     Examples
     --------
     Running a simulation:
+
     >>> mdse simulate -f config.yml
+
     Viewing a trajectory file:
+
     >>> mdse view -f result.traj
+
     Cleaning up trajectory files:
+
     >>> mdse clean -f ./results --recursive
     """
     parser = create_parser()

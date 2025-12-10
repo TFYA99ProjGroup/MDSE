@@ -26,7 +26,7 @@ def setup_logging(debug=False):
 
     This function sets up two handlers for the root logger:
     1. A stream handler that prints logs to standard output.
-    2. A file handler that saves logs to a timestamped file in the `logs/`
+    2. A file handler that saves logs to a timestamped file in the `logs/`\
        directory (e.g., `logs/simulation_20250101_120000.log`).
 
     The logging level is set to `logging.DEBUG` if the `debug` flag is True,

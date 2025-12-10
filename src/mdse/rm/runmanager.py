@@ -12,6 +12,7 @@ a list of simulation configurations, distributing them for execution (with MPI
 support), and processing the results into a structured, database-friendly format.
 
 Key functionalities include:
+
 - Reading simulation configurations, including expanding configurations based on
   defect structures from an HTTK database.
 - Distributing simulation jobs across multiple processes using an MPI-based
@@ -269,6 +270,7 @@ class RunManager:
 
         This method implements a master/worker pattern to distribute simulation
         jobs.
+
         - **If MPI size >= 2**: The master (rank 0) sends job indices to worker
           ranks. Workers execute the simulation, process the results using
           `run_results`, and send the `MongoDBEntry` back to the master.
