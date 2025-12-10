@@ -5,6 +5,12 @@
 
 
 """
-Informative text
+Logging Configuration Package for MDSE.
+
+This package contains modules for setting up and configuring logging across
+the MDSE application.
+
+The primary module, `mdse.logging.logging_config`, provides the `setup_logging`
+function, which initializes the root logger with console and file handlers.
 """
 from . import logging_config as logging_config

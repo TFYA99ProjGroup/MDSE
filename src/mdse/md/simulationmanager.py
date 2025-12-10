@@ -4,6 +4,18 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 
+"""
+Manages the setup and execution of molecular dynamics simulations.
+
+This module provides the `SimulationManager` class, which is responsible for
+interpreting a configuration dictionary, setting up an ASE (Atomic Simulation
+Environment) Atoms object, initializing a calculator, and running the simulation
+according to the specified ensemble (NVE, NVT, or NPT).
+
+It acts as a high-level interface to ASE's dynamics and calculator functionalities,
+streamlining the process of running simulations from a structured configuration.
+"""
+
 import ase.io
 from ase import Atoms, units
 from asap3.md.verlet import VelocityVerlet
@@ -29,55 +41,19 @@ the_mace_calculator = None
 
 class SimulationManager:
     """
-    A utility class for setting up and running simple molecular dynamics (MD)
-    simulations with ASE (Atomic Simulation Environment).
+    Manages the setup and execution of a single molecular dynamics simulation.
 
-    This class allows you to construct atoms, molecules, or crystals from a
-    given chemical notation and lattice structure, initialize them with a
-    velocity distribution, and run MD simulations in the NVE, NVT or NPT ensemble.
+    This class interprets a configuration dictionary to set up and run a
+    simulation using ASE. It handles crystal creation (from bulk, file, or list),
+    calculator initialization (EMT, LennardJones, MACE), and execution of
+    dynamics in NVE, NVT, or NPT ensembles.
 
     Parameters
     ----------
-    chem_notation : str, optional
-        Chemical symbol or formula of the system to simulate (default: 'Cu').
-    structure : str, optional
-        Crystal structure type (e.g., 'sc', 'fcc', 'bcc'), used if no explicit
-        positions are provided (default: 'fcc').
-    positions : list or None, optional
-        List of explicit atomic positions. If provided, overrides `structure`
-        (default: None).
-    a : float, optional
-        Primary lattice constant (default: 3.6).
-    b : float or None, optional
-        Secondary lattice constant, only needed for non-cubic cells
-        (default: None).
-    c : float or None, optional
-        Tertiary lattice constant, only needed for non-cubic cells
-        (default: None).
-    cubic : bool, optional
-        Whether to enforce a cubic cell when only `a` is specified
-        (default: True).
-    temperature : float, optional
-        Initial temperature in Kelvin for velocity initialization (default:
-        800).
-    timestep : float, optional
-        Integration timestep in femtoseconds (default: 2).
-    length : int, optional
-        Total number of integration steps to run (default: 400).
-    traj_interval : int, optional
-        Interval (in steps) at which to write trajectory snapshots and report
-        energy (default: 10).
-    pressure_au : float, optional
-        Pressure constant for NPT measured in atomic units. 1 atm = 3.44e-9 au
-        (default: 3.85e-2).
-    thermo_time : float, optional
-        The characteristic time scale for the thermostat in ASE time units. Typically,
-        it is set to 100 times of timestep (default: 100 * units.fs).
-    baro_time : float, optional
-        The characteristic time scale for the barostat in ASE time units. Typically,
-        it is set to 1000 times of timestep (default: 1000 * units.fs).
-    Supercell: list, optional
-        Enables to create a supercrystal. Defaults to 1x1x1, which is [1,1,1].
+    config : dict
+        A dictionary containing the complete configuration for the simulation,
+        typically parsed from a YAML file. It should include sections for
+        'CRYSTAL', 'SIMULATION', and 'ENSAMBLE'.
 
     Attributes
     ----------
@@ -266,7 +242,10 @@ class SimulationManager:
 
     def view_super_crystal(self):
         """
-        Visualize a supercell of the constructed crystal (3x3x3 as default).
+        Visualize the constructed crystal structure.
+
+        If the crystal was created as a supercell, this will visualize the
+        entire supercell.
 
         Notes
         -----
@@ -300,6 +279,23 @@ class SimulationManager:
             ) from e
 
     def _check_keys(self, name, d, keys):
+        """
+        Check for the presence of required keys in a dictionary.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dictionary being checked (for error messages).
+        d : dict
+            The dictionary to check.
+        keys : list[str]
+            A list of keys that must be present in the dictionary.
+
+        Raises
+        ------
+        KeyError
+            If any of the specified keys are missing from the dictionary.
+        """
         missing = [k for k in keys if k not in d]
         if missing:
             raise KeyError(f"Missing keys in {name}: {missing}")
@@ -346,6 +342,7 @@ class SimulationManager:
         Supported calculators:
           - ``EMT``
           - ``LennardJones``
+          - ``MACE``
         """
         if self.calculator == "EMT":
             if self.calc_params.get("use_glass"):
@@ -386,18 +383,35 @@ class SimulationManager:
         return calculator
 
     def _attach_frame(self):
+        """
+        Append a copy of the current crystal state to the results trajectory.
+
+        This method is intended to be called by an ASE dynamics object at each
+        trajectory interval. It saves the current atomic configuration and, if
+        enabled, the potential energy.
+        """
         self.result.append(self.crystal.copy())
         if self.save_potential_energy:
             self.result[-1].info["pot_energy"] = self.crystal.get_potential_energy()
 
-    def _attach_outputs(self, dyn, print):
-        """Attach outputs to simulation."""
+    def _attach_outputs(self, dyn, print_output):
+        """
+        Attach trajectory and logging outputs to the dynamics object.
+
+        Parameters
+        ----------
+        dyn : ase.md.MDLogger
+            The ASE dynamics object to attach handlers to.
+        print_output : bool
+            If True, attach a handler to print energy and temperature updates
+            to the logger.
+        """
         symbols = "".join(set(self.crystal.get_chemical_symbols()))
         if self.create_trajectory:
             traj = Trajectory(f"{symbols}_{self.temperature}.traj", "w", self.crystal)
             dyn.attach(traj.write, interval=self.traj_interval)
 
-        if print:
+        if print_output:
             dyn.attach(self.print_energy, interval=self.traj_interval)
 
         dyn.attach(self._attach_frame, self.traj_interval)
@@ -405,7 +419,7 @@ class SimulationManager:
     def simulate(
         self,
         distribution=MaxwellBoltzmannDistribution,
-        print=False,
+        print_output=False,
     ):
         """
         Run a molecular dynamics simulation for the selected ensemble.
@@ -422,7 +436,7 @@ class SimulationManager:
         distribution : callable, optional
             Function used to initialize particle velocities.
             Defaults to ``MaxwellBoltzmannDistribution``.
-        print : bool, optional
+        print_output : bool, optional
             If ``True``, prints simulation output at runtime.
             Defaults to ``False``.
 
@@ -435,8 +449,6 @@ class SimulationManager:
         ------
         ValueError
             If ``self.ensamble`` is not one of ``NVE``, ``NVT``, or ``NPT``.
-        pymongo.errors.ServerSelectionTimeoutError
-            If a connection to the MongoDB server fails (depending on context).
         Exception
             Propagates other unexpected errors from lower-level methods.
 
@@ -451,11 +463,11 @@ class SimulationManager:
         - :meth:`simulate_npt`
         """
         if self.ensamble.lower() == "nve":
-            result = self.simulate_nve(distribution, print)
+            result = self.simulate_nve(distribution, print_output)
         elif self.ensamble.lower() == "nvt":
-            result = self.simulate_nvt(distribution, print)
+            result = self.simulate_nvt(distribution, print_output)
         elif self.ensamble.lower() == "npt":
-            result = self.simulate_npt(distribution, print)
+            result = self.simulate_npt(distribution, print_output)
         else:
             msg = f"Not supperted ensamble tried to be used: {self.ensamble} "
             "Please use one of following: NVE, NVT, NPT"
@@ -466,7 +478,7 @@ class SimulationManager:
     def simulate_nve(
         self,
         distribution=MaxwellBoltzmannDistribution,
-        print=False,
+        print_output=False,
     ):
         """
         Run a molecular dynamics simulation in the NVE ensemble using
@@ -474,13 +486,11 @@ class SimulationManager:
 
         Parameters
         ----------
-        calculator : str, optional
-            The ASE calculator to use for force and energy evaluation
-            (default: ``'EMT'``).
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
-
+        print_output : bool, optional
+            If ``True``, prints simulation output at runtime.
         Returns
         -------
         ResultMD
@@ -501,7 +511,7 @@ class SimulationManager:
 
             dyn = VelocityVerlet(self.crystal, timestep=self.timestep)
 
-            self._attach_outputs(dyn, print)
+            self._attach_outputs(dyn, print_output)
             dyn.run(self.length)
             logger.debug("Simulation done")
         except IOError as e:
@@ -516,7 +526,7 @@ class SimulationManager:
     def simulate_npt(
         self,
         distribution=MaxwellBoltzmannDistribution,
-        print=False,
+        print_output=False,
     ):
         """
         Run a molecular dynamics simulation in the NPT ensemble using
@@ -527,7 +537,8 @@ class SimulationManager:
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
-
+        print_output : bool, optional
+            If ``True``, prints simulation output at runtime.
         Returns
         -------
         ResultMD
@@ -551,7 +562,7 @@ class SimulationManager:
                 tdamp=self.thermo_time,
                 pdamp=self.baro_time,
             )
-            self._attach_outputs(dyn, print)
+            self._attach_outputs(dyn, print_output)
 
             dyn.run(self.length)
         except IOError as e:
@@ -566,7 +577,7 @@ class SimulationManager:
     def simulate_nvt(
         self,
         distribution=MaxwellBoltzmannDistribution,
-        print=False,
+        print_output=False,
     ):
         """
         Run a molecular dynamics simulation in the NVT ensemble using
@@ -577,7 +588,8 @@ class SimulationManager:
         distribution : callable, optional
             Function used to initialize velocities (default:
             ``MaxwellBoltzmannDistribution``).
-
+        print_output : bool, optional
+            If ``True``, prints simulation output at runtime.
         Returns
         -------
         ResultMD
@@ -599,7 +611,7 @@ class SimulationManager:
                 temperature_K=self.temperature,
                 tdamp=self.thermo_time,
             )
-            self._attach_outputs(dyn, print)
+            self._attach_outputs(dyn, print_output)
 
             dyn.run(self.length)
         except IOError as e:

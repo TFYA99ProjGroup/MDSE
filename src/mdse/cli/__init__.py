@@ -5,6 +5,14 @@
 
 
 """
-Informative text
+MDSE Command-Line Interface (CLI) Package.
+
+This package provides the entry point and command-line parsing logic for the
+MDSE (Molecular Dynamics Simulation Engine) application. It allows users to
+interact with the simulation, analysis, and data management functionalities
+from the terminal.
+
+The primary module, `mdse.cli.cli`, defines the main parser and all available
+subcommands, such as `simulate`, `view`, `clean`, and various analysis tools.
 """
 from . import cli as cli
