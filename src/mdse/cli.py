@@ -15,25 +15,30 @@ interface with multiple subcommands.
 The CLI supports a wide range of functionalities, including:
 
 - **Simulation Management**:
+
   - `simulate`: Run molecular dynamics simulations from a YAML configuration file,
     with support for MPI for parallel execution.
 
 - **Data Analysis**:
+
   - `msd`: Calculate and visualize the Mean Square Displacement.
   - `lindemann`: Calculate the Lindemann index.
   - `self_diff`: Calculate the self-diffusion coefficient.
   - `ish`: Calculate the isobaric specific heat.
 
 - **Database Interaction**:
+
   - `write_db`: Write simulation results from JSON files to a MongoDB database.
   - `visualize`: Generate plots from data stored in the database.
   - `outliers`: Detect and report outlier data points in the database.
 
 - **Visualization and File Management**:
+
   - `view`: Open and inspect crystal structure files (`.traj`) using ASE's GUI.
   - `clean`: Remove simulation trajectory files (`.traj`) from a directory.
 
 - **Documentation**:
+
   - `build_docs`: Build the project's Sphinx documentation locally.
   - `view_docs`: Open the locally built documentation in a web browser.
 
@@ -771,6 +776,7 @@ def main():
     """Main entry point for the MDSE command-line interface.
 
     This function orchestrates the CLI by:
+
     1. Creating the argument parser.
     2. Parsing the command-line arguments provided by the user.
     3. Setting up the logging configuration (e.g., setting the level to DEBUG
@@ -782,11 +788,17 @@ def main():
     Examples
     --------
     Running a simulation:
+
     >>> mdse simulate -f config.yml
+    
     Viewing a trajectory file:
+    
     >>> mdse view -f result.traj
+    
     Cleaning up trajectory files:
+    
     >>> mdse clean -f ./results --recursive
+    
     """
     parser = create_parser()
 
