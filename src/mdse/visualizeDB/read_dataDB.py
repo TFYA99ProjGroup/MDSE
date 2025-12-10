@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import logging
 from pymongo import MongoClient
+from mdse.rm.dbmanager import DBManager
 
 logger = logging.getLogger(__name__)
 
@@ -61,29 +62,46 @@ def read_data(config_data):
 
         #if not uri or not db_name or not table_name:
         #    raise RuntimeError("Config for mongo lacks uri or database or table field")
+        
+        client = DBManager(uri)
+        mace_entries = client.read_from_db(
+            conditions={},
+            outputs=[
+                "defect_key",
+                "formation_energy"
+            ],
+            collection_str="MACE_results"
+        )
+        dft_entries = client.read_from_db(
+            conditions={},
+            outputs=[
+                "defect_key",
+                "defect_formation_energy",
+                "spin",
+                "defect_type",
+            ],
+            collection_str="DFT_data"
+        )
 
-        client = MongoClient(uri)
-        db = client["materials_db"]
 
-        DFT_data = db["DFT_data"]
-        MACE_data = db["MACE_results"]
 
-        final_data = [] #[{id: 1, ...}, {id: 2,....}]
-
-        # Get all documents
-        all_mace_entries = []
-        for doc in MACE_data.find():
-            doc["_id"] = str(doc["_id"])  # optional, to make JSON-friendly
-            all_mace_entries.append(doc)
-
+        all_mace_entries = list(mace_entries.values())
+        all_dft_entries = list(dft_entries.values())
+        print(all_dft_entries)
+        final_data = []
         for mace_entry in all_mace_entries:
             def_id = mace_entry["defect_key"]
-
-            dft_entries = list(DFT_data.find({"defect_key" : def_id}))
             #Will get multiple entries, because diferent spins.
             #Compare Mace to multiple DFT-spins
 
-            for dft_entry in dft_entries:
+            #Find dft_entries that match
+            matching_dft = []
+            for dft_ent in all_dft_entries:
+                if dft_ent["defect_key"] == def_id:
+                    matching_dft.append(dft_ent)
+
+
+            for dft_entry in matching_dft:
                 mace_copy = mace_entry.copy()
                 # Extract fields we need
                 mace_copy["DFT_defect_formation_energy"] = dft_entry.get("defect_formation_energy")
@@ -102,20 +120,7 @@ def read_data(config_data):
         print(f"Found {len(all_mace_entries)} entries")
         print(f"Found total {len(final_data)} data points (spins incl.)")
         return final_data
-     
 
-
-        #db = client[db_name]
-        #table = db[table_name]
-
-        #Needs to return [ {sim_id : 1, energy : 2},  {sim_id : 2, energy : 4}] so
-        #list of dictionaries.
-        #Each dictionary is information about one result/simulation.
-        dum = False
-        if dum:
-            return table
-
-        raise RuntimeError("Not implemented for mongoDB yet")
 
 
 
