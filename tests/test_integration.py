@@ -25,11 +25,11 @@ def validate_rm(file_path, sim_list, address):
     rm = RunManager(sim_list)
     rm.run_simulations()
     jsonfiledir = file_path.parent.parent / "results"
-    json_files = list(jsonfiledir.glob("*.json"))
-    assert len(json_files) == 1, f"Expected 1 json files, found {len(json_files)}"
+    json_files = list(jsonfiledir.glob("*.jsonl"))
+    assert len(json_files) == 1, f"Expected 1 jsonl files, found {len(json_files)}"
 
     for jsonfile in jsonfiledir.iterdir():
-        if jsonfile.suffix == ".json":
+        if jsonfile.suffix == ".jsonl":
             assert jsonfile.exists(), f"File does not exist: {jsonfile}"
             with open(jsonfile, "r", encoding="utf-8") as f:
                 for data in json.load(f):
