@@ -43,14 +43,13 @@ def test_multicore(address):
 
 def validate_rm_without_runmanager(file_path, address):
     jsonfiledir = file_path.parent.parent / "results"
-    json_files = list(jsonfiledir.glob("*.json"))
-    assert len(json_files) == 1, f"Expected 1 json files, found {len(json_files)}"
+    json_files = list(jsonfiledir.glob("*.jsonl"))
+    assert len(json_files) == 1, f"Expected 1 jsonl files, found {len(json_files)}"
 
     for jsonfile in json_files:
         with open(jsonfile, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            for data_point in data:
-                validate_db_document(data_point)
+            for line in f:
+                validate_db_document(json.loads(line))
 
     db_str = "test_db"
     collection_str = "test_collection"
