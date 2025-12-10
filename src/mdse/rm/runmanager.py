@@ -14,7 +14,7 @@ from datetime import datetime
 from mdse.md.resultMD import ResultMD
 from pathlib import Path
 from httk4mdse.httk_reader import get_defects, save_defects, setup_db
-from mdse.parser.parse_yml import get_files
+from mdse.parser import get_files
 
 logger = logging.getLogger(__name__)
 

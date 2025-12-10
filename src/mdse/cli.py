@@ -15,10 +15,10 @@ import os
 import logging
 import webbrowser
 
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 from mdse.rm.runmanager import RunManager
 from mdse.rm.dbmanager import DBManager
-from mdse.logging.logging_config import setup_logging
+from mdse.logging import setup_logging
 from mdse.md.resultMD import ResultMD
 from mdse.visualizeDB.run_visDB import run_visualize_db
 

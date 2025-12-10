@@ -6,7 +6,7 @@
 
 from mdse.utils import transfer_chemical_potential, transfer_defect_formation_energy
 
-from mdse.logging.logging_config import setup_logging
+from mdse.logging import setup_logging
 
 setup_logging()
 

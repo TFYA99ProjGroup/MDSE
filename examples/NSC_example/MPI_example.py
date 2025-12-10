@@ -5,8 +5,8 @@
 
 
 from mdse.rm.runmanager import RunManager
-from mdse.parser.parse_yml import main_read
-from mdse.logging.logging_config import setup_logging
+from mdse.parser import main_read
+from mdse.logging import setup_logging
 import logging
 
 logger = logging.getLogger(__name__)

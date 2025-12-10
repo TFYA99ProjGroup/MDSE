@@ -7,7 +7,7 @@
 # Reads data from existing db, and calculates
 # defect formation energy for entries. Also calculates formation energy for host.
 
-from mdse.logging.logging_config import setup_logging
+from mdse.logging import setup_logging
 from mdse.rm.dbmanager import DBManager
 from mdse.rm.dbmanager import MongoDBEntry
 from mdse.utils import calc_formation_energy, defect_formation_energy, get_nelements

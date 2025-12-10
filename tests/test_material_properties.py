@@ -6,7 +6,7 @@
 
 import pytest
 from mdse.rm.runmanager import RunManager
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 from pathlib import Path
 
 

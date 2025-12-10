@@ -5,7 +5,7 @@
 
 
 from mdse.md.simulationmanager import SimulationManager
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 
 
 

@@ -31,7 +31,7 @@ lint.select = ["E", "F", "W"]
 lint.ignore = ["E203"]
 
 [project.scripts]
-mdse = "mdse.cli.cli:main"
+mdse = "mdse.cli:main"
 
 [tool.pytest.ini_options]
 addopts = ""

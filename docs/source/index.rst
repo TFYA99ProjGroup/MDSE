@@ -12,9 +12,8 @@ Welcome to the documentation for the `mdse` package.
    :maxdepth: 4
    :caption: Contents:
 
-   installation
    examples
-   license
+   licensing
    changelog
    gettingstarted
    tech_docs

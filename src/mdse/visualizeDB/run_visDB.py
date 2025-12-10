@@ -5,7 +5,7 @@
 
 
 from mdse.visualizeDB.read_dataDB import read_data
-from mdse.parser.parse_yml import read_yaml_simulations
+from mdse.parser import read_yaml_simulations
 from mdse.visualizeDB.make_plot import make_plot
 
 

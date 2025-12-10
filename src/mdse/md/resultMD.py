@@ -1309,9 +1309,9 @@ class ResultMD:
     def calc_lattice(self):
         """For conventional cell, find what lattice constants minimizes energy
 
-        **For cubic or triagonal: Use a EOS-fit
-        **For hexagonal or tetragonal: Use a quadratic fit
-        **For orthorhomic, monoclinic or triclinic: Already minimized
+        **For cubic or triagonal: Use a EOS-fit**
+        **For hexagonal or tetragonal: Use a quadratic fit**
+        **For orthorhomic, monoclinic or triclinic: Already minimized**
 
         returns:
             cov_structure(str): Name of the conventional cell structure

@@ -3,6 +3,73 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
+"""
+Module for parsing simulation configs.
+
+The simulation configuration files have a specific format that need to be followed, the structure looks like
+
+.. code-block:: YAML
+
+    [Name]:
+      CRYSTAL:
+        TYPE: [DATABASE, FILE or BULK]
+        Name: [name of material or sim]
+        Supercell: (optional)
+          - [x]
+          - [y]
+          - [z]
+        Filepath: [relative path from this file to crystal file or database] (only required for FILE and DATABASE)
+
+        [The following are only required for DATABSE]
+        Structure_folder: [path to generated structure files]
+        Query:
+          [key]: [value]
+
+        [The following are only required for BULK]
+        Structure: [fcc, bcc, etc.]
+        Lattice_a: [Å]
+        Lattice_b: [Å] (optional)
+        Lattice_c: [Å] (optional)
+        Cubic: [True/False cubic unitcell]
+
+      ENSAMBLE:
+        Ensamble: [NVT, NVE, NPT]
+        Temp: [temperature in K]
+        ThermoTime: [steps between thermostat use]
+      SIMULATION:
+        Timestep: [timestep in fs]
+        Length: [number of timesteps]
+        TrajInterval: [frequence of write]
+        Calculator: [MACE, LennardJones, EMT]
+        CalculatorParams:
+            [param]: [value] (see documentation of specific calculator)
+        Create_traj: [Whether to create a trajectory file for sim]
+      RESULT:
+        Properties:
+          - [material property or all]
+          - [prop]
+
+The Temp setting can also have a _list and _range extension which look like
+
+.. code-block:: python
+
+    Temp_list:
+      - [K]
+      - ...
+      .
+
+or
+
+.. code-block:: python
+
+    Temp_range:
+      start: [K]
+      stop: [K]
+      step: [stepsize]
+
+which create multiple simulations for each element in the list or range.
+
+"""
 
 import yaml
 import logging

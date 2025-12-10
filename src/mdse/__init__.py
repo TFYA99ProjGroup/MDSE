@@ -23,9 +23,3 @@ Subpackages
 
 For detailed documentation, see the submodules below.
 """
-
-from . import cli as cli
-from . import logging as logging
-from . import md as md
-from . import parser as parser
-from . import rm as rm

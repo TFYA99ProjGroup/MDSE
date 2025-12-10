@@ -7,7 +7,7 @@
 from mdse.md.resultMD import ResultMD
 from mdse.md.visualize import VisualizeResult
 from mdse.rm.runmanager import RunManager
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 
 def main():
 
