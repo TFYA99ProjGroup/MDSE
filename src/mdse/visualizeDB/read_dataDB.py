@@ -7,7 +7,6 @@
 import json
 from pathlib import Path
 import logging
-from pymongo import MongoClient
 from mdse.rm.dbmanager import DBManager
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ def read_data(config_data):
 
 
     elif (source == "mongo"):
-        logger.debug(f"Creating plots from DB")
+        logger.debug("Creating plots from DB")
 
         uri = config_data.get("uri")
 
@@ -127,13 +126,15 @@ def read_data(config_data):
             for dft_entry in matching_dft:
                 mace_copy = mace_entry.copy()
                 # Extract fields we need
-                mace_copy["DFT_defect_formation_energy"] = dft_entry.get("defect_formation_energy")
-                mace_copy["delta_E"] = mace_copy["DFT_defect_formation_energy"] - mace_copy["formation_energy"]
+                mace_copy["DFT_defect_formation_energy"] =(
+                dft_entry.get("defect_formation_energy"))
+                mace_copy["delta_E"] = (mace_copy["DFT_defect_formation_energy"]
+                                        - mace_copy["formation_energy"])
                 mace_copy["DefectInfo"] = {"defect_type" : dft_entry.get("defect_type")}
                 mace_copy["spin"] = dft_entry.get("spin")
                 final_data.append(mace_copy)
             logger.debug("Added DFT data to entries")
-                
+
         for entry in final_data:
             #Fix some data
             def_type = entry["DefectInfo"]["defect_type"]

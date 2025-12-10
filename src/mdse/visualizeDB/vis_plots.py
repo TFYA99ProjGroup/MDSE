@@ -363,7 +363,7 @@ def sub_sub_plot(plot_name, plot_data, sim_data):
 
     avg = plot_data.get("average")
     fix_y = plot_data.get("fix_y")
-    
+
 
     ax1.set_xlabel("Element")
     ax1.set_ylabel("ΔE (eV)")
@@ -498,7 +498,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
                                     "substitution2" : el_sorted[1],
                                     "Energy" : sim.get("delta_E")})
                 continue
-            
+
             continue
 
         if {cat1,cat2} == {"substitution", "interstitial"}:
