@@ -6,7 +6,6 @@
 
 from mdse.md.simulationmanager import SimulationManager
 import logging
-from mpi4py import MPI as _TrueMPI
 import uuid
 import math
 from mdse.rm.dbmanager import MongoDBEntry, DBManager
@@ -20,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 _FORCE_NO_MPI = False  # Set to True to simulate missing MPI backend for testing
 try:
+    from mpi4py import MPI as _TrueMPI
     comm = _TrueMPI.COMM_WORLD
     _ = comm.Get_rank()
     MPI = _TrueMPI
@@ -99,8 +99,8 @@ class RunManager:
             for config in self.simulation_config:
                 item = list(config.values())[0]
                 logger.debug(f"Adding {item} as a simulation.")
-                self.md_simulations.append(SimulationManager(item))
-
+                # self.md_simulations.append(SimulationManager(item))
+                self.md_simulations.append(item)
         logger.debug("RunManager done innit bruv!")
 
     def _read_from_sqlite(self):
@@ -210,15 +210,16 @@ class RunManager:
             logger.warning(
                 "MPI size < 2. Now the poor Master has to do all the work alone!"
             )
-            for index, sim in enumerate(self.md_simulations):
+            for index, sim_conf in enumerate(self.md_simulations):
+                sim = SimulationManager(sim_conf)
                 if sim is None:
                     logger.error("Simulation is None, skipping")
                     continue
                 res = sim.simulate()
                 config = self.simulation_config[index]
                 entry = self.run_results(res, config)
-                self.MongoDBentriesAsJson.append(entry.to_dict())
-            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
+                # self.MongoDBentriesAsJson.append(entry.to_dict())
+                DBManager.create_json_from_mongodbentries([entry.to_dict()])
             # Insert single core execution here if desired
             return
 
@@ -237,25 +238,27 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
-                logger.debug(f"[Master] Received {msg} from worker {src}")
+                logger.info(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
                     if msg is None:
                         logger.warning(f"[Master] Worker {src} reported no" +
                                         "entry for last job (skipped/failed).")
                     elif type(msg) is MongoDBEntry:
-                        self.MongoDBentriesAsJson.append(msg.to_dict())
+                        # self.MongoDBentriesAsJson.append(msg.to_dict())
+                        DBManager.create_json_from_mongodbentries([msg.to_dict()])
+
                     if jobs:
                         job = jobs.pop(0)
-                        logger.debug(f"[Master] Sent new job {job} to worker {src}")
+                        logger.info(f"[Master] Sent new job {job} to worker {src}")
                         comm.send(job, dest=src, tag=TAG_WORK)
                     else:
                         logger.debug(f"[Master] Sent stop signal to worker {src}")
                         comm.send(None, dest=src, tag=TAG_STOP)
                         finished_workers += 1
 
-            logger.debug("[Master] All jobs completed.")
-            DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
+            logger.info("[Master] All jobs completed.")
+            # DBManager.create_json_from_mongodbentries(self.MongoDBentriesAsJson)
         else:
             # Initialize worker by notifying master
             comm.send("", dest=0, tag=TAG_DONE)
@@ -266,7 +269,8 @@ class RunManager:
                 if tag == TAG_WORK:
                     logger.debug(f"[Worker {rank}] Received job {job}")
                     ########## Run the simulation here! #########
-                    sim = self.md_simulations[job]
+                    # sim = self.md_simulations[job]
+                    sim = SimulationManager(self.md_simulations[job])
                     if sim is None:
                         logger.error("Simulation is None, skipping")
                         comm.send(None, dest=0, tag=TAG_DONE)
@@ -276,23 +280,8 @@ class RunManager:
                     config = self.simulation_config[job]
                     logger.debug(f"config::: {config}")
                     database_entry = self.run_results(res, config)
-                    logger.debug(f"[Worker {rank}] Completed job {job}")
+                    logger.info(f"[Worker {rank}] Completed job {job}")
                     comm.send(database_entry, dest=0, tag=TAG_DONE)
                 elif tag == TAG_STOP:
                     logger.debug(f"[Worker {rank}] Received stop signal from master.")
                     break
-
-    def run_nvt_simulations(self):
-        """Executes all simulations managed by this RunManager."""
-        for sim in self.md_simulations:
-            sim.simulate_nvt()
-
-    def run_nve_simulations(self):
-        """Executes all simulations managed by this RunManager."""
-        for sim in self.md_simulations:
-            sim.simulate_nve()
-
-    def run_npt_simulations(self):
-        """Executes all simulations managed by this RunManager."""
-        for sim in self.md_simulations:
-            sim.simulate_npt()

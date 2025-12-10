@@ -1,0 +1,25 @@
+Simulation:
+  CRYSTAL:
+    TYPE: DATABASE
+    Name: diamondsqliterunde
+    Filepath: ../../defects.sqlite
+    Structure_folder: "./defect"
+    Query:
+      charge: 0
+      hulldistance: 1e-5
+  ENSAMBLE:
+    Ensamble: NVT
+    Temp: 1
+    ThermoTime: 5
+  SIMULATION:
+    Timestep: 1 #fs
+    Length: 5
+    TrajInterval: 1
+    Calculator: MACE
+    CalculatorParams: 
+      model_paths: ../models/mace-mpa-0-small.model
+      device: cpu
+    Create_traj: True
+  RESULT:
+    Properties:
+      - all

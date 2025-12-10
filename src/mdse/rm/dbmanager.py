@@ -144,26 +144,40 @@ class DBManager:
         except ServerSelectionTimeoutError as e:
             logger.error(f"MongoClient is not connected: {e}")
 
+    # @staticmethod
+    # def create_json_from_mongodbentries(entries: list[MongoDBEntry]):
+    #     path = Path("results/all_results_v2.json")
+    #     path.parent.mkdir(parents=True, exist_ok=True)
+
+    #     if path.exists():
+    #         with open(path, "r", encoding="utf-8") as f:
+    #             try:
+    #                 existing_docs = json.load(f)
+    #             except json.JSONDecodeError:
+    #                 existing_docs = []
+    #     else:
+    #         existing_docs = []
+
+    #     all_docs = existing_docs + entries
+
+    #     with open(path, "w", encoding="utf-8") as f:
+    #         json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
+    #                   if hasattr(o, 'isoformat') else o)
+    #     return
+
     @staticmethod
     def create_json_from_mongodbentries(entries: list[MongoDBEntry]):
-        path = Path("results/all_results_v2.json")
+        path = Path("results/all_results_v2.jsonl")
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                try:
-                    existing_docs = json.load(f)
-                except json.JSONDecodeError:
-                    existing_docs = []
-        else:
-            existing_docs = []
+        with open(path, "a", encoding="utf-8") as f:
+            for entry in entries:
+                json_str = json.dumps(
+                    entry,
+                    default=lambda o: o.isoformat() if hasattr(o, "isoformat") else o
+                )
+                f.write(json_str + "\n")  # append line
 
-        all_docs = existing_docs + entries
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
-                      if hasattr(o, 'isoformat') else o)
-        return
 
     def write_jsonfiles_to_db(
         self, path, db_str="materials_db", collection_str="structures"
@@ -173,7 +187,7 @@ class DBManager:
         `structures`.
 
         The method:
-        1. Scans the directory specified by `path` for `.json` files.
+        1. Scans the directory specified by `path` for `.jsonl` files.
         2. Reads each file into a Python dictionary.
         3. Inserts all documents into the MongoDB collection.
 
@@ -185,12 +199,13 @@ class DBManager:
         db = self.client[db_str]
         examples = db[collection_str]
         logger.debug(path)
-        json_files = glob.glob(f"{path}/*.json")
+        json_files = glob.glob(f"{path}/*.jsonl")
         logger.debug(json_files)
         all_docs = []
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
-                for data in json.load(f):
+                for line in f:
+                    data = json.loads(line)
                     data["last_modified"] = datetime.fromisoformat(
                         data["last_modified"]
                     )
