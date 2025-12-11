@@ -5,7 +5,14 @@
 
 
 """
-Informative text
+A tool for visualizing simulation data from various sources.
+
+This package provides a framework for generating plots from simulation data stored
+in sources like JSON files or MongoDB databases. It is driven by a YAML
+configuration file that specifies the data source and the desired plots.
+
+The main entry point is `run_visualize_db`, which orchestrates the entire
+process of data reading and plot generation.
 """
 
 from . import make_plot as make_plot
