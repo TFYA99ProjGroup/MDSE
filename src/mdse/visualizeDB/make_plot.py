@@ -13,7 +13,7 @@ function based on the configuration and executes it with the provided data.
 
 import logging
 from mdse.visualizeDB.vis_plots import (scatter_plot, doping_plot,
-heatmap_plot, single_defect_plot)
+heatmap_plot, single_defect_plot, sub_sub_plot)
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,8 @@ def valid_plot(plot_type):
 
     available_types = {"scatter" : scatter_plot, "doping" : doping_plot,
                        "heatmap" : heatmap_plot,
-                       "single" : single_defect_plot}
+                       "single" : single_defect_plot,
+                       "sub-sub" : sub_sub_plot}
 
     if plot_type not in available_types:
         raise ValueError("The plot is not supported")

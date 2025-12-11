@@ -7,6 +7,7 @@
 import pytest
 from mdse.rm.runmanager import RunManager
 from mdse.parser import main_read
+from mdse.md.simulationmanager import SimulationManager as SM
 from pathlib import Path
 
 
@@ -31,9 +32,9 @@ def results():
 
     rm = RunManager(config)
 
-    nve = rm.md_simulations[0].simulate()
-    nvt = rm.md_simulations[1].simulate()
-    npt = rm.md_simulations[2].simulate()
+    nve = SM(rm.md_simulations[0]).simulate()
+    nvt = SM(rm.md_simulations[1]).simulate()
+    npt = SM(rm.md_simulations[2]).simulate()
 
     return nve, nvt, npt
 

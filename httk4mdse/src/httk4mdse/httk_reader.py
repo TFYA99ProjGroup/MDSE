@@ -85,14 +85,27 @@ def get_defects(store, **query):
     else:
         search_defect_cell = search.variable(DefectCell)
         search_defect_info = search.variable(DefectInfo)
+        search_screen_cell = search.variable(ScreenCell)
+        search_hull_distance = search.variable(HullDistance)
 
         search.add(search_defect_info.key == search_defect_cell.key)
+        search.add(search_defect_info.key == search_screen_cell.defect_key)
+        search.add(search_defect_info.key == search_hull_distance.defect_key)
+
+        search.add(search_screen_cell.charge == search_hull_distance.defect_charge)
+        search.add(search_screen_cell.spin == search_hull_distance.defect_spin)
 
         if query.get("key") is not None:
             search.add(search_defect_cell.key == str(query["key"]))
 
         if query.get("priority") is not None:
             search.add(search_defect_cell.priority == query["priority"])
+
+        if query.get("charge") is not None:
+            search.add(search_screen_cell.charge == query["charge"])
+
+        if query.get("hulldistance") is not None:
+            search.add(search_hull_distance.min_distance < query["hulldistance"])
 
         search.output(search_defect_cell.key, "key")
         search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
@@ -219,7 +232,7 @@ def get_defect_formation_energy(store, **query):
 
         .. math::
 
-           E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} - \\sum_i n_i \\mu_i
+            E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} + \\sum_i n_i \\mu_i
 
       5. Stores the resulting data in a MongoDB collection named "DFT data".
 
@@ -248,6 +261,8 @@ def get_defect_formation_energy(store, **query):
     if query.get("key") is not None:
         search.add(search_defect_info.key == query["key"])
 
+
+
     search.output(search_defect_info.key, "key")
     search.output(search_defect_info.defect_stoichiometry, "stoichiometry")
     search.output(search_screen_result.total_energy_coarse, "tot_energy_defect")
@@ -263,7 +278,7 @@ def get_defect_formation_energy(store, **query):
 
         chem_pot = calc_chem_pot(store, stoichiometry)
 
-        defect_formation_energy = match[2] - match[3] - chem_pot
+        defect_formation_energy = match[2] - match[3] + chem_pot
 
         dft_data[str(match[0]) + "_" + str(match[4])] = {
             "defect_key": str(match[0]),
@@ -305,7 +320,7 @@ def calc_chem_pot(store, stoichiometry):
     """
     search = store.searcher()
     pattern = r"([A-Za-z]+):(-?\d+)"
-    matches = {elem: -int(count) for elem, count in re.findall(pattern, stoichiometry)}
+    matches = {elem: int(count) for elem, count in re.findall(pattern, stoichiometry)}
 
     search_chem_pot = search.variable(ChemicalPotential)
     search.add(search_chem_pot.material.is_in(*matches.keys()))

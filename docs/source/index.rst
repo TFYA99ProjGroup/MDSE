@@ -23,6 +23,7 @@ Welcome to the documentation for the `mdse` package.
    :recursive:
 
    mdse
+   httk4mdse
 
 Indices and tables
 ==================

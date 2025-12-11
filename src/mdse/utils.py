@@ -41,11 +41,12 @@ def defect_formation_energy(db):
         db (DBManager): An active DBManager instance connected to the database.
     """
     defects = db.read_from_db(
-        {"host_material": "diamond"},
-        outputs=[
+        {"defect_host_material": "diamond"},
+       outputs=[
             "id",
             "defect_key",
             "defect_stoichiometry",
+            "defect_host_material",
             "host_material",
             "total_energy",
         ],
@@ -61,16 +62,18 @@ def defect_formation_energy(db):
         logger.debug(f"Defect stoichiometry: {defect_stoichiometry}")
 
         element_counts = get_nelements(defect_stoichiometry)
-        element_counts = {elem: -count for elem, count in element_counts.items()}
-
+        element_counts = {elem: count for elem, count in element_counts.items()}
         E_DF, total_chem_pot = calc_formation_energy(E_Host, element_counts, db, E_D)
 
         md_entries[entry["id"]] = {
             "id": entry["id"],
             "defect_key": entry["defect_key"],
-            "formation_energy": E_DF,
+            "defect_stoichiometry" : defect_stoichiometry,
             "total_chemical_potential": total_chem_pot,
-        }
+            "tot_energy_defect" : E_D,
+            "tot_energy_host" : E_Host,
+            "formation_energy": E_DF,
+       }
 
     db.clear_collection("MACE_results")
     db.write_dict_to_db(md_entries, collection_str="MACE_results")
@@ -80,10 +83,15 @@ def calc_formation_energy(host_energy, element_counts, db, defect_energy=0):
     """Calculates the formation energy for a given defect.
 
     The formation energy is calculated using the formula:
-    E_DF = E_D - E_Host + sum(n_i * mu_i)
-    where E_D is the energy of the defect system, E_Host is the energy of the
-    pristine host system, n_i is the number of atoms of element i added or
-    removed, and mu_i is the chemical potential of element i.
+
+    .. math::
+
+        E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} + \\sum_i n_i \\mu_i
+    
+    where :math:`E_\\mathrm{defect}` is the energy of the defect system,
+    :math:`E_\\mathrm{Host}` is the energy of the pristine host system,
+    :math:`n_i` is the number of atoms of element i added or removed,
+    and :math:`\\mu_i` is the chemical potential of element i.
 
     Args:
         host_energy (float): The total energy of the host material.

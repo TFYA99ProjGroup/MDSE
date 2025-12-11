@@ -17,6 +17,7 @@ chemical, and calculated physical properties, into a MongoDB instance, making
 them queryable and accessible for further analysis or sharing via an OPTIMADE
 API.
 """
+
 import glob
 import bson
 import json
@@ -29,6 +30,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class MongoDBEntry:
     """
@@ -40,6 +42,7 @@ class MongoDBEntry:
     dictionary for custom simulation-specific data.
     Fields are categorized into 'must', 'should', and 'optional' according to OPTIMADE.
     """
+
     # Must fields
     id: str
     type: str = "structures"
@@ -96,11 +99,10 @@ class MongoDBEntry:
             A dictionary representation of the `MongoDBEntry` instance.
         """
         base = {
-            "id": self.id, #must
+            "id": self.id,  # must
             # "immutable_id": None, #optional (handled by alias of MongoDB's _id)
-            "type": self.type, #must
-            "structure_features": self.structure_features, #must, but can be empty list
-
+            "type": self.type,  # must
+            "structure_features": self.structure_features,  # must, but can be empty list
             # Should fields, very good ideas to have
             "last_modified": self.last_modified,
             "elements": self.elements,
@@ -116,16 +118,12 @@ class MongoDBEntry:
             "nsites": self.nsites,
             "species_at_sites": self.species_at_sites,
             "species": self.species,
-
             # Optional fields, but good if queryable
             "chemical_formula_hill": self.chemical_formula_hill,
-            "space_group_symmetry_operations_xyz":
-                self.space_group_symmetry_operations_xyz,
+            "space_group_symmetry_operations_xyz": self.space_group_symmetry_operations_xyz,
             "space_group_symbol_hall": self.space_group_symbol_hall,
-            "space_group_symbol_hermann_mauguin":
-                self.space_group_symbol_hermann_mauguin,
-            "space_group_symbol_hermann_mauguin_extended":
-                self.space_group_symbol_hermann_mauguin_extended,
+            "space_group_symbol_hermann_mauguin": self.space_group_symbol_hermann_mauguin,
+            "space_group_symbol_hermann_mauguin_extended": self.space_group_symbol_hermann_mauguin_extended,
             "space_group_it_number": self.space_group_it_number,
             "assemblies": self.assemblies,
         }
@@ -146,8 +144,12 @@ class MongoDBEntry:
         path = Path(f"results/{self.id}.json")
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=2, default=lambda o: o.isoformat()
-                      if hasattr(o, 'isoformat') else o)
+            json.dump(
+                self.to_dict(),
+                f,
+                indent=2,
+                default=lambda o: o.isoformat() if hasattr(o, "isoformat") else o,
+            )
 
 
 class DBManager:
@@ -191,6 +193,27 @@ class DBManager:
         except ServerSelectionTimeoutError as e:
             logger.error(f"MongoClient is not connected: {e}")
 
+    # @staticmethod
+    # def create_json_from_mongodbentries(entries: list[MongoDBEntry]):
+    #     path = Path("results/all_results_v2.json")
+    #     path.parent.mkdir(parents=True, exist_ok=True)
+
+    #     if path.exists():
+    #         with open(path, "r", encoding="utf-8") as f:
+    #             try:
+    #                 existing_docs = json.load(f)
+    #             except json.JSONDecodeError:
+    #                 existing_docs = []
+    #     else:
+    #         existing_docs = []
+
+    #     all_docs = existing_docs + entries
+
+    #     with open(path, "w", encoding="utf-8") as f:
+    #         json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
+    #                   if hasattr(o, 'isoformat') else o)
+    #     return
+
     @staticmethod
     def create_json_from_mongodbentries(entries: list[dict]) -> None:
         """
@@ -209,26 +232,23 @@ class DBManager:
         logger.debug("Creating/appending to all_results_v2.json")
 
         path = Path("results/all_results_v2.json")
+
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                try:
-                    existing_docs = json.load(f)
-                except json.JSONDecodeError:
-                    existing_docs = []
-        else:
-            existing_docs = []
+        with open(path, "a", encoding="utf-8") as f:
+            for entry in entries:
+                json_str = json.dumps(
+                    entry,
+                    default=lambda o: o.isoformat() if hasattr(o, "isoformat") else o,
+                )
+                f.write(json_str + "\n")  # append line
 
-        all_docs = existing_docs + entries
-
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(all_docs, f, indent=2, default=lambda o: o.isoformat()
-                      if hasattr(o, 'isoformat') else o)
-        return
-
-    def write_jsonfiles_to_db(self, path: str, db_str: str = "materials_db",
-                              collection_str: str = "structures") -> None:
+    def write_jsonfiles_to_db(
+        self,
+        path: str,
+        db_str: str = "materials_db",
+        collection_str: str = "structures",
+    ) -> None:
         """
         Uploads all JSON files from a specified directory to a MongoDB collection.
 
@@ -261,12 +281,13 @@ class DBManager:
         db = self.client[db_str]
         examples = db[collection_str]
         logger.debug(path)
-        json_files = glob.glob(f"{path}/*.json")
+        json_files = glob.glob(f"{path}/*.jsonl")
         logger.debug(json_files)
         all_docs = []
         for path in json_files:
             with open(path, "r", encoding="utf-8") as f:
-                for data in json.load(f):
+                for line in f:
+                    data = json.loads(line)
                     data["last_modified"] = datetime.fromisoformat(
                         data["last_modified"]
                     )
@@ -278,8 +299,12 @@ class DBManager:
         else:
             logger.info("No documents to insert")
 
-    def write_dict_to_db(self, data: dict, db_str: str = "materials_db",
-                         collection_str: str = "structures") -> None:
+    def write_dict_to_db(
+        self,
+        data: dict,
+        db_str: str = "materials_db",
+        collection_str: str = "structures",
+    ) -> None:
         """
         Inserts a dictionary of documents into a specified MongoDB collection.
 
@@ -369,8 +394,9 @@ class DBManager:
                 return None
         return val
 
-    def read_from_db(self, conditions: dict, outputs: list[str],
-                     collection_str: str = "structures") -> dict:
+    def read_from_db(
+        self, conditions: dict, outputs: list[str], collection_str: str = "structures"
+    ) -> dict:
         """
         Query the MongoDB collection and extract selected fields.
 
@@ -458,17 +484,14 @@ class DBManager:
         db = self.client["materials_db"]
         coll = db[collection_str]
 
-        cursor = coll.find(
-            {field: {"$exists": True}},
-            {field: 1, "_id": 0}
-        )
+        cursor = coll.find({field: {"$exists": True}}, {field: 1, "_id": 0})
 
         values = []
         for doc in cursor:
             # Extract nested value using your existing helper
             val = self._get_nested(doc, field)
             if isinstance(val, list):
-                values.extend(val)     # flatten lists
+                values.extend(val)  # flatten lists
             else:
                 values.append(val)
 
@@ -499,8 +522,12 @@ class DBManager:
         result = collection.delete_many({})
         logger.info(f"Deleted {result.deleted_count} entries.")
 
-    def detect_outliers(self, properties_to_check=None, db_client="materials_db",
-        db_collection="structures", std_dev_threshold=2.0,
+    def detect_outliers(
+        self,
+        properties_to_check=None,
+        db_client="materials_db",
+        db_collection="structures",
+        std_dev_threshold=2.0,
     ):
         """
         Detects outliers in the database based on specified properties.
@@ -537,13 +564,16 @@ class DBManager:
 
         if properties_to_check is None:
             properties_to_check = [
-                "lindemann", "self_diffusion", "isobaric_specific_heat",
-                "debye", "total_energy"
+                "lindemann",
+                "self_diffusion",
+                "isobaric_specific_heat",
+                "debye",
+                "total_energy",
             ]
             logger.info(
                 f"properties_to_check not specified, using defaults: "
                 f"{properties_to_check}"
-                )
+            )
 
         logger.debug(f"Properties to check: {properties_to_check}")
         logger.debug(f"Standard deviation threshold: {std_dev_threshold}")
@@ -586,10 +616,9 @@ class DBManager:
                             {"$arrayElemAt": [{"$split": ["$id", "_"]}, 1]},
                         ]
                     },
-                    "doc": "$$ROOT"
+                    "doc": "$$ROOT",
                 }
             },
-
             # Stage 2: Group by "base_name" and calculate stats for each property.
             # This groups all documents with the same "base_name" together.
             # For each group:
@@ -608,13 +637,16 @@ class DBManager:
                 "$group": {
                     "_id": "$base_name",
                     "documents": {"$push": "$doc"},
-                    **{f"mean_{prop}": {"$avg": f"$doc.{prop}"}
-                       for prop in properties_to_check},
-                    **{f"std_dev_{prop}": {"$stdDevPop": f"$doc.{prop}"}
-                       for prop in properties_to_check}
+                    **{
+                        f"mean_{prop}": {"$avg": f"$doc.{prop}"}
+                        for prop in properties_to_check
+                    },
+                    **{
+                        f"std_dev_{prop}": {"$stdDevPop": f"$doc.{prop}"}
+                        for prop in properties_to_check
+                    },
                 }
             },
-
             # Stage 3: Deconstruct the documents-array to process each one.
             # Takes the "documents" array from the previous
             # stage and creates a separate document for each element
@@ -633,7 +665,6 @@ class DBManager:
             #        "std_dev_lindemann": 0.05
             #      }
             {"$unwind": "$documents"},
-
             # Stage 4: Replace the root with the original document, but keep the stats.
             # This stage reshapes the document to be more user-friendly.
             # $replaceRoot generates a new document where
@@ -655,15 +686,17 @@ class DBManager:
                             "$documents",
                             {
                                 "group_stats": {
-                                    prop: {"mean": f"$mean_{prop}", "std_dev":
-                                           f"$std_dev_{prop}"}
+                                    prop: {
+                                        "mean": f"$mean_{prop}",
+                                        "std_dev": f"$std_dev_{prop}",
+                                    }
                                     for prop in properties_to_check
                                 }
-                            }
+                            },
                         ]
                     }
                 }
-            }
+            },
         ]
 
         entries_with_stats = collection.aggregate(pipeline)
@@ -679,7 +712,7 @@ class DBManager:
                 value = entry.get(prop)
 
                 if value is None or mean is None or std_dev is None or std_dev == 0:
-                    continue # Not enough data or no deviation
+                    continue  # Not enough data or no deviation
 
                 z_score = abs((value - mean) / std_dev)
                 if z_score > std_dev_threshold:
@@ -688,13 +721,15 @@ class DBManager:
                         f"Value: {value}, Group mean: {mean}\n"
                         f"Group std_dev: {std_dev}, Z-score: {z_score:.2f}\n"
                     )
-                    outliers.append({
-                        "id": entry["id"],
-                        "property": prop,
-                        "value": value,
-                        "mean": mean,
-                        "std_dev": std_dev,
-                    })
+                    outliers.append(
+                        {
+                            "id": entry["id"],
+                            "property": prop,
+                            "value": value,
+                            "mean": mean,
+                            "std_dev": std_dev,
+                        }
+                    )
 
         logger.debug(f"Outlier detection finished. Found {len(outliers)} outliers.")
         return outliers
