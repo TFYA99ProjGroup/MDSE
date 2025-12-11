@@ -553,7 +553,7 @@ def heatmap_plot(plot_name,plot_data,sim_data):
 
 
 def scatter_plot(plot_name, plot_data,sim_data):
-    """Generates a 2D or 3D scatter plot from simulation data.
+    """Generates a scatter plot from simulation data.
 
     This function creates a scatter plot where the x and y axes are determined
     by properties specified in `plot_data`. An optional third property can be

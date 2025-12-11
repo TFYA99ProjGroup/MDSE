@@ -72,11 +72,7 @@ class SimulationManager:
 
     sim_item.get() picks the values from the simulation
 
-    >>> sim = SimulationManager(chem_notation=sim_item['Type'], structure=sim_item.get(
-    ...    'Structure'), a=sim_item.get('Lattice'), cubic=sim_item.get('Cubic'),
-    ...    temperature=sim_item.get('Temp'),
-    ...    timestep=sim_item.get('Timestep'), length=sim_item.get('Length'),
-    ...   traj_interval=sim_item.get('TrajInterval'))
+    >>> sim = SimulationManager(sim_item)
     >>> sim.simulate_nve()
     """
 
@@ -400,7 +396,7 @@ class SimulationManager:
 
         Parameters
         ----------
-        dyn : ase.md.MDLogger
+        dyn : :py:class:`ase.md.md.MolecularDynamics`
             The ASE dynamics object to attach handlers to.
         print_output : bool
             If True, attach a handler to print energy and temperature updates

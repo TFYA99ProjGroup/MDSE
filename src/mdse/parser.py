@@ -45,7 +45,11 @@ The simulation configuration files have a specific format that need to be follow
       ENSAMBLE:
         Ensamble: [NVT, NVE, NPT]
         Temp: [temperature in K]
+        [required for NVT]
         ThermoTime: [steps between thermostat use]
+        [required for NPT]
+        Pressure: [eV/Å^3]
+        BaroTime: [steps between barostat use]
       SIMULATION:
         Timestep: [timestep in fs]
         Length: [number of timesteps]
@@ -59,7 +63,7 @@ The simulation configuration files have a specific format that need to be follow
           - [material property or all]
           - [prop]
 
-The Temp setting can also have a _list and _range extension which look like
+The Temp, Pressure settings can also have a _list and _range extension which look like
 
 .. code-block:: python
 
