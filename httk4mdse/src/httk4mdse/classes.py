@@ -15,6 +15,9 @@
 #
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    Changes made by Oskar Bollner oskbo133@student.liu.se, 2025-12-11.
+#
 
 from __future__ import print_function, division
 
