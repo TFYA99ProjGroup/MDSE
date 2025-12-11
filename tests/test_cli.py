@@ -5,7 +5,7 @@
 
 
 from unittest.mock import patch, MagicMock
-from mdse.cli.cli import create_parser, simulate_mpi
+from mdse.cli import create_parser, simulate_mpi
 
 
 def test_simulate_calls_runmanager():
@@ -13,8 +13,8 @@ def test_simulate_calls_runmanager():
     args = parser.parse_args(["simulate", "-f", "config.yaml", "-c", "Ensamble=NVT"])
 
     with (
-        patch("mdse.cli.cli.main_read") as mock_main_read,
-        patch("mdse.cli.cli.RunManager") as mock_RunManager,
+        patch("mdse.cli.main_read") as mock_main_read,
+        patch("mdse.cli.RunManager") as mock_RunManager,
     ):
         mock_main_read.return_value = ["sim1", "sim2"]
 
@@ -37,8 +37,8 @@ def test_simulate_mpi_calls_runmanager():
 
     with (
         patch("mpi4py.MPI") as mock_MPI,
-        patch("mdse.cli.cli.main_read") as mock_main_read,
-        patch("mdse.cli.cli.RunManager") as mock_RunManager,
+        patch("mdse.cli.main_read") as mock_main_read,
+        patch("mdse.cli.RunManager") as mock_RunManager,
     ):
         mock_comm = MagicMock()
         mock_comm.Get_rank.return_value = 0
@@ -59,7 +59,7 @@ def test_calc_msd_calls():
     parser = create_parser()
     args = parser.parse_args(["msd", "-f", "file1.traj", "file2.traj"])
 
-    with patch("mdse.cli.cli.ResultMD") as mock_ResultMD:
+    with patch("mdse.cli.ResultMD") as mock_ResultMD:
         mock_instance = assert_from_file(mock_ResultMD, args)
 
         assert mock_instance.visualize_msd.call_count == 2
@@ -69,7 +69,7 @@ def test_calc_lindemann_calls():
     parser = create_parser()
     args = parser.parse_args(["lindemann", "-f", "file1.traj", "file2.traj"])
 
-    with patch("mdse.cli.cli.ResultMD") as mock_ResultMD:
+    with patch("mdse.cli.ResultMD") as mock_ResultMD:
         assert_from_file(mock_ResultMD, args)
 
 
@@ -77,7 +77,7 @@ def test_calc_self_diff_calls():
     parser = create_parser()
     args = parser.parse_args(["self_diff", "-f", "file1.traj", "file2.traj"])
 
-    with patch("mdse.cli.cli.ResultMD") as mock_ResultMD:
+    with patch("mdse.cli.ResultMD") as mock_ResultMD:
         assert_from_file(mock_ResultMD, args)
 
 
@@ -85,7 +85,7 @@ def test_calc_ish_calls():
     parser = create_parser()
     args = parser.parse_args(["ish", "-f", "file1.traj", "file2.traj"])
 
-    with patch("mdse.cli.cli.ResultMD") as mock_ResultMD:
+    with patch("mdse.cli.ResultMD") as mock_ResultMD:
         assert_from_file(mock_ResultMD, args)
 
 
@@ -102,7 +102,7 @@ def test_write_to_database_calls_dbmanager_write():
         ]
     )
 
-    with patch("mdse.cli.cli.DBManager") as mock_DBManager:
+    with patch("mdse.cli.DBManager") as mock_DBManager:
         mock_instance = MagicMock()
         mock_DBManager.return_value = mock_instance
 
@@ -119,7 +119,7 @@ def test_visualize_DB_calls_run_visualize_db():
     parser = create_parser()
     args = parser.parse_args(["visualize", "-f", "mongodb://db/"])
 
-    with patch("mdse.cli.cli.run_visualize_db") as mock_visualize:
+    with patch("mdse.cli.run_visualize_db") as mock_visualize:
         args.func(args)
 
         mock_visualize.assert_called_once_with("mongodb://db/")
