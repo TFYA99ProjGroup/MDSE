@@ -18,23 +18,27 @@ loaded from a `.traj` file using the `from_file` classmethod.
 Key functionalities include the calculation of:
 
 - **Structural and Transport Properties**:
+
   - Mean Squared Displacement (MSD)
   - Self-diffusion coefficient
   - Lindemann index
   - Nearest-neighbor distance
 
 - **Thermodynamic Properties**:
+
   - Isochoric heat capacity
   - Isobaric specific heat and enthalpy
   - Cohesive energy
   - Temperature, pressure, and energy evolution over time
 
 - **Vibrational Properties**:
+
   - Velocity Autocorrelation Function (VACF)
   - Density of States (DOS)
   - Debye temperature
 
 - **Mechanical Properties**:
+
   - Elastic constants (C11, C12, C44)
   - Bulk, Shear, and Young's moduli
 """
@@ -130,6 +134,7 @@ class ResultMD:
         -------
         tuple
             A tuple containing:
+
             - taus_fs (list): Time lags in femtoseconds.
             - MSD_at_tau_x (list): MSD values in the x-direction (Å²).
             - MSD_at_tau_y (list): MSD values in the y-direction (Å²).
@@ -213,7 +218,7 @@ class ResultMD:
         Parameters
         ----------
         frame_skip : float, optional
-            Fraction of initial frames to skip. Passed to `_calc_msd_list`.
+            Fraction of initial frames to skip. Passed to :py:meth:`_calc_msd_list`.
             Defaults to 0.2.
 
         Returns
@@ -371,16 +376,17 @@ class ResultMD:
         ----------
         frame_skip : float, optional
             Fraction of the total initial frames to skip for equilibration.
-            This value is passed directly to ``self._calc_vacf``.
+            This value is passed directly to :py:meth:`_calc_vacf`.
             Defaults to 0.5.
 
         Returns
         -------
         tuple
             A tuple of `(dos, omega)`:
-            - **dos** (numpy.ndarray): The 1D array of the normalized
+
+            - **dos** (numpy.ndarray): The 1D array of the normalized\
               density of states.
-            - **omega** (numpy.ndarray): The 1D array of the corresponding
+            - **omega** (numpy.ndarray): The 1D array of the corresponding\
               angular frequencies (in rad/s).
         """
         self.check_equilibrium()
@@ -427,7 +433,7 @@ class ResultMD:
         """Visualize the density of states (DOS).
 
         This method plots the cached DOS as a function of angular frequency.
-        `calc_density_of_states()` must be called first to compute and cache
+        :py:meth:`calc_density_of_states` must be called first to compute and cache
         the DOS data.
         """
         pl.figure()
@@ -450,15 +456,15 @@ class ResultMD:
 
         The calculation performs the following steps:
 
-        1. Calls ``self.calc_density_of_states(frame_skip)`` to get the `dos` \
-            and angular frequency `omega` arrays.
+        1. Calls :py:meth:`calc_density_of_states` to get the `dos` \
+            and angular frequency :math:`\\omega` arrays.
         2. Calculates the cumulative integral of the DOS with respect to \
-            `omega` (i.e., the total number of modes up to a given frequency).
+            :math:`\\omega` (i.e., the total number of modes up to a given frequency).
         3. Finds the index where this cumulative integral first matches or \
             exceeds the target degrees of freedom (3N).
         4. The frequency at this index is taken as the Debye frequency.
-        5. Converts the Debye frequency to the Debye temperature using the \
-            relation
+        5. Converts the Debye frequency to the Debye temperature using the relation
+
             .. math::
                 \\Theta_D = \\frac{\\hbar \\omega_D}{k_B}.
 
@@ -472,7 +478,7 @@ class ResultMD:
         Returns
         -------
         float
-            The calculated Debye temperature (Θ_D) in Kelvin.
+            The calculated Debye temperature (:math:`\\Theta_D`) in Kelvin.
         """
         kB = constants.Boltzmann
         hbar = constants.hbar
@@ -573,7 +579,8 @@ class ResultMD:
         numpy.ndarray
             An array of enthalpy values for each frame in Joules.
 
-        Note:
+        Note
+        -------
             Developers, you need a calc to get the total energy. Btw,
             if you just began reading theese docs, calc stands for calculator.
         """
@@ -721,8 +728,8 @@ class ResultMD:
     def calc_C11(self, crystal_equil, epsilon=0.01):
         """Calculate the C11 elastic constant.
 
-        C11 is calculated by applying a uniaxial strain ε_xx and using a
-        finite difference approximation for the second derivative of energy.
+        C11 is calculated by applying a uniaxial strain :math:`\\epsilon_{xx}` and using
+        a finite difference approximation for the second derivative of energy.
 
         Parameters
         ----------
@@ -757,8 +764,9 @@ class ResultMD:
     def calc_C12(self, crystal_equil, epsilon=0.01):
         """Calculate the C12 elastic constant.
 
-        C12 is calculated by applying a biaxial strain (ε_xx = ε, ε_yy = -ε)
-        and using a finite difference approximation.
+        C12 is calculated by applying a biaxial strain
+        (:math:`\\epsilon_{xx} = \\epsilon`, :math:`\\epsilon_{yy} = -\\epsilon`) and
+        using a finite difference approximation.
 
         Parameters
         ----------
@@ -793,8 +801,8 @@ class ResultMD:
     def calc_C44(self, crystal_equil, gamma):
         """Calculate the C44 elastic constant.
 
-        C44 is calculated by applying a shear strain (ε_xy) and using a
-        finite difference approximation.
+        C44 is calculated by applying a shear strain (:math:`\\epsilon_{xy}`) and using
+        a finite difference approximation.
 
         Parameters
         ----------
@@ -1177,6 +1185,7 @@ class ResultMD:
 
         This method attempts to identify the frame at which the system
         equilibrates by checking for three conditions in order:
+
         1. Total energy becomes constant.
         2. Temperature becomes constant.
         3. Total energy begins to oscillate around a stable mean.
@@ -1606,7 +1615,7 @@ class ResultMD:
     def calc_lattice(self):
         """Determine the equilibrium lattice constants for the conventional cell.
 
-        This method calls `_estimate_lattice()` to get energy-vs-lattice data
+        This method calls :py:meth:`_estimate_lattice` to get energy-vs-lattice data
         and then fits this data to find the lattice parameters that minimize
         the potential energy. The fitting method depends on the crystal
         structure:
@@ -1617,12 +1626,13 @@ class ResultMD:
           fit to the energy surface.
         - For orthorhombic, monoclinic, or triclinic structures, it returns
           the constants found by the sequential optimization in
-          `_estimate_lattice`.
+          :py:meth:`_estimate_lattice`.
 
         Returns
         -------
         tuple
             A tuple containing:
+
             - cov_structure (str): The name of the crystal structure type.
             - list: The optimal lattice constants `[a, b, c]` in Angstroms.
         """

@@ -427,6 +427,7 @@ class SimulationManager:
         This method acts as a high-level dispatcher that selects and executes
         the appropriate simulation routine based on ``self.ensamble``.
         Supported ensembles are:
+
         - ``NVE``: microcanonical (constant energy)
         - ``NVT``: canonical (constant temperature)
         - ``NPT``: isothermal-isobaric (constant pressure and temperature)
@@ -452,12 +453,13 @@ class SimulationManager:
         Exception
             Propagates other unexpected errors from lower-level methods.
 
-        Notes
+        Note
         -----
         The ensemble type is read from the instance attribute ``self.ensamble``.
         This attribute must be one of ``'NVE'``, ``'NVT'``, or ``'NPT'``.
 
         The simulation is carried out using one of:
+
         - :meth:`simulate_nve`
         - :meth:`simulate_nvt`
         - :meth:`simulate_npt`

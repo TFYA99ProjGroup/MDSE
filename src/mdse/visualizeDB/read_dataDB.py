@@ -26,12 +26,12 @@ def read_data(config_data):
     'data_source' key in the configuration dictionary.
 
     Args:
-        config_data (dict): Configuration specifying the data source, location,
+        config_data (dict): Configuration specifying the data source, location,\
             and other necessary parameters.
 
     Returns:
-        list[dict]: A list of dictionaries, where each dictionary contains
-            the data for a single simulation.
+        list[dict]: A list of dictionaries, where each dictionary contains\
+        the data for a single simulation.
 
     Raises:
         RuntimeError: If the configuration is invalid, the specified file is

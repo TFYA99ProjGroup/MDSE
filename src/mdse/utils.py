@@ -81,7 +81,6 @@ def calc_formation_energy(host_energy, element_counts, db, defect_energy=0):
 
     The formation energy is calculated using the formula:
     E_DF = E_D - E_Host + sum(n_i * mu_i)
-
     where E_D is the energy of the defect system, E_Host is the energy of the
     pristine host system, n_i is the number of atoms of element i added or
     removed, and mu_i is the chemical potential of element i.
@@ -95,7 +94,7 @@ def calc_formation_energy(host_energy, element_counts, db, defect_energy=0):
             the defect. Defaults to 0.
 
     Returns:
-        tuple[float, float]: A tuple containing the calculated formation energy
+        tuple[float, float]: A tuple containing the calculated formation energy\
             and the total chemical potential contribution.
     """
     total_chem_pot = 0
