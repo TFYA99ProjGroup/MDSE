@@ -12,11 +12,11 @@ Welcome to the documentation for the `mdse` package.
    :maxdepth: 4
    :caption: Contents:
 
-   examples
-   licensing
-   changelog
    gettingstarted
    tech_docs
+   examples
+   changelog
+   licensing
 
 .. autosummary::
    :toctree: generated
