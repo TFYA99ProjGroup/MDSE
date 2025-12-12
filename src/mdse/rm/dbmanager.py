@@ -222,7 +222,7 @@ class DBManager:
         """
         Appends a list of MongoDB document dictionaries to a single JSON file.
 
-        If the target file (`results/all_results_v2.json`) already exists,
+        If the target file (`results/all_results_v2.jsonl`) already exists,
         it loads the existing content and appends the new entries.
         The file is created if it does not exist.
 
@@ -232,9 +232,9 @@ class DBManager:
             A list of dictionaries, where each dictionary represents a MongoDB
             document (e.g., converted from `MongoDBEntry.to_dict()`).
         """
-        logger.debug("Creating/appending to all_results_v2.json")
+        logger.debug("Creating/appending to all_results_v2.jsonl")
 
-        path = Path("results/all_results_v2.json")
+        path = Path("results/all_results_v2.jsonl")
 
         path.parent.mkdir(parents=True, exist_ok=True)
 
