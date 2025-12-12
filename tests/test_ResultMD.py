@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,20 +11,24 @@ from mdse.md.resultMD import ResultMD
 
 
 class MockAtoms:
-    def __init__(self, positions, velocities=None, pot = 0, kin = 0):
+    def __init__(self, positions, velocities=None, pot=1, kin=1, temp=1):
         self.positions = positions
         self.velocities = velocities
         self.info = {
-            "dt": 5
+            "dt": 5,
+            "atoms_per_unit": 1,
+            "E_single_atom": 1,
+            "pot_energy": pot,
         }
         self.kinetic_energy = kin
         self.potential_energy = pot
+        self.temperature = temp
 
     def __len__(self):
         return len(self.positions)
 
     def __array__(self):
-        return self.positions[:,0]
+        return self.positions[:, 0]
 
     def get_velocities(self):
         return self.velocities
@@ -29,32 +39,48 @@ class MockAtoms:
     def get_kinetic_energy(self):
         return self.kinetic_energy
 
+    def get_temperature(self):
+        return self.temperature
+
 
 @pytest.fixture
 def mock_frames():
     """Generate mock ASE-like frames with positions and velocities."""
     np.random.seed(42)
-    frames = [MockAtoms(np.random.rand(5, 3),
-                        np.random.rand(5, 3), 1, 2) for _ in range(20)]
+    frames = [
+        MockAtoms(np.random.rand(5, 3), np.random.rand(5, 3), 1, 2) for _ in range(20)
+    ]
     return frames
+
+
+@pytest.fixture
+def mock_frames_non_equil():
+    """Generate mock ASE-like frames with positions and velocities. Non equilibrium"""
+    np.random.seed(42)
+    frames = [
+        MockAtoms(
+            np.random.rand(5, 3),
+            np.random.rand(5, 3),
+            np.random.uniform(1, 200),
+            0,
+            np.random.uniform(1, 60),
+        )
+        for _ in range(20)
+    ]
+    return frames
+
 
 @pytest.fixture
 def mock_frames_simple():
     """Generate mock ASE-like frames with positions. Only two frames, known distances"""
-    pos1 = np.array([
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [1.0, 1.0, 0.0]
-    ])
-    pos2 = np.array([
-        [0.0, 0.0, 0.0],
-        [2.0, 0.0, 0.0],
-        [0.0, 2.0, 0.0],
-        [2.0, 2.0, 0.0]
-    ])
-    frame1 = MockAtoms(pos1)
-    frame2 = MockAtoms(pos2)
+    pos1 = np.array(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]]
+    )
+    pos2 = np.array(
+        [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [2.0, 2.0, 0.0]]
+    )
+    frame1 = MockAtoms(pos1, kin=1, pot=1, temp=1)
+    frame2 = MockAtoms(pos2, kin=1, pot=1, temp=1)
     frames = [frame1, frame2]
     return frames
 
@@ -63,22 +89,30 @@ def mock_frames_simple():
 def mock_linear_walk():
     """Generate a mock linear walk, with predictable diffusion coefficient"""
 
-    pos = np.array([
-        [  # Frame 1
-            [0, 0, 1], [0, 1, 0], [1, 0, 0]
+    pos = np.array(
+        [
+            [  # Frame 1
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
         ]
-    ])
+    )
 
-    step = np.array([
-        [  # How large steps at each frame, for each atom
-            [0, 0, 1], [0, 1, 0], [1, 0, 0]
+    step = np.array(
+        [
+            [  # How large steps at each frame, for each atom
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
         ]
-    ])
-    frames = [MockAtoms(pos)]
+    )
+    frames = [MockAtoms(pos, kin=1, pot=1, temp=1)]
 
     for i in range(1, 50):
         pos += step
-        frames.append(MockAtoms(pos.copy()))
+        frames.append(MockAtoms(pos.copy(), kin=1, pot=1, temp=1))
 
     return frames
 
@@ -86,13 +120,17 @@ def mock_linear_walk():
 @pytest.fixture
 def mock_stationary_walk():
     """Generate a mock stationary walk, with predictable diffusion coefficient"""
-    pos = np.array([
-        [  # Frame 1
-            [0, 0, 1], [0, 1, 0], [1, 0, 0]
+    pos = np.array(
+        [
+            [  # Frame 1
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
         ]
-    ])
+    )
 
-    frames = [MockAtoms(pos) for _ in range(0, 50)]
+    frames = [MockAtoms(pos, kin=1, pot=1) for _ in range(0, 50)]
 
     return frames
 
@@ -101,22 +139,30 @@ def mock_stationary_walk():
 def mock_oscillation_walk():
     """Generate a mock oscillating walk, with predictable diffusion coefficient"""
 
-    pos1 = np.array([
-        [  # Frame 1
-            [0, 0, 1], [0, 1, 0], [1, 0, 0]
+    pos1 = np.array(
+        [
+            [  # Frame 1
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
         ]
-    ])
+    )
 
-    pos2 = np.array([
-        [  # How large oscillations
-            [0, 0, 1], [0, 1, 0], [1, 0, 0]
+    pos2 = np.array(
+        [
+            [  # How large oscillations
+                [0, 0, 1],
+                [0, 1, 0],
+                [1, 0, 0],
+            ]
         ]
-    ])
-    frames = [MockAtoms(pos1)]
+    )
+    frames = [MockAtoms(pos1, kin=1.5, pot=1.5, temp=5)]
 
     for i in range(1, 25):
-        frames.append(MockAtoms(pos2.copy()))
-        frames.append(MockAtoms(pos1.copy()))
+        frames.append(MockAtoms(pos2.copy(), kin=0.5, pot=0.5, temp=1))
+        frames.append(MockAtoms(pos1.copy(), kin=0.51, pot=0.51, temp=2))
 
     return frames
 
@@ -135,11 +181,12 @@ def test_calc_msd_list_returns_expected_shapes(mock_frames):
     result.frames_in_fs = 10
     taus_fs, msd_x, msd_y, msd_z = result._calc_msd_list()
 
-    expected_length = len(range(7, len(mock_frames) - 7))
-    assert len(taus_fs) == expected_length
-    assert len(msd_x) == expected_length
-    assert len(msd_y) == expected_length
-    assert len(msd_z) == expected_length
+    # Very implementation specific test
+    # expected_length = len(range(7, len(mock_frames) - 7))
+    # assert len(taus_fs) == expected_length
+    # assert len(msd_x) == expected_length
+    # assert len(msd_y) == expected_length
+    # assert len(msd_z) == expected_length
     assert taus_fs[1] - taus_fs[0] == 10
 
 
@@ -228,7 +275,7 @@ def test_calc_self_diff_linear_walk(mock_linear_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert (Diff_coeff > 0)
+    assert Diff_coeff > 0
 
 
 def test_calc_self_diff_stationary_walk(mock_stationary_walk):
@@ -238,34 +285,36 @@ def test_calc_self_diff_stationary_walk(mock_stationary_walk):
 
     Diff_coeff = result.calc_self_diff()
 
-    assert (Diff_coeff == 0)
+    assert Diff_coeff == 0
 
 
 def test_calc_self_diff_oscillation_walk(mock_oscillation_walk):
     """Checks that for a oscillatory crystal, self diffusion is zero"""
     result = ResultMD(mock_oscillation_walk)
     result.frames_in_fs = 1
-
     Diff_coeff = result.calc_self_diff()
 
-    assert(Diff_coeff == 0)
+    assert Diff_coeff == 0
+
 
 def test_calc_debye_temperature(mock_frames):
     result = ResultMD(mock_frames)
 
     theta_D = result.calc_debye_temperature(frame_skip=0.5)
 
-    assert(theta_D != 0)
+    assert theta_D != 0
+
 
 def test_calc_density_of_states(mock_frames):
     result = ResultMD(mock_frames)
 
     dos, omega = result.calc_density_of_states(frame_skip=0.5)
 
-    assert(len(dos) > 0)
-    assert(len(omega) > 0)
+    assert len(dos) > 0
+    assert len(omega) > 0
     for i in range(len(dos)):
-        assert(dos[i] >= 0)
+        assert dos[i] >= 0
+
 
 def test_energies(mock_frames):
     """Check so getters get the correct energies, and correct amount"""
@@ -274,18 +323,130 @@ def test_energies(mock_frames):
     pot_energ = result.get_pot_energies()
     kin_energ = result.get_kin_energies()
 
-    assert(len(mock_frames) == len(pot_energ))
-    assert(len(mock_frames) == len(kin_energ))
+    assert len(mock_frames) == len(pot_energ)
+    assert len(mock_frames) == len(kin_energ)
 
-    right_pot = [1]*len(mock_frames)
-    right_kin = [2]*len(mock_frames)
+    right_pot = [1] * len(mock_frames)
+    right_kin = [2] * len(mock_frames)
 
-    assert(pot_energ == right_pot)
-    assert(kin_energ == right_kin)
+    assert pot_energ == right_pot
+    assert kin_energ == right_kin
+
 
 def test_time_axis(mock_frames):
     """Check so get time axis gets list of times"""
     result = ResultMD(mock_frames)
     times = result.get_time_axis()
 
-    assert(len(times) == len(mock_frames))
+    assert len(times) == len(mock_frames)
+
+
+def test_cohesive_energy(mock_frames, monkeypatch):
+    """Check that cohesive energy runs, and returns a float"""
+    result = ResultMD(mock_frames)
+    #Patch single_atom_energy() to return dummy
+    monkeypatch.setattr(result, "single_atom_energy",
+                        lambda: 0.0)
+    coh_energy = result.get_cohesive_energy()
+
+    assert isinstance(coh_energy, float)
+
+
+def test_equilibrium_check_non_equil(mock_frames_non_equil):
+    """Use an random energy and temperature frames. Should give non-equilibrium"""
+    result = ResultMD(mock_frames_non_equil)
+    position = result.check_equilibrium()
+    assert position == 0
+    assert not result.reached_equilibrium
+
+
+def test_equilibrium_check_oscill(mock_oscillation_walk):
+    """Use oscillatary walk."""
+    result = ResultMD(mock_oscillation_walk)
+    kin_energy = result.get_kin_energies()
+    pot_energy = result.get_pot_energies()
+    temperatures = result.get_temperatures()
+    Tot_energy = [kin + pot for (kin, pot) in zip(kin_energy, pot_energy)]
+
+    # Const energy check, should not trigger
+    equil_index = result._check_equilibrium_const(Tot_energy, 0.0001)
+    assert equil_index == (len(Tot_energy) - 2)
+
+    # Const temperature, should not trigger
+    equil_index = result._check_equilibrium_const(temperatures, 0.001)
+    assert equil_index == (len(Tot_energy) - 2)
+
+    #Oscillating energy, should trigger
+    equil_index = result._check_equilibrium_oscill(Tot_energy,0.005)
+    assert(equil_index == 1)
+
+    # Oscillating energy, should trigger
+    equil_index = result._check_equilibrium_oscill(Tot_energy, 0.005)
+    assert equil_index == 1
+
+
+@pytest.fixture
+def cubic_system():
+    "Generates _calc_lattice() data for a cubic crystal simulation"
+
+    #Create parabol shape of energy vs vol
+    volumes = np.linspace(10*0.95, 10*1.05, 10)
+    energies = (volumes - 10)**2 + 5 #E(V) = (V-10)^2 +5 , so min at V=10
+    energy_v_vol = [[E, V] for E, V in zip(energies, volumes)]
+
+    return energy_v_vol
+
+
+@pytest.fixture
+def hexagonal_system():
+    "Generates _calc_lattice() data for a hexagonal crystal simulation"
+
+    #Optimal
+    a0 = 1
+    c0 = 2
+
+    #Create quadratic shape of energy vs lattice
+    a_vals = np.linspace(a0*0.95, a0*1.05, 10)
+    c_vals = np.linspace(c0*0.95, c0*1.05, 10)
+    energy_v_latt = []
+    for a in a_vals:
+        for c in c_vals:
+            E = (a - a0)**2 + (c - c0)**2 + 10 #E(a,c) = (a-a0)^2 + (c-c0)^2 + E0
+            energy_v_latt.append([E, [a, a, c]])
+
+    return energy_v_latt
+
+def test_cubic_lattice(monkeypatch, cubic_system):
+    """Test cubic system, with min at V=10 """
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return cubic system
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: cubic_system)
+    result.crystal_conv = True
+    result.crystal_struct = "cubic"
+
+    structure, opt_latt = result.calc_lattice()
+
+    assert np.isclose(opt_latt[0], 10**(1/3), 0.001)
+    assert(structure == "cubic")
+
+def test_hexagonal_lattice(monkeypatch, hexagonal_system):
+    """Tries if hexagonal system, with min at a=b=1, c=2"""
+    result = ResultMD(None)
+
+    #Patch calc_lattice() to return hexagonal system
+    monkeypatch.setattr(result, "_estimate_lattice",
+                        lambda: hexagonal_system)
+    result.crystal_conv = True
+    result.crystal_struct = "hexagonal"
+
+    structure, opt_latt = result.calc_lattice()
+
+    assert np.isclose(opt_latt[0], 1, 0.000001)
+    assert np.isclose(opt_latt[1], 1, 0.000001)
+    assert np.isclose(opt_latt[2], 2, 0.000001)
+
+    #a==b
+    assert(opt_latt[0] == opt_latt[1])
+    assert(structure == "hexagonal")

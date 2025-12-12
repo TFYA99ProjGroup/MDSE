@@ -1,0 +1,65 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
+"""
+Logging configuration for the MDSE package.
+
+This module provides a centralized function, `setup_logging`, to configure
+the application's root logger. It standardizes logging across the application
+by setting up handlers for both console output and file-based logging,
+ensuring consistent formatting and behavior.
+"""
+
+
+import logging
+import sys
+from datetime import datetime
+from pathlib import Path
+
+
+def setup_logging(debug=False):
+    """
+    Configure the root logger for the application.
+
+    This function sets up two handlers for the root logger:
+    1. A stream handler that prints logs to standard output.
+    2. A file handler that saves logs to a timestamped file in the `logs/`\
+       directory (e.g., `logs/simulation_20250101_120000.log`).
+
+    The logging level is set to `logging.DEBUG` if the `debug` flag is True,
+    otherwise it defaults to `logging.INFO`.
+
+    Parameters
+    ----------
+    debug : bool, optional
+        If True, set the logging level to DEBUG. Otherwise, set it to INFO.
+        Defaults to False.
+    """
+    logfile = Path(f"logs/simulation_{datetime.now():%Y%m%d_%H%M%S}.log")
+    logfile.parent.mkdir(parents=True, exist_ok=True)
+
+    level = logging.DEBUG if debug else logging.INFO
+
+    formatter = logging.Formatter(
+        fmt="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%H:%M:%S"
+    )
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+
+    # Save to log-file
+    file_handler = logging.FileHandler(logfile, mode="a")  # "a" = append
+    file_handler.setFormatter(formatter)
+
+    # Setup root-logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+    root_logger.handlers.clear()  # Clear any existing handlers
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+
+    logging.debug(f"Logging initialized (debug={debug}, file={logfile})")

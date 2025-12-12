@@ -1,12 +1,17 @@
 
 # ASE files
 *.traj
+*.cif
 
 # NSC Output files
 slurm-*.out
 
 # MongoDB
 mongo_data/
+
+# Simulation data
+defects/
+results/
 
 ###
 ### Python auto generated
@@ -38,7 +43,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-results/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

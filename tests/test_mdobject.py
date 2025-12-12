@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 from pathlib import Path
 import numpy as np
 from pytest import raises
@@ -230,6 +236,7 @@ def test_calculators():
     n = len(numbers)
     sigma = np.random.rand(n)
     epsilon = np.random.rand(n)
+    rCut = 3 * sigma
 
     config = {
         "CRYSTAL": {
@@ -245,7 +252,12 @@ def test_calculators():
             "Length": 20000,
             "TrajInterval": 5,
             "Calculator": "LennardJones",
-            "Calc_params": {"elements": numbers, "sigma": sigma, "epsilon": epsilon},
+            "CalculatorParams": {
+                "elements": numbers,
+                "sigma": sigma,
+                "epsilon": epsilon,
+                "rCut": rCut,
+            },
             "Create_traj": True,
         },
     }

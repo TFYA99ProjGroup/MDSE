@@ -1,7 +1,13 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 from mdse.md.resultMD import ResultMD
 from mdse.md.visualize import VisualizeResult
 from mdse.rm.runmanager import RunManager
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 
 def main():
 
@@ -24,9 +30,11 @@ def main():
 
     vis = VisualizeResult([Cu_100,Cu_200,Cu_300,Ni_300,Ni_200,Ni_100])
 
+    vis.plot_energy("tot")
+    vis.plot_DOS()
     vis.plot_energy("kin")
-
-    vis.plot_scatter("self_diff","lindemann","avg_a")
+    vis.plot_MSD()
+    vis.plot_scatter("lindemann","self_diff","avg_a")
 
 
 if __name__ == "__main__":

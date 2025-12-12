@@ -1,0 +1,63 @@
+# Install docker: https://docs.docker.com/engine/install/
+# I recommend the install script for ease of use:
+#   curl -fsSL https://get.docker.com -o get-docker.sh
+#   sudo sh get-docker.sh
+# That should include compose aswell.
+#
+# Then follow instructions here to allow non-root usage (if you want to do that):
+#   https://docs.docker.com/engine/install/linux-postinstall/
+#
+# Run with "docker compose up -d --build" when standing in the "MDSE/database" directory
+# Stop with "docker compose down"
+# If you have not given non-root access to docker, prefix those commands with "sudo".
+#
+# adress to write and read to: mongodb://admin:secret@localhost:27017/
+
+services:
+  mongodb: # MongoDB service, our main database
+    image: mongo:7.0
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: materials_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo_data:/data/db 
+      # Persist data on host machine, can be deleted with "sudo rm -rf ./mongo_data"
+      #
+      # Might be a good idea to put the mounted directory outside of the project 
+      # folder to avoid accidental deletion. E.g. ~/mongo_data:/data/db
+      # Then the mounted directory is in your home folder. (Ubuntu)
+
+  mongo-express: # MongoDB web-based admin interface (http://localhost:8081)
+    image: mongo-express:latest
+    container_name: mongo_express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_BASICAUTH_USERNAME: webadmin
+      ME_CONFIG_BASICAUTH_PASSWORD: websecret
+    depends_on:
+      - mongodb
+
+  optimade-server: # OPTIMADE server service
+    build: .
+    container_name: optimade-server
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      OPTIMADE_CONFIG_FILE: /app/optimade_config.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./optimade_config.json:/app/optimade_config.json
+      - ./logs:/app/logs

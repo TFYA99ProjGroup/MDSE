@@ -1,3 +1,9 @@
+# Copyright (c) 2025 See AUTHORS
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
+
+
 """
 Molecular Dynamics Simulation Environment
 =========================================
@@ -6,18 +12,24 @@ The mdse package provides tools for running molecular dynamics simulations,
 managing simulation results, parsing YAML input files, logging, and
 command-line utilities.
 
-Subpackages
------------
+Subpackages and Modules
+-----------------------
 
 - mdse.cli       : Command-line interface functions
 - mdse.logging   : Logging configuration and utilities
 - mdse.md        : Core molecular dynamics simulations
 - mdse.parser    : YAML parsing and parameter handling
+- mdse.rm        : Runmanagement and database interaction
+- mdse.utils     : Post-processing and data management utilities
+- mdse.visualizeDB: Database visualization tools
 
 For detailed documentation, see the submodules below.
 """
+
 from . import cli as cli
 from . import logging as logging
 from . import md as md
 from . import parser as parser
 from . import rm as rm
+from . import utils as utils
+from . import visualizeDB as visualizeDB

@@ -5,21 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mdse"
 version = "0.2.0"
-requires-python = ">=3.10.12"
+requires-python = ">=3.9.21, <3.12"
 dependencies = [
     "Cython==3.1.4",
     "ase==3.26.0",
     "numpy==1.26.4",
-    "scipy==1.15.3",
-    "matplotlib==3.10.6",
+    "scipy==1.13.1",
+    "matplotlib==3.9.4",
     "mpi4py==4.1.0",
-    "ipython==8.37.0",
-    "Sphinx==8.1.3",
+    "ipython==8.18.1",
+    "Sphinx==7.4.7",
     "sphinx-rtd-theme==3.0.2",
     "asap3==3.13.9",
     "PyYAML==6.0.3",
     "pymongo==4.15.3",
-    "mace-torch"
+    "mace-torch",
+    "pandas",
+    "seaborn",
+    "httk4mdse @ file:./httk4mdse/"
 ]
 
 [tool.ruff]
@@ -28,4 +31,16 @@ lint.select = ["E", "F", "W"]
 lint.ignore = ["E203"]
 
 [project.scripts]
-mdse = "mdse.cli.cli:main"
+mdse = "mdse.cli:main"
+
+[tool.pytest.ini_options]
+addopts = ""
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+norecursedirs = [
+    "httk-src",
+    "database/mongo_data",
+    "*/mongo_data/*",
+    "*.data",
+]

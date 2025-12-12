@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop"]
   pull_request:
     branches: [ "main", "develop" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -44,8 +45,41 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
           pip install pytest
+        
+      - name: Cache MACE model
+        id: cache-mace
+        uses: actions/cache@v3
+        with:
+          path: models/2023-12-10-mace-128-L0_energy_epoch-249.model
+          key: mace-model-2023-12-10
 
-      - name: Create mongoDB Docker container      
-        run: sudo docker run -d -p 27017:27017 mongo:latest
-      - name: Run pytest
-        run: pytest
+      - name: Download MACE model if missing
+        if: steps.cache-mace.outputs.cache-hit != 'true'
+        run: |
+          echo "Cache miss — downloading model..."
+          mkdir -p models
+          curl -L -o models/2023-12-10-mace-128-L0_energy_epoch-249.model \
+            https://github.com/ACEsuit/mace-foundations/releases/download/mace_mp_0/2023-12-10-mace-128-L0_energy_epoch-249.model
+
+      - name: Verify model presence
+        run: |
+          if [ ! -f models/2023-12-10-mace-128-L0_energy_epoch-249.model ]; then
+            echo "ERROR: MACE model is missing!"
+            exit 1
+          fi
+          echo "MACE model found."
+
+      - name: Start MongoDB container
+        run: |
+          docker compose -f database/docker-compose.yaml up -d --build
+          sleep 3  # Wait for MongoDB to be ready
+      
+      - name: Run regular tests
+        run: pytest -m "not mpi"
+
+      - name: Run MPI tests
+        run: |
+          CORES=$(nproc --all)
+          N=$(( CORES < 2 ? 1 : 2 ))
+          echo "Running MPI tests with $N processes"
+          mpirun --oversubscribe -n $N pytest -m mpi

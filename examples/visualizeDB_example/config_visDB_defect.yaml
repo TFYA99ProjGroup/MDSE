@@ -1,0 +1,16 @@
+data:
+  data_source: "json" #mongo when using mongoDB
+  path: "mock_data_defects.json" #Path to .json or mongo
+plots:
+  plot_1_defect:
+    type: "single"
+    average: True
+    fix_y: False
+  plot_2_defect:
+    type: heatmap
+    x: "substitution"
+    y: "interstitial"
+  plot_3_defect:
+    type: heatmap
+    x: "interstitial"
+    y: "substitution"

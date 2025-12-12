@@ -1,0 +1,5 @@
+mongo_data
+logs
+example_populating_db.py
+mock_data_generator.py
+run_outlier_detection.py
