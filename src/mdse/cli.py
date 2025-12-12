@@ -740,7 +740,8 @@ def create_parser():
     visualize_db.set_defaults(func=visualize_DB)
 
     formation_energy_db = subparsers.add_parser(
-        "calc_defect_formation_energy", help="guess"
+        "calc_defect_formation_energy", help="Calculates the defect formation energy " +
+                                             "from a database."
     )
 
     formation_energy_db.add_argument(

@@ -33,7 +33,8 @@ The following material properties can be calculated with mdse:
     - Bulk modulus
     - Young's modulus
 - Coheseive energy (in the form of Atomization energy)
-
+- Formation energy
+- Defect formation energy
 Installation
 ============
 
@@ -41,8 +42,7 @@ Requirements
 ------------
 
 Dependencies:
-    - Python 3.10+
-    - `httk <https://github.com/httk/httk>`_
+    - Python >=3.9.21, <3.12
 
 Optional (Highly recommended):
     - Message Passing Interface (MPI), e.g. `Open MPI <https://www.open-mpi.org/>`_ 
@@ -171,6 +171,23 @@ Commands
 
      - Writes data from json-file to MongoDB database.
 
+   * - ::
+
+         visualize [-h] -f FILEPATH
+
+     - Visualizes data from database. Uses config file too.
+
+   * - ::
+
+         calc_defect_formation_energy [-h] -a ADDRESS
+
+     - Calculates the defect formation energy from a database.
+
+   * - ::
+
+         outliers [-h] -a ADDRESS [-p PROPERTY [PROPERTY ...]] [--db-client DB_CLIENT] [--db-collection DB_COLLECTION] [--std-dev STD_DEV_THRESHOLD]
+
+     - Detects outliers in the database.
 
 Library Usage
 =============================
