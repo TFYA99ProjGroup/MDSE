@@ -28,7 +28,7 @@ Version 1.0.0 (2025-12-12)
 
 **Changed**
 ------------
-- Added `httk<https://github.com/httk/httk>`_ as a dependency in order to read SQLite db
+- Added `httk <ittps://github.com/httk/httk>`_ as a dependency in order to read SQLite db
 
 
 ----
