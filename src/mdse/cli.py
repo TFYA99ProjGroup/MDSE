@@ -826,7 +826,7 @@ def main():
     Cleaning up trajectory files:
 
     >>> mdse clean -f ./results --recursive
-    
+
     """
     parser = create_parser()
 

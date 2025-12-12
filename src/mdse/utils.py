@@ -87,7 +87,7 @@ def calc_formation_energy(host_energy, element_counts, db, defect_energy=0):
     .. math::
 
         E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} + \\sum_i n_i \\mu_i
-    
+
     where :math:`E_\\mathrm{defect}` is the energy of the defect system,
     :math:`E_\\mathrm{Host}` is the energy of the pristine host system,
     :math:`n_i` is the number of atoms of element i added or removed,

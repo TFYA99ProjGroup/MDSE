@@ -102,7 +102,7 @@ class MongoDBEntry:
             "id": self.id,  # must
             # "immutable_id": None, #optional (handled by alias of MongoDB's _id)
             "type": self.type,  # must
-            "structure_features": self.structure_features,  # must, but can be empty list
+            "structure_features": self.structure_features,  #must, but can be empty list
             # Should fields, very good ideas to have
             "last_modified": self.last_modified,
             "elements": self.elements,
@@ -120,10 +120,13 @@ class MongoDBEntry:
             "species": self.species,
             # Optional fields, but good if queryable
             "chemical_formula_hill": self.chemical_formula_hill,
-            "space_group_symmetry_operations_xyz": self.space_group_symmetry_operations_xyz,
+            "space_group_symmetry_operations_xyz": \
+                self.space_group_symmetry_operations_xyz,
             "space_group_symbol_hall": self.space_group_symbol_hall,
-            "space_group_symbol_hermann_mauguin": self.space_group_symbol_hermann_mauguin,
-            "space_group_symbol_hermann_mauguin_extended": self.space_group_symbol_hermann_mauguin_extended,
+            "space_group_symbol_hermann_mauguin": \
+            self.space_group_symbol_hermann_mauguin,
+            "space_group_symbol_hermann_mauguin_extended": \
+            self.space_group_symbol_hermann_mauguin_extended,
             "space_group_it_number": self.space_group_it_number,
             "assemblies": self.assemblies,
         }

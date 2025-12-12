@@ -232,7 +232,8 @@ def get_defect_formation_energy(store, **query):
 
         .. math::
 
-            E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} + \\sum_i n_i \\mu_i
+            E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} +\
+            \\sum_i n_i \\mu_i
 
       5. Stores the resulting data in a MongoDB collection named "DFT data".
 

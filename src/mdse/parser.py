@@ -16,7 +16,8 @@ molecular dynamics simulations. It provides functionalities to:
 3.  Handle command-line overwrites for specific configuration values.
 4.  Expand file paths, creating multiple simulations if a path points to a directory.
 
-The simulation configuration files have a specific format that need to be followed, the structure looks like
+The simulation configuration files have a specific format that need to be followed,
+the structure looks like
 
 .. code-block:: YAML
 
@@ -28,7 +29,8 @@ The simulation configuration files have a specific format that need to be follow
           - [x]
           - [y]
           - [z]
-        Filepath: [relative path from this file to crystal file or database] (only required for FILE and DATABASE)
+        (only required for FILE and DATABASE)
+        Filepath: [relative path from this file to crystal file or database]
 
         [The following are only required for DATABSE]
         Structure_folder: [path to generated structure files]
