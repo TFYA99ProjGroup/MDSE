@@ -124,9 +124,9 @@ class MongoDBEntry:
                 self.space_group_symmetry_operations_xyz,
             "space_group_symbol_hall": self.space_group_symbol_hall,
             "space_group_symbol_hermann_mauguin": \
-            self.space_group_symbol_hermann_mauguin,
+                self.space_group_symbol_hermann_mauguin,
             "space_group_symbol_hermann_mauguin_extended": \
-            self.space_group_symbol_hermann_mauguin_extended,
+                self.space_group_symbol_hermann_mauguin_extended,
             "space_group_it_number": self.space_group_it_number,
             "assemblies": self.assemblies,
         }
