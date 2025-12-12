@@ -5,7 +5,46 @@
 
 
 """
-Functions for parsing MDSE configuration files.
+Command-Line Interface (CLI) for the MDSE package.
+
+This module defines the main entry point and command structure for interacting
+with the MDSE (Molecular Dynamics Simulation Engine) package from the command
+line. It uses Python's `argparse` library to create a powerful and user-friendly
+interface with multiple subcommands.
+
+The CLI supports a wide range of functionalities, including:
+
+- **Simulation Management**:
+
+  - `simulate`: Run molecular dynamics simulations from a YAML configuration file,\
+    with support for MPI for parallel execution.
+
+- **Data Analysis**:
+
+  - `msd`: Calculate and visualize the Mean Square Displacement.
+  - `lindemann`: Calculate the Lindemann index.
+  - `self_diff`: Calculate the self-diffusion coefficient.
+  - `ish`: Calculate the isobaric specific heat.
+
+- **Database Interaction**:
+
+  - `write_db`: Write simulation results from JSON files to a MongoDB database.
+  - `visualize`: Generate plots from data stored in the database.
+  - `outliers`: Detect and report outlier data points in the database.
+
+- **Visualization and File Management**:
+
+  - `view`: Open and inspect crystal structure files (`.traj`) using ASE's GUI.
+  - `clean`: Remove simulation trajectory files (`.traj`) from a directory.
+
+- **Documentation**:
+
+  - `build_docs`: Build the project's Sphinx documentation locally.
+  - `view_docs`: Open the locally built documentation in a web browser.
+
+The `main()` function serves as the primary entry point, which parses command-line
+arguments, sets up logging, and dispatches the request to the appropriate
+handler function.
 """
 
 import argparse
@@ -15,10 +54,10 @@ import os
 import logging
 import webbrowser
 
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 from mdse.rm.runmanager import RunManager
 from mdse.rm.dbmanager import DBManager
-from mdse.logging.logging_config import setup_logging
+from mdse.logging import setup_logging
 from mdse.md.resultMD import ResultMD
 from mdse.visualizeDB.run_visDB import run_visualize_db
 from mdse.utils import defect_formation_energy
@@ -107,13 +146,14 @@ def simulate_mpi(args):
         Command-line arguments. Should contain:
 
         - filepath (str): Path to a YAML file describing simulation parameters.
-        - mpi (bool): If True, run simulations using MPI with less logging.
-        - ensamble (str | None): If provided, overwrite the ensamble setting.
+        - config (list[str] | None): Optional 'key=value' pairs to
+          overwrite configuration from the YAML file.
 
     Notes
     -----
     Parses the input YAML using ``main_read()``, creates a ``RunManager``,
-    and executes all simulations.
+    and executes all simulations. This function is intended to be called from
+    `simulate()` when the `--mpi` flag is used.
     """
 
     try:
@@ -152,14 +192,18 @@ def simulate(args):
     """
     Run molecular dynamics simulations defined in a YAML configuration.
 
+    If the `--mpi` flag is used, this function will dispatch to `simulate_mpi`
+    for parallel execution.
+
     Parameters
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
 
         - filepath (str): Path to a YAML file describing simulation parameters.
-        - mpi (bool): If True, run simulations using MPI with less logging.
-        - ensamble (str | None): If provided, overwrite the ensamble setting.
+        - mpi (bool): If True, dispatch to the MPI-safe simulation function.
+        - config (list[str] | None): Optional 'key=value' pairs to
+          overwrite configuration from the YAML file.
 
     Notes
     -----
@@ -189,6 +233,20 @@ def simulate(args):
 
 
 def convert_scalar(v):
+    """
+    Attempt to convert a string to an integer or float.
+
+    Parameters
+    ----------
+    v : str
+        The input string to convert.
+
+    Returns
+    -------
+    int | float | str
+        The converted value as an integer or float if successful,
+        otherwise the original string.
+    """
     try:
         return int(v)
     except ValueError:
@@ -199,6 +257,22 @@ def convert_scalar(v):
 
 
 def parse_value(v):
+    """
+    Parse a string value into a scalar or a list of scalars.
+
+    If the string contains commas, it is split into a list of values.
+    Each value is then converted to an int or float if possible.
+
+    Parameters
+    ----------
+    v : str
+        The string value to parse.
+
+    Returns
+    -------
+    int | float | str | list[int | float | str]
+        The parsed value, which can be a single scalar or a list of scalars.
+    """
     v = v.strip()
     if "," in v:
         return [convert_scalar(x) for x in v.split(",")]
@@ -206,6 +280,24 @@ def parse_value(v):
 
 
 def insert_nested(d, key_path, value):
+    """
+    Insert a value into a nested dictionary using a dot-separated key path.
+
+    Creates nested dictionaries as needed.
+
+    Parameters
+    ----------
+    d : dict
+        The dictionary to modify.
+    key_path : str
+        A dot-separated string representing the nested keys (e.g., "a.b.c").
+    value : any
+        The value to insert at the specified path.
+
+    Notes
+    -----
+    This function modifies the input dictionary `d` in place.
+    """
     keys = key_path.split(".")
     cur = d
     for k in keys[:-1]:
@@ -216,6 +308,24 @@ def insert_nested(d, key_path, value):
 
 
 def parse_config(items):
+    """
+    Parse a list of 'key=value' strings into a nested dictionary.
+
+    Keys can be dot-separated to create nested structures. For example,
+    ``["sim.steps=1000", "potential.name=EAM"]`` becomes
+    ``{'sim': {'steps': 1000}, 'potential': {'name': 'EAM'}}``.
+
+    Parameters
+    ----------
+    items : list[str] | None
+        A list of strings, each in "key=value" format.
+
+    Returns
+    -------
+    dict | None
+        A nested dictionary representing the configuration, or None if the
+        input is None.
+    """
     if items is None:
         return None
     result = {}
@@ -228,15 +338,18 @@ def parse_config(items):
 
 def calc_msd(args):
     """
-    Call the mean square displacement (msd) visualization function.
+    Calculate and visualize the mean square displacement (MSD).
+
+    This function processes one or more trajectory files, calculates the MSD
+    for each, and generates a plot.
 
     Parameters
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
 
-        - filepath (str): Path to a traj file describing simulation result.
-
+        - filepath (list[str]): Paths to `.traj` files containing simulation
+          results.
     """
     paths = args.filepath
     for path in paths:
@@ -247,15 +360,18 @@ def calc_msd(args):
 
 def calc_lindemann(args):
     """
-    Call the lindemann calculation function.
+    Calculate and print the Lindemann index.
+
+    This function processes one or more trajectory files and prints the
+    calculated Lindemann index for each.
 
     Parameters
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
 
-        - filepath (str): Path to a traj file describing simulation result.
-
+        - filepath (list[str]): Paths to `.traj` files containing simulation
+          results.
     """
     paths = args.filepath
     for path in paths:
@@ -266,15 +382,18 @@ def calc_lindemann(args):
 
 def calc_self_diff(args):
     """
-    Call the self diffition calculation function.
+    Calculate and print the self-diffusion coefficient.
+
+    This function processes one or more trajectory files and prints the
+    calculated self-diffusion coefficient for each.
 
     Parameters
     ----------
     args : argparse.Namespace
         Command-line arguments. Should contain:
 
-        - filepath (str): Path to a traj file describing simulation result.
-
+        - filepath (list[str]): Paths to `.traj` files containing simulation
+          results.
     """
     paths = args.filepath
     for path in paths:
@@ -295,8 +414,8 @@ def calc_isobaric_specific_heat(args):
     args : argparse.Namespace
         Command-line arguments. Should contain:
 
-        - filepath (str): Path to a traj file describing simulation result.
-
+        - filepath (list[str]): Paths to `.traj` files containing simulation
+          results.
     """
     paths = args.filepath
     for path in paths:
@@ -318,8 +437,8 @@ def build_website_locally(args):
 
     Parameters
     ----------
-    args: args
-        Command-line arguments passed from the caller (not used directly).
+    args : argparse.Namespace
+        Command-line arguments. This parameter is unused.
     """
     logger.info("Building the documentation locally")
     subprocess.run(
@@ -337,14 +456,26 @@ def view_website_browser(args):
 
     Parameters
     ----------
-    args: args
-        Command-line arguments passed from the caller (not used directly).
+    args : argparse.Namespace
+        Command-line arguments. This parameter is unused.
     """
     logger.info("Viewing the docs with default web-browser")
     webbrowser.open("docs/_build/html/index.html")
 
 
 def write_to_database(args):
+    """
+    Write simulation results from JSON files to a MongoDB database.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+
+        - address (str): The connection URI for the MongoDB database.
+        - filepath (list[str]): A list of paths to JSON files or directories
+          containing JSON files to be written to the database.
+    """
     writer = DBManager(args.address)
     for path in args.filepath:
         logger.info(f"Writing data from {path} to {args.address}")
@@ -365,6 +496,17 @@ def calculate_defect_formation_energy(args):
     defect_formation_energy(db)
 
 def visualize_DB(args):
+    """
+    Generate plots from data in the database using a configuration file.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+
+        - filepath (str): Path to a YAML configuration file that specifies
+          which data to fetch and how to plot it.
+    """
     path = args.filepath
 
     run_visualize_db(path)
@@ -373,6 +515,23 @@ def visualize_DB(args):
 def outlier_detection(args):
     """
     Connect to the database and run outlier detection.
+
+    Fetches data from a specified MongoDB collection, groups it by chemical
+    formula, and identifies outliers for given physical properties based on a
+    standard deviation threshold.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments. Should contain:
+
+        - address (str): The connection URI for the MongoDB database.
+        - properties (list[str] | None): A list of properties to check for
+          outliers (e.g., 'energy_per_atom').
+        - db_client (str): The name of the MongoDB database.
+        - db_collection (str): The name of the collection within the database.
+        - std_dev (float): The standard deviation threshold for classifying
+          a data point as an outlier.
     """
     logger.debug(f"Connecting to the database at {args.address}")
     try:
@@ -412,6 +571,17 @@ def outlier_detection(args):
 
 
 def create_parser():
+    """
+    Create and configure the argument parser for the MDSE CLI.
+
+    This function defines all the commands, subcommands, and their respective
+    arguments, help messages, and default functions to be executed.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        The fully configured parser object.
+    """
     # ----------Setup----------
     parser = argparse.ArgumentParser(description="MDSE")
 
@@ -632,24 +802,33 @@ def create_parser():
 
 
 def main():
+    """Main entry point for the MDSE command-line interface.
+
+    This function orchestrates the CLI by:
+
+    1. Creating the argument parser.
+    2. Parsing the command-line arguments provided by the user.
+    3. Setting up the logging configuration (e.g., setting the level to DEBUG\
+       if `--debug` is specified).
+    4. Dispatching the command to the appropriate handler function based on the\
+       subcommand provided.
+    5. If no subcommand is given, it prints the help message.
+
+    Examples
+    --------
+    Running a simulation:
+
+    >>> mdse simulate -f config.yml
+
+    Viewing a trajectory file:
+
+    >>> mdse view -f result.traj
+
+    Cleaning up trajectory files:
+
+    >>> mdse clean -f ./results --recursive
+
     """
-    Entry point for the MDSE CLI.
-
-    Provides the following subcommands:
-
-    - `simulate`: Run simulations defined in a YAML file.
-        >>> mdse simulate -f config.yml
-    - `view`: Open structure files with the ASE GUI.
-        >>> mdse view -f file1.traj file2.traj
-    - `clean`: Remove all `.traj` files in a directory.
-        >>> mdse clean -f ./results
-
-    Notes
-    -----
-    The selected subcommand is dispatched to the corresponding function
-    via `argparse`'s ``set_defaults(func=...)``.
-    """
-
     parser = create_parser()
 
     args = parser.parse_args()

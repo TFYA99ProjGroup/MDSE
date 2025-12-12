@@ -4,6 +4,45 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 
+"""
+Post-processing and analysis of molecular dynamics simulation data.
+
+This module defines the `ResultMD` class, which serves as a primary tool for
+analyzing the output of molecular dynamics simulations. It acts as a container
+for a sequence of simulation frames (ASE Atoms objects) and provides a rich
+set of methods to compute various physical properties from the trajectory data.
+
+The `ResultMD` class can be instantiated directly with a list of frames or
+loaded from a `.traj` file using the `from_file` classmethod.
+
+Key functionalities include the calculation of:
+
+- **Structural and Transport Properties**:
+
+  - Mean Squared Displacement (MSD)
+  - Self-diffusion coefficient
+  - Lindemann index
+  - Nearest-neighbor distance
+
+- **Thermodynamic Properties**:
+
+  - Isochoric heat capacity
+  - Isobaric specific heat and enthalpy
+  - Cohesive energy
+  - Temperature, pressure, and energy evolution over time
+
+- **Vibrational Properties**:
+
+  - Velocity Autocorrelation Function (VACF)
+  - Density of States (DOS)
+  - Debye temperature
+
+- **Mechanical Properties**:
+
+  - Elastic constants (C11, C12, C44)
+  - Bulk, Shear, and Young's moduli
+"""
+
 from matplotlib import pyplot as pl
 from scipy import constants
 import numpy as np
@@ -28,13 +67,19 @@ class ResultMD:
     calculate and visualize the mean squared displacement (MSD).
     """
 
-    "default constructor, used for list of atoms objects ..."
-
     def __init__(self, data, conv_crystal = None, calc_params = None):
         """Initialize the ResultMD object.
 
-        Parameters:
-            data (list): List of ASE Atoms objects representing simulation frames.
+        Parameters
+        ----------
+        data : list
+            List of ASE Atoms objects representing the simulation frames.
+        conv_crystal : ase.Atoms, optional
+            The conventional (unit) cell of the crystal structure, used for
+            lattice constant calculations. Defaults to None.
+        calc_params : dict, optional
+            Parameters for the ASE calculator, used to re-initialize the
+            calculator for post-processing tasks. Defaults to None.
         """
         logger.debug("Initialize ResultMD")
 
@@ -55,11 +100,15 @@ class ResultMD:
     def from_file(cls, filepath):
         """Create a ResultMD object from a trajectory file.
 
-        Parameters:
-            filepath (str): Path to the trajectory file.
+        Parameters
+        ----------
+        filepath : str
+            Path to the trajectory file (e.g., a `.traj` file).
 
-        Returns:
-            ResultMD: An instance of the class containing trajectory frames.
+        Returns
+        -------
+        ResultMD
+            An instance of the class containing the trajectory frames.
         """
         logger.debug(f"Creating instances of ResultMD from {filepath}")
         try:
@@ -72,12 +121,24 @@ class ResultMD:
     def _calc_msd_list(self, frame_skip=0.2):
         """Calculate the mean squared displacement (MSD) for each direction.
 
-        Returns:
-            tuple: A tuple containing:
-                - taus_fs (list): Time lags in femtoseconds.
-                - MSD_at_tau_x (list): MSD values in the x-direction.
-                - MSD_at_tau_y (list): MSD values in the y-direction.
-                - MSD_at_tau_z (list): MSD values in the z-direction.
+        This method computes the MSD as a function of time lag (tau) for the
+        x, y, and z components separately. It first skips a fraction of initial
+        frames to account for equilibration.
+
+        Parameters
+        ----------
+        frame_skip : float, optional
+            Fraction of initial frames to skip for equilibration. Defaults to 0.2.
+
+        Returns
+        -------
+        tuple
+            A tuple containing:
+
+            - taus_fs (list): Time lags in femtoseconds.
+            - MSD_at_tau_x (list): MSD values in the x-direction (Å²).
+            - MSD_at_tau_y (list): MSD values in the y-direction (Å²).
+            - MSD_at_tau_z (list): MSD values in the z-direction (Å²).
         """
         logger.debug("Beginning calculations for MSD")
 
@@ -151,8 +212,19 @@ class ResultMD:
     def calc_msd(self, frame_skip=0.2):
         """Compute the overall mean squared displacement (MSD).
 
-        Returns:
-            float: The average MSD value across all directions.
+        This method calculates the total MSD, averaged over all three spatial
+        directions.
+
+        Parameters
+        ----------
+        frame_skip : float, optional
+            Fraction of initial frames to skip. Passed to :py:meth:`_calc_msd_list`.
+            Defaults to 0.2.
+
+        Returns
+        -------
+        float
+            The average MSD value across all directions (Å²).
         """
         logger.debug("Begginning calc_msd")
         _, MSD_x, MSD_y, MSD_z = self._calc_msd_list(frame_skip)
@@ -161,10 +233,15 @@ class ResultMD:
     def estimate_nearest_neighbor_distance(self, positions):
         """Estimate average nearest-neighbor distance for one frame.
 
-        Args:
-            positions (ndarray): shape (N, 3) array of atomic positions.
-        Returns:
-            float: average nearest-neighbor distance for one frame.
+        Parameters
+        ----------
+        positions : numpy.ndarray
+            A (N, 3) array of atomic positions for N atoms.
+
+        Returns
+        -------
+        float
+            The average nearest-neighbor distance for the given frame (Å).
         """
         diffs = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
         dists = np.sqrt(np.sum(diffs**2, axis=-1))
@@ -175,8 +252,11 @@ class ResultMD:
     def estimate_average_a(self):
         """Estimate the average nearest-neighbor distance over all frames.
 
-        Returns:
-            float: The average nearest-neighbor distance across all frames.
+        Returns
+        -------
+        float
+            The average nearest-neighbor distance across all frames in the
+            trajectory (Å).
         """
         all_a = [
             self.estimate_nearest_neighbor_distance(f.positions) for f in self.frames
@@ -186,10 +266,19 @@ class ResultMD:
     def calc_lindemann(self, a=None):
         """Compute the global Lindemann parameter.
 
-        Args:
-            a (float): Average nearest-neighbor distance.
-        Returns:
-            float: Lindemann parameter `delta_L`.
+        The Lindemann index is a measure of structural disorder, defined as the
+        root-mean-square displacement divided by the nearest-neighbor distance.
+
+        Parameters
+        ----------
+        a : float, optional
+            Average nearest-neighbor distance (Å). If not provided, it will be
+            calculated using `estimate_average_a()`. Defaults to None.
+
+        Returns
+        -------
+        float
+            The dimensionless Lindemann parameter `delta_L`.
         """
         logging.debug("Calculate lindemann")
         if a is None:
@@ -198,7 +287,12 @@ class ResultMD:
         return np.sqrt(msd) / a
 
     def visualize_msd(self):
-        """Visualize the mean squared displacement (MSD) as a function of time lag."""
+        """Visualize the mean squared displacement (MSD) vs. time lag.
+
+        This method generates a plot showing the MSD for the x, y, and z
+        directions as a function of the time lag, tau. It is a convenience
+        wrapper around `_calc_msd_list`.
+        """
         import matplotlib.pyplot as plt
 
         logger.debug("Beggining visualize_msd")
@@ -225,16 +319,20 @@ class ResultMD:
         `self.frames`. It uses the **Wiener-Khinchin theorem** (via FFT)
         for a computationally efficient calculation.
 
-        Args:
-            frame_skip (float, optional): Fraction of the *total* initial
-                frames to skip (e.g., for equilibration). Defaults to 0.5.
-            max_lag (float, optional): Fraction of the *remaining* frames
-                (after skipping) to use as the maximum lag time. The
-                returned VACF will have this many points. Defaults to 0.5.
+        Parameters
+        ----------
+        frame_skip : float, optional
+            Fraction of the *total* initial frames to skip for equilibration.
+            Defaults to 0.5.
+        max_lag : float, optional
+            Fraction of the *remaining* frames (after skipping) to use as the
+            maximum lag time. The returned VACF will have this many points.
+            Defaults to 0.5.
 
-        Returns:
-            numpy.ndarray: A 1D array containing the normalized VACF. Its
-                length will be `int((1 - frame_skip) * len(self.frames) * max_lag)`.
+        Returns
+        -------
+        numpy.ndarray
+            A 1D array containing the normalized VACF.
         """
         self.check_equilibrium()
 
@@ -274,20 +372,22 @@ class ResultMD:
         The resulting DOS is cached in ``self.dos``. If this method is called
         again, it will return the cached values without recalculation.
 
-        Args:
-            frame_skip (float, optional): Fraction of the total initial
-                frames to skip (e.g., for equilibration). This value is
-                passed directly to ``self._calc_vacf`` and is also used
-                to select the frames for calculating ``natoms``.
-                Defaults to 0.5.
+        Parameters
+        ----------
+        frame_skip : float, optional
+            Fraction of the total initial frames to skip for equilibration.
+            This value is passed directly to :py:meth:`_calc_vacf`.
+            Defaults to 0.5.
 
-        Returns:
-            tuple: A tuple of `(dos, omega)`:
-                - **dos** (numpy.ndarray): The 1D array of the normalized
-                  density of states.
-                - **omega** (numpy.ndarray): The 1D array of the corresponding
-                  angular frequencies. The units depend on the units of
-                  `dt` (e.g., rad/fs if `dt` is in fs).
+        Returns
+        -------
+        tuple
+            A tuple of `(dos, omega)`:
+
+            - **dos** (numpy.ndarray): The 1D array of the normalized\
+              density of states.
+            - **omega** (numpy.ndarray): The 1D array of the corresponding\
+              angular frequencies (in rad/s).
         """
         self.check_equilibrium()
         if self.reached_equilibrium:
@@ -330,7 +430,12 @@ class ResultMD:
         return self.dos, omega
 
     def plot_density_of_states(self):
-        """Visualize the density of states as a function of angular frequency."""
+        """Visualize the density of states (DOS).
+
+        This method plots the cached DOS as a function of angular frequency.
+        :py:meth:`calc_density_of_states` must be called first to compute and cache
+        the DOS data.
+        """
         pl.figure()
         pl.plot(self.dos)
         pl.show()
@@ -351,27 +456,29 @@ class ResultMD:
 
         The calculation performs the following steps:
 
-        1. Calls ``self.calc_density_of_states(frame_skip)`` to get the `dos` \
-            and angular frequency `omega` arrays.
+        1. Calls :py:meth:`calc_density_of_states` to get the `dos` \
+            and angular frequency :math:`\\omega` arrays.
         2. Calculates the cumulative integral of the DOS with respect to \
-            `omega` (i.e., the total number of modes up to a given frequency).
+            :math:`\\omega` (i.e., the total number of modes up to a given frequency).
         3. Finds the index where this cumulative integral first matches or \
             exceeds the target degrees of freedom (3N).
         4. The frequency at this index is taken as the Debye frequency.
-        5. Converts the Debye frequency to the Debye temperature using the \
-            relation
+        5. Converts the Debye frequency to the Debye temperature using the relation
+
             .. math::
                 \\Theta_D = \\frac{\\hbar \\omega_D}{k_B}.
 
-        Args:
-            frame_skip (float, optional): Fraction of the total initial \
-                frames to skip (e.g., for equilibration). This value is \
-                passed directly to `self.calc_density_of_states`. \
-                Defaults to 0.5.
+        Parameters
+        ----------
+        frame_skip : float, optional
+            Fraction of the total initial frames to skip for equilibration.
+            This value is passed directly to `calc_density_of_states`.
+            Defaults to 0.5.
 
-        Returns:
-            float: The calculated Debye temperature ``Theta_D``. The units \
-                (e.g., Kelvin) depend on the `dt` value from the frames.
+        Returns
+        -------
+        float
+            The calculated Debye temperature (:math:`\\Theta_D`) in Kelvin.
         """
         kB = constants.Boltzmann
         hbar = constants.hbar
@@ -401,11 +508,23 @@ class ResultMD:
         return Theta_D
 
     def calc_self_diff(self):
-        """Calculates self diffusion coefficient using MSD.
-        Requires a linear-fit, so filters out noisy tau values. (Might need fine-tuning)
+        """Calculate the self-diffusion coefficient from the MSD.
 
-        Returns:
-            D_total (float): Self diffusion coefficent, w.r.t all directions.
+        The diffusion coefficient (D) is determined from the slope of the mean
+        squared displacement (MSD) vs. time lag (:math:`\\tau`) plot, based on
+        the Einstein relation in 3D:
+
+        .. math::
+            MSD(\\tau) = 6D\\tau
+
+        A linear regression is performed on a central portion of the MSD data
+        to find the slope.
+
+        Returns
+        -------
+        float
+            The total self-diffusion coefficient in units of Å² per unit of
+            time from the simulation (e.g., Å²/fs).
         """
         taus_fs, MSD_of_tau_x, MSD_of_tau_y, MSD_of_tau_z = self._calc_msd_list()
         if taus_fs == []:
@@ -447,10 +566,21 @@ class ResultMD:
     def calc_isobaric_enthalpy(self):
         """Calculates isobaric enthalpy after a NPT ensemble.
 
-        Returns:
-            enthalpy_J (float): Enthalpy with unit Joule.
+        The enthalpy (H) is calculated as:
 
-        Note:
+        .. math::
+            H = E + PV
+
+        where E is the total
+        energy (potential + kinetic), P is the pressure, and V is the volume.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of enthalpy values for each frame in Joules.
+
+        Note
+        -------
             Developers, you need a calc to get the total energy. Btw,
             if you just began reading theese docs, calc stands for calculator.
         """
@@ -481,10 +611,18 @@ class ResultMD:
         return enthalpy_J
 
     def calc_isobaric_specific_heat(self):
-        """Caluclates isobaric specific heat or c_p after a NPT ensemble.
+        """Calculate the isobaric specific heat (Cp) per unit mass.
 
-        Returns:
-            specific heat (float): Specific heat in units J / (kg * K).
+        This method is intended for results from an NPT ensemble. It
+        calculates Cp from the fluctuations in enthalpy (H) using the formula:
+
+        .. math::
+            C_p = \\frac{\\langle (H - \\langle H \\rangle)^2 \\rangle}{k_B T^2}
+
+        Returns
+        -------
+        float
+            The isobaric specific heat in units of J / (kg * K).
         """
         T_K = []
         for frame in self.frames:
@@ -519,10 +657,19 @@ class ResultMD:
         return Cp / tot_mass_kg
 
     def calc_isochoric_heat_capacity_per_atom(self):
-        """Calculates the heat capacity per atom after a NVT ensemble.
+        """Calculate the isochoric heat capacity (Cv) per atom.
 
-        Returns:
-            Heat capacity per atom (float): Heat capacity per atom in units J / (n * K)
+        This method is intended for results from an NVT ensemble. It
+        calculates Cv from the fluctuations in total energy (E) using the
+        formula:
+
+        .. math::
+            C_v = \\frac{\\langle (E - \\langle E \\rangle)^2 \\rangle}{k_B T^2}
+
+        Returns
+        -------
+        float
+            The isochoric heat capacity per atom in units of J/K per atom.
         """
         E_eV, T_K = [], []
 
@@ -555,6 +702,20 @@ class ResultMD:
         return Cv / n_atoms
 
     def _energy_with_strain(self, crystal, strain_matrix):
+        """Helper function to calculate potential energy of a strained crystal.
+
+        Parameters
+        ----------
+        crystal : ase.Atoms
+            The Atoms object to be strained.
+        strain_matrix : numpy.ndarray
+            A 3x3 matrix representing the strain to apply to the cell.
+
+        Returns
+        -------
+        float
+            The potential energy of the strained crystal in Joules.
+        """
         logger.debug("calc strained energy")
         crystal = self._attach_calc(crystal)
         cell = crystal.cell.copy()
@@ -565,18 +726,23 @@ class ResultMD:
         return crystal.get_potential_energy() * constants.eV
 
     def calc_C11(self, crystal_equil, epsilon=0.01):
-        """Calculate the C11 elastic constant. Found by applying axial compression on
-        one axis of the cell.
+        """Calculate the C11 elastic constant.
 
-        parameters :
-            crystal_equil : ase.Atoms object
-                A relaxed equilibrium structure, calculator will be attached inside
-                the function.
-            gamma : float
-                Magnitude of the applied compression.
+        C11 is calculated by applying a uniaxial strain :math:`\\epsilon_{xx}` and using
+        a finite difference approximation for the second derivative of energy.
 
-        returns:
-            float: C11
+        Parameters
+        ----------
+        crystal_equil : ase.Atoms
+            A relaxed equilibrium structure. A calculator will be attached
+            inside the function.
+        epsilon : float, optional
+            Magnitude of the applied strain. Defaults to 0.01.
+
+        Returns
+        -------
+        float
+            The C11 elastic constant in Pascals.
         """
         logger.debug("Calculating C11")
         crystal_equil = self._attach_calc(crystal_equil)
@@ -596,18 +762,24 @@ class ResultMD:
         return C11
 
     def calc_C12(self, crystal_equil, epsilon=0.01):
-        """Calculate the C12 elastic constant. Found by applying compression
-        on one axis and viewing the dilation of the cell in another.
+        """Calculate the C12 elastic constant.
 
-        parameters :
-            crystal_equil : ase.Atoms object
-                A relaxed equilibrium structure, calculator will be attached inside
-                the function.
-            gamma : float
-                Magnitude of the applied compression.
+        C12 is calculated by applying a biaxial strain
+        (:math:`\\epsilon_{xx} = \\epsilon`, :math:`\\epsilon_{yy} = -\\epsilon`) and
+        using a finite difference approximation.
 
-        returns:
-            float: C12
+        Parameters
+        ----------
+        crystal_equil : ase.Atoms
+            A relaxed equilibrium structure. A calculator will be attached
+            inside the function.
+        epsilon : float, optional
+            Magnitude of the applied strain. Defaults to 0.01.
+
+        Returns
+        -------
+        float
+            The C12 elastic constant in Pascals.
         """
         logger.debug("Caluculating C12")
         crystal_equil = self._attach_calc(crystal_equil)
@@ -627,18 +799,23 @@ class ResultMD:
         return C12
 
     def calc_C44(self, crystal_equil, gamma):
-        """Calculate the C44 elastic constant. Found by applying shear strain
-        to a relaxed cell.
+        """Calculate the C44 elastic constant.
 
-        parameters:
-            crystal_equil : ase.Atoms object
-                A relaxed equilibrium structure, calculator will be attached inside
-                the function.
-            gamma : float
-                Magnitude of the applied shear strain.
+        C44 is calculated by applying a shear strain (:math:`\\epsilon_{xy}`) and using
+        a finite difference approximation.
 
-        returns:
-            float: C44
+        Parameters
+        ----------
+        crystal_equil : ase.Atoms
+            A relaxed equilibrium structure. A calculator will be attached
+            inside the function.
+        gamma : float
+            Magnitude of the applied shear strain.
+
+        Returns
+        -------
+        float
+            The C44 elastic constant in Pascals.
         """
         logger.debug("C44")
         crystal_equil = self._attach_calc(crystal_equil)
@@ -666,16 +843,23 @@ class ResultMD:
         return C44
 
     def calc_shear_modulus(self, strain=0.01):
-        """Calculates the shear modulus at an equilibrium frame.
-        Shear modulus, G = (3*C44 + C11 - C12) / 5
+        """Calculate the shear modulus (G) for a cubic crystal.
 
-        parameters:
-            strain : float
-                Magnitude of the applied strain. Applies to both the shear strain and
-                compression. Default is 0.01 (i.e., 1% shear or compress)
+        This method computes the Voigt, Reuss, and Hill averages for the shear
+        modulus based on the calculated elastic constants C11, C12, and C44.
+        It returns the Hill average, which is the arithmetic mean of the Voigt
+        (upper bound) and Reuss (lower bound) moduli.
 
-        returns:
-            float: shear_modulus
+        Parameters
+        ----------
+        strain : float, optional
+            Magnitude of the strain applied for calculating the underlying
+            elastic constants. Defaults to 0.01.
+
+        Returns
+        -------
+        float
+            The Hill average shear modulus in Pascals.
         """
         ## Maybe fix mean over serveral equil frames
         logger.debug("Calculating shear moudulus")
@@ -704,17 +888,24 @@ class ResultMD:
         return shear_modulus
 
     def calc_bulk_modulus(self, strain=0.01):
-        """Calculates the shear modulus at an equilibrium frame.
-        Bulk modulus, B = (C11 + 2*C12) / 3
+        """Calculate the bulk modulus (B) for a cubic crystal.
 
-        parameters:
-            strain : float
-                Magnitude of the applied strain. Applies to
-                compression in both elasticity constants. Default is 0.01(i.e.,
-                1% shear or compress)
+        The bulk modulus is calculated from the elastic constants C11 and C12
+        using the relation:
 
-        returns:
-            float: bulk_modulus
+        .. math::
+            B = \\frac{C_{11} + 2C_{12}}{3}
+
+        Parameters
+        ----------
+        strain : float, optional
+            Magnitude of the strain applied for calculating the underlying
+            elastic constants. Defaults to 0.01.
+
+        Returns
+        -------
+        float
+            The bulk modulus in Pascals.
         """
         logger.debug("Calculating bulk modulus")
         equil_frame = self.check_equilibrium()
@@ -735,17 +926,24 @@ class ResultMD:
         return bulk_modulus
 
     def calc_youngs_modulus(self, strain=0.01):
-        """Calculates Young's modulus at an equilibrium frame.
-        Young's modulus, E = 9*B*G / (3*B + G)
+        """Calculate Young's modulus (E).
 
-        parameters:
-            strain : float
-                Magnitude of the applied strain. Applies uniformly to
-                tensile or compressive deformation when computing the
-                elastic response. Default is 0.01 (i.e., 1% strain).
+        Young's modulus is calculated from the bulk (B) and shear (G) moduli
+        using the relation:
 
-        returns:
-            float: youngs_modulus
+        .. math::
+            E = \\frac{9BG}{3B + G}
+
+        Parameters
+        ----------
+        strain : float, optional
+            Magnitude of the strain applied for calculating the underlying
+            bulk and shear moduli. Defaults to 0.01.
+
+        Returns
+        -------
+        float
+            Young's modulus in Pascals.
         """
         logger.debug("Calculating Young's modulus")
 
@@ -758,28 +956,38 @@ class ResultMD:
         return youngs_modulus
 
     def get_pot_energies(self):
-        """Gets the potential energis at each frame.
+        """Get the potential energy for each frame.
 
-        returns:
-            list: Potential energy at each frame
+        If potential energy was not saved during the simulation, this method
+        will calculate it for all frames.
+
+        Returns
+        -------
+        list
+            A list of potential energy values (eV) for each frame.
         """
         #Check if pot_energy is calculated. If not, calculates it
         self._attach_pot_energy_to_frames()
         return [frame.info["pot_energy"] for frame in self.frames]
 
     def get_kin_energies(self):
-        """Gets the kinnetic energis at each frame.
+        """Get the kinetic energy for each frame.
 
-        returns:
-            list: Kinnetic energy at each frame
+        Returns
+        -------
+        list
+            A list of kinetic energy values (eV) for each frame.
         """
         logger.debug("Get kinetic energies")
         return [frame.get_kinetic_energy() for frame in self.frames]
 
     def get_tot_energies(self):
-        """Gets total energy at each frame
-        returns:
-            list: Total energy at each frame
+        """Get the total energy (potential + kinetic) for each frame.
+
+        Returns
+        -------
+        list
+            A list of total energy values (eV) for each frame.
         """
         logger.debug("Get total energies")
 
@@ -791,10 +999,13 @@ class ResultMD:
         ]
 
     def get_time_axis(self):
-        """Gets the time steps where frames are from.
+        """Generate a time axis for the simulation frames.
 
-        returns:
-            times (list): Contains at what times each frame is from.
+        Returns
+        -------
+        numpy.ndarray
+            An array of time values corresponding to each frame, in the same
+            time units as the simulation timestep (e.g., fs).
         """
         logger.debug("Get an time-axis")
         dt = self.frames[0].info["dt"]
@@ -802,11 +1013,11 @@ class ResultMD:
         return times
 
     def _attach_pot_energy_to_frames(self):
-        """If there was no 'Calc_pot' flag in the .yaml config file, potential energy
-        wont be calculated and saved to frame.info["pot_energy"].
+        """Ensure potential energy is calculated and stored in each frame.
 
-        This function uses calculator to calculate and attach .info["pot_energy"] to
-        all frames, if no such information was saved in simulation manager.
+        This helper method checks if `pot_energy` is already in `frame.info`.
+        If not, it initializes the calculator and computes the potential energy
+        for every frame, storing the result in `frame.info['pot_energy']`.
         """
         logger.debug("Potential energy was needed, check if stored in frames")
         #Check if SM saved potential energy
@@ -825,12 +1036,17 @@ class ResultMD:
 
 
     def single_atom_energy(self):
-        """This function returns the energy of a single atom in the structure.
-        Used when calculating cohesive energy.
+        """Calculate the average potential energy of isolated atoms.
 
-        returns:
-            E_atom (float): The energy of one atom in the structure
-            int: How many atoms in formula. Ex MgCu2 gives 3
+        This method calculates the total potential energy of the individual,
+        non-interacting atoms that make up the material's formula unit. The
+        result is then averaged per atom in the formula unit. This value is
+        a key component for calculating the cohesive energy.
+
+        Returns
+        -------
+        float
+            The average potential energy per isolated atom (eV).
         """
         logger.debug("Start calculating single_atom energies")
 
@@ -885,10 +1101,22 @@ class ResultMD:
 
 
     def get_cohesive_energy(self):
-        """The cohesive energy, as E_single_atom - E_bulk_all_atoms / nr of atoms
+        """Calculate the cohesive energy per atom.
 
-        Returns:
-            float: The cohesive energy
+        Cohesive energy is the energy required to separate a material into
+        isolated, neutral atoms. It is calculated as:
+
+        .. math::
+            E_{\\text{cohesive}} = E_{\\text{isolated}} - E_{\\text{bulk}}
+
+        where :math:`E_{\\text{isolated}}` is the average energy of an isolated atom and
+        :math:`E_{\\text{bulk}}`
+        is the average potential energy per atom in the bulk material.
+
+        Returns
+        -------
+        float
+            The cohesive energy per atom (eV).
         """
         logger.debug("Calc cohesive energy")
         pots = self.get_pot_energies()
@@ -901,20 +1129,24 @@ class ResultMD:
         )
 
     def get_temperatures(self):
-        """Gets temperature for all frames
+        """Get the temperature for each frame.
 
-        returns:
-            list: List of all temperatures at each frame
+        Returns
+        -------
+        list
+            A list of temperature values (K) for each frame.
         """
         logger.debug("Get tempertures")
         return [frame.get_temperature() for frame in self.frames]
 
     def get_pressures(self):
-        """Gets pressure for all frames
+        """Get the pressure for each frame.
 
-        returns:
-            list : List of all pressures at each frame
-
+        Returns
+        -------
+        list
+            A list of pressure values for each frame, calculated from the
+            stress tensor.
         """
         pressure = []
         for frame in self.frames:
@@ -924,16 +1156,23 @@ class ResultMD:
 
 
     def get_pressure(self, frame):
-        """Gets pressure for a specified frame, specified by the average of the
-        normal stresses on the orthogonal planes.
+        """Get pressure for a single frame.
 
-        parameters:
-            frame : int
-                The specified frame for which to calculate the pressure.
+        Pressure is calculated as the negative average of the diagonal elements of the
+        stress tensor:
 
-        returns:
-            float : The pressure in the current frame
+        .. math::
+            P = - \\frac{\\sigma_{xx} + \\sigma_{yy} + \\sigma_{zz}}{3}
 
+        Parameters
+        ----------
+        frame : ase.Atoms
+            The Atoms object for which to calculate the pressure.
+
+        Returns
+        -------
+        float
+            The pressure of the frame.
         """
         frame.calc = self._check_calc_2()
         stress = frame.get_stress()
@@ -942,11 +1181,22 @@ class ResultMD:
         return pressure
 
     def check_equilibrium(self):
-        """Checks whetever the simulation reached equilibrium.
-        Also sets at what frame this happens
+        """Check if the simulation has reached equilibrium.
 
-        returns:
-            pos (int): Index of where equilibrium was found. 0 if no equilibrium found.
+        This method attempts to identify the frame at which the system
+        equilibrates by checking for three conditions in order:
+
+        1. Total energy becomes constant.
+        2. Temperature becomes constant.
+        3. Total energy begins to oscillate around a stable mean.
+
+        It sets `self.reached_equilibrium` to True if any condition is met.
+
+        Returns
+        -------
+        int
+            The index of the first frame considered to be in equilibrium.
+            Returns 0 if no equilibrium is detected.
         """
         logger.debug("Started check if equilibrium was reached")
         kin_energy = self.get_kin_energies()
@@ -991,15 +1241,24 @@ class ResultMD:
         return 0
 
     def _check_equilibrium_const(self, property, tol):
-        """Checks when a propery starts to stabalize around a constant value.
+        """Check when a property stabilizes around a constant value.
 
-        args:
-            Property (list): List containing property for all frames
-            tol (float): Tolerance of when energy has reached constant value
-        returns:
-            pos (int): Position of frame where equilibrium starts
+        Equilibrium is assumed when the relative change between consecutive
+        data points falls below a given tolerance.
+
+        Parameters
+        ----------
+        property : list
+            A list of numerical values (e.g., energy or temperature) over time.
+        tol : float
+            The relative tolerance for determining stability.
+
+        Returns
+        -------
+        int
+            The index of the first frame where the property is stable.
         """
-        logger.debug("Check if we have equilibrium in the form of constant energy")
+        logger.debug("Check if we have equilibrium in the form of constant property")
         difference = [
             abs(property[i + 1] - property[i]) / property[i]
             for i in range(len(property) - 1)
@@ -1014,15 +1273,23 @@ class ResultMD:
         return pos
 
     def _check_equilibrium_oscill(self, Tot_energy, tol):
-        """Checks if energy follows an oscillating pattern. Look at a window, do a mean.
-        Then move the window along the frames and see how mean changes.
-        When stops changing much, we are over an oscillating area.
+        """Check if a property is oscillating around a stable mean.
 
-        args:
-            Tot_energy (list): List of total energy for all frames
-            tol (float): The tolerance in % from total mean value
-        returns:
-            pos (int): At what frame we start getting within tolerance
+        This method uses a moving window to calculate the mean of the property.
+        Equilibrium is assumed when the relative change between the means of
+        consecutive windows falls below a tolerance.
+
+        Parameters
+        ----------
+        Tot_energy : list
+            List of total energy values for all frames.
+        tol : float
+            The relative tolerance for determining stability of the window mean.
+
+        Returns
+        -------
+        int
+            The index of the first frame of the first stable window.
         """
         logger.debug("Check if equilibrium, in oscillating behavior")
         window_lenght = 5
@@ -1050,6 +1317,21 @@ class ResultMD:
         return len(Tot_energy) - 2
 
     def _attach_calc(self, crystal_equil):
+        """Attach the correct calculator to an Atoms object.
+
+        This helper function reads the calculator type from `self.frames[0].info`
+        and attaches a new instance of that calculator to the provided Atoms object.
+
+        Parameters
+        ----------
+        crystal_equil : ase.Atoms
+            The Atoms object to which the calculator will be attached.
+
+        Returns
+        -------
+        ase.Atoms
+            The same Atoms object with the calculator attached.
+        """
         calc = self.frames[0].info["calc"]
         if calc == "EMT":
             crystal_equil.calc = EMT()
@@ -1063,9 +1345,21 @@ class ResultMD:
         return crystal_equil
 
     def _check_keys(self, name, d, keys):
-        """
-        STOLEN from simulationmanager. Used in _check_calc_2 to see so LJ
-        has correct parameters.
+        """Check for the presence of required keys in a dictionary.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dictionary being checked (for error messages).
+        d : dict
+            The dictionary to check.
+        keys : list[str]
+            A list of keys that must be present in the dictionary.
+
+        Raises
+        ------
+        KeyError
+            If any of the specified keys are missing from the dictionary.
         """
         missing = [k for k in keys if k not in d]
         if missing:
@@ -1073,15 +1367,17 @@ class ResultMD:
 
 
     def _check_calc_2(self):
-        """"
-        STOLEN from simulationmanager. So we can init. our own calculator here.
-        Will use the parameters from simulation manager, to re-init the same
-        calculator used there.
+        """Initialize and return a calculator based on stored parameters.
 
-        Is needed so we can perform calculations here.
+        This method re-creates the ASE calculator that was used for the
+        original simulation, using the type and parameters stored in `self.frames`
+        and `self.calc_params`. This is necessary for post-processing
+        calculations that require a calculator.
 
-        returns:
-            calculator: Instance of the calculator to use
+        Returns
+        -------
+        ase.calculators.calculator.Calculator
+            An initialized ASE calculator instance.
         """
         if not self.crystal_conv:
             raise RuntimeError("ResultMD object was not given conventional" \
@@ -1126,8 +1422,11 @@ class ResultMD:
         return calculator
 
     def _estimate_lattice(self):
-        """
-        Tries different lattice constants on the conventional cell.
+        """Calculate energy vs. lattice parameters for the conventional cell.
+
+        This method systematically varies the lattice parameters of the
+        conventional cell, calculates the potential energy for each variation,
+        and returns the data needed for finding the equilibrium lattice.
 
         **For systems where we have same constant in all directions:
         Calculate volume at each guess. Then we do a EOS-fit latter to find min.
@@ -1141,11 +1440,18 @@ class ResultMD:
         Then using this min, try guessing for one other direction, find min.
         So will get an estimate of which 3 constants in all directions give min.
 
+        Returns
+        -------
+        list
+            The format of the returned list depends on the crystal structure:
+            - For cubic/trigonal: A list of `[energy, volume]` pairs.
+            - For hexagonal/tetragonal: A list of `[energy, [a, a, c]]` lists.
+            - For orthorhombic/monoclinic/triclinic: A list `[a, b, c]` of the
+              optimized lattice constants.
 
-        returns:
-            energy_vs_vol(list): [energy, volume]
-            energy_vs_latt(list): [energy, [a,a,c]]
-            list: [a,b,c] which minimized energy
+        Notes
+        -----
+        This method sets `self.crystal_struct` based on the cell geometry.
         """
         logger.debug("Starting estimate_lattice()")
         a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
@@ -1307,19 +1613,32 @@ class ResultMD:
 
 
     def calc_lattice(self):
-        """For conventional cell, find what lattice constants minimizes energy
+        """Determine the equilibrium lattice constants for the conventional cell.
 
-        **For cubic or triagonal: Use a EOS-fit
-        **For hexagonal or tetragonal: Use a quadratic fit
-        **For orthorhomic, monoclinic or triclinic: Already minimized
+        This method calls :py:meth:`_estimate_lattice` to get energy-vs-lattice data
+        and then fits this data to find the lattice parameters that minimize
+        the potential energy. The fitting method depends on the crystal
+        structure:
 
-        returns:
-            cov_structure(str): Name of the conventional cell structure
-            list: The optimal lattice constant in 3-directions
+        - For cubic or trigonal structures, it performs an Equation of State
+          (EOS) fit.
+        - For hexagonal or tetragonal structures, it performs a 2D quadratic
+          fit to the energy surface.
+        - For orthorhombic, monoclinic, or triclinic structures, it returns
+          the constants found by the sequential optimization in
+          :py:meth:`_estimate_lattice`.
+
+        Returns
+        -------
+        tuple
+            A tuple containing:
+
+            - cov_structure (str): The name of the crystal structure type.
+            - list: The optimal lattice constants `[a, b, c]` in Angstroms.
         """
         logger.debug("Start calculating/extracting which optimal lattice const is.")
 
-        energy_v_lattice = self._estimate_lattice() #Will update self.crystral_struct
+        energy_v_lattice = self._estimate_lattice() # Will update self.crystal_struct
         cov_structure = self.crystal_struct
 
         if not self.crystal_conv:

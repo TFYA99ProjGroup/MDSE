@@ -4,22 +4,40 @@
 # For a copy, see <https://github.com/TFYA99ProjGroup/MDSE/blob/main/LICENSE>.
 
 
+"""
+Visualization tools for post-processing molecular dynamics simulation results.
+
+This module provides the `VisualizeResult` class, which is designed to take a
+list of `ResultMD` objects and generate various comparative plots. It allows for
+the visualization of properties like Mean Squared Displacement (MSD), Density of
+States (DOS), and energy evolution across multiple simulations. It also supports
+creating scatter plots and histograms to analyze relationships between different
+calculated properties.
+"""
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 import logging
 
-logger = logging.getLogger(__name__) #Need to attach Handler?
+logger = logging.getLogger(__name__)
 
 class VisualizeResult:
-    """Class for visualizing ResultMD objects
+    """
+    A class for visualizing and comparing results from multiple simulations.
+
+    This class takes a list of `ResultMD` objects and provides methods to
+    generate various plots, such as MSD, DOS, energy profiles, scatter plots,
+    and histograms, allowing for easy comparison across different simulation runs.
     """
 
     def __init__(self,data):
         """Initialize VisualizeResult object.
 
-        Args:
-            data (list): List containing ResultMD objects that are to be visualized.
+        Parameters
+        ----------
+        data : list
+            A list of `ResultMD` objects to be visualized.
         """
         self.results = data
         logger.debug(
@@ -32,7 +50,12 @@ class VisualizeResult:
                           "DOS" : "calc_density_of_states"}
 
     def plot_MSD(self):
-        """Collects all MSD vs tau for the list of resultMD. Then plots them togheter.
+        """
+        Plot the Mean Squared Displacement (MSD) for all stored simulations.
+
+        This method iterates through each `ResultMD` object, calculates the MSD
+        for the x, y, and z directions, and plots them on a single graph.
+        Each simulation is distinguished by color.
         """
         logger.debug(f"Starting to plot MSD for {len(self.results)} simulations")
         colors = cm.viridis(np.linspace(0,1,len(self.results)))
@@ -53,14 +76,23 @@ class VisualizeResult:
         plt.show()
 
     def plot_scatter(self, prop1, prop2, prop3, size = 30):
-        """ Takes 3 properties and plots all these in a scatterplot.
-        First 2 properties are on x and y axis, while third is color of data point.
+        """
+        Create a 3D scatter plot from three calculated properties.
 
-        args:
-            prop1 (str): Property on x-axis
-            prop2 (str): Property on y-axis
-            prop3 (str): Property on color scaling.
-            size (int): Size of data points
+        This method generates a scatter plot where the x and y axes represent
+        two properties, and a third property is represented by the color of
+        the data points.
+
+        Parameters
+        ----------
+        prop1 : str
+            The name of the property for the x-axis.
+        prop2 : str
+            The name of the property for the y-axis.
+        prop3 : str
+            The name of the property for the color scale.
+        size : int, optional
+            The size of the markers in the scatter plot. Defaults to 30.
         """
         logger.debug(f"Starting to plot scatter for {len(self.results)} simulations")
 
@@ -88,11 +120,15 @@ class VisualizeResult:
         plt.show()
 
     def plot_histogram(self,prop1, bins = 100):
-        """Plots a histogram, based on 1 property.
+        """
+        Plot a histogram for a single property across all simulations.
 
-        args:
-            prop1(str): The propertie to plot.
-            bins(int): How many bins the property should be placed in.
+        Parameters
+        ----------
+        prop1 : str
+            The name of the property to be plotted.
+        bins : int, optional
+            The number of bins to use in the histogram. Defaults to 100.
         """
         if prop1 not in self.available:
             logger.error(
@@ -111,7 +147,12 @@ class VisualizeResult:
         plt.show()
 
     def plot_DOS(self):
-        """Plots DOS vs angular frequency, for all results saved.
+        """
+        Plot the Density of States (DOS) for all stored simulations.
+
+        This method calculates and plots the DOS vs. angular frequency for each
+        `ResultMD` object on a single graph, labeling each curve with the
+        simulation's name.
         """
         DOS, omega = zip(
             *[
@@ -130,7 +171,17 @@ class VisualizeResult:
         plt.show()
 
     def plot_energy(self, energy_type = "kin"):
-        """Plots specified energy for all the simulations stored
+        """
+        Plot the evolution of energy over time for all stored simulations.
+
+        Parameters
+        ----------
+        energy_type : str, optional
+            The type of energy to plot. Valid options are:
+
+            - "kin": Kinetic energy (default)
+            - "pot": Potential energy
+            - "tot": Total energy
         """
 
         available_energies = {"kin" : "get_kin_energies", "pot" : "get_pot_energies",

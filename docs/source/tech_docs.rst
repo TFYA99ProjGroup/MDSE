@@ -5,100 +5,101 @@ Technical Documentation
 Introduction
 ============
 
-<This is an introduction! Some text...>
+MDSE is a high-performance computational framework designed to orchestrate parallel molecular dynamics (MD) simulations. It automates the interaction with databases, manages complex simulation lifecycles, and computes material properties for high-throughput analysis.
+
+By integrating robust open-source libraries, MDSE provides a streamlined interface for simulating crystal structures and analyzing defects.
+
+Architecture & Tech Stack
+=========================
+
+MDSE is built upon a modular architecture, leveraging specific libraries for simulation, parallelization, and data management.
+
+Simulation Engine
+-----------------
+
+**ASE (Atomic Simulation Environment)**
+The core of the simulation framework [#]_. MDSE utilizes the ASE :py:class:`Atoms` object as the primary data structure for atomic positions, properties, and metadata. The ASE Calculator interface allows MDSE to seamlessly integrate various interatomic potentials.
 
 
-Background
-==========
 
-<Short info about underlying concepts and the most important packages/programs being used>
+**ASAP (As Soon As Possible)**
+Used as a high-performance extension to ASE [#]_. While ASE handles the structure, ASAP is employed for efficient force evaluations and optimized potential performance. It is particularly critical for large-scale systems where standard ASE calculators may be the bottleneck.
 
-Now follows a short description of underlying libraries, concepts and platforms used by the MDSE software. For more information about external libraries and platforms, see each libraries own respective documentation.
+Data Management
+---------------
 
-ASE
----
+**HTTk (High-Throughput Toolkit)**
+MDSE utilizes the ``httk.db`` module to interface with SQLite databases containing material defect data [#]_. This allows for the automated retrieval and setup of simulation environments based on existing material datasets.
 
-The MDSE software makes great use of the **Atomic Simulation Environment (ASE)** python library [#]_. It is a framework for constructing and managing atomic-scale simulations. MDSE uses ASE mainly for its Atoms object which represents atomic positions, relevant properties and corresponding metadata. In addition, ASE's Calculator interface provides a way to attach interatomic potentials to the Atoms object allowing MDSE to integrate different potential models, ensuring a simple but flexible simulation workflow.
+**PyMongo**
+The bridge between MDSE and the MongoDB storage backend. It handles the serialization of simulation results and material properties into the document-based database.
 
-ASAP
-----
-The **As Soon As Possible (ASAP)** is a python library that works as an extension of ASE [#]_. It offers efficient force evaluations, more optimized performance of some potentials as compared to ASE, aswell as support parallelization. ASAP is well suited for large systems where pure ASE is too slow. In MDSE, ASAP is used to accelerate the simulation workflow with optimized calculators and parallelization, thus minimizing core time on the supercomputer.
-
-httk
-----
-
-The **High-Throughput Tool Kit (httk)** is a toolkit for preparing and running calculations, analyzing the results, and storing results in global and/or personalized databases [#]_. MDSE uses this toolkit to be able to communicate with and initialize simulations from an sqlite database containing material defects.
+**Optimade API**
+Ensures that all data outputs comply with the **FAIR** (Findable, Accessible, Interoperable, and Reusable) data principles, ensuring compatibility with the broader materials science ecosystem.
 
 Parallelization
 ---------------
 
-Parallelization is the concept of letting different cores of the CPU do different computations simultaneously to optimize efficiency and minimize computation time. MDSE makes use of the **Message Passing Interface (MPI)** to accomplish this feat. MPI is
-
-mongoDB
-
-<
-docker?
-
-sqlite, or Joels DB info
-
-
-Super computer
->
-
+**MPI (Message Passing Interface)**
+To maximize computational efficiency, MDSE implements parallelization via MPI. This allows the software to distribute multiple simulations across multiple CPU cores, significantly reducing runtime for large simulation batches.
 
 System Overview
 ===============
 
-<This whole section should be discussed to find a up to date model of our program>
+MDSE is architected into two primary, decoupled modules. This separation of concerns improves maintainability and allows for independent scaling of simulation and analysis capabilities.
 
-MDSE is divided into three major modules, each managing their own large task. This limits which parts of the code can communicate, makes the software less cluttered and makes it easier to expand upon in the future.
+1. **Simulation Module:** The execution engine. It accepts user configurations, initializes the ASE/ASAP environment, and manages the MD lifecycle.
+2. **Data Processing Module:** The analytical engine. It handles database I/O, post-processing of trajectories, and visualization.
 
 .. image:: _static/MD-Design.png
-    :alt: I think it's time to remake this...
-
-
-The simulation module is the main component of MDSE. Running mainly on the ASE and ASAP libraries this module will setup, plan and execute all simulations. It receives a user specified configuration and creates an appropriate simulation based on the input.
-
-Result Module?
-
-The Data Processing Module...
-
-The Data Visualization Module...
-
+    :alt: High-level architectural diagram of MDSE modules.
 
 Simulation Workflow
 ===================
 
-<Should describe the workings of all major parts of MDSE. Aimed to be like a narrative and not like simply reading through the code.
+The MDSE workflow is designed to be linear and reproducible. The process follows a clear path from Configuration -> Initialization -> Execution -> Analysis.
 
-Simulations
------------
-Simulations begin by requiring a user specified configuration in a YAML file and optionally a CIF file. This describes exactly what the simulation will do, molecular properties, desired ensemble, simulation properties aswell as which properties to calculate. An MDSE parser reads the config and passes the information to a run manager which manages multiple simultaneous simulations aswell as parallelization.
 
-The run manager creates an instance of the ASE [1]_ Atoms object and attaches a calculator for the specified potential. Then an MD simulation based on the configuration is performed with ASE or ASAP and all frames before equillibration are removed to improve the accuracy of calculations.
 
-Calculations
+1. Configuration (CLI)
+----------------------
+MDSE operates primarily via a Command Line Interface (CLI). Users initiate simulations by passing a configuration file (YAML format) to the :py:mod:`mdse.parser`.
+
+This configuration defines:
+
+* **Crystal Properties:** Structure files, supercell size, etc.
+* **Simulation Parameters:** Temperature, time steps, ensemble (NVT/NVE...), etc.
+* **Output Requests:** Specific material properties to calculate.
+
+*Note: CLI flags are available to override specific parameters in the config file without editing the source YAML.*
+
+2. Initialization & Parsing
+---------------------------
+The Parser module validates the input and forwards the data to the :py:class:`~mdse.rm.runmanager.RunManager`.
+The Run Manager instantiates :py:class:`~mdse.md.simulationmanager.SimulationManager` objects. These objects encapsulate the simulation state, attaching the appropriate potentials (Calculators) to the ASE :py:class:`Atoms` objects.
+
+3. Execution
 ------------
+If the input source is an external database (e.g., ADAQ [#]_), MDSE queries the SQLite database for structures matching the criteria. These are extracted to ``.cif`` files.
+The simulation is then executed using the combined power of ASE and ASAP, utilizing MPI for parallel processing where applicable.
 
-When a simulation is done and the crystal structure is relaxed the run manager will begin calculating all material properties specified by the user. The run manager first checks for equillibrium and removes all previous frames as these are not useful for calculating any material properties. Results are then calculated as time averages over the remaining equillibration frames to find the most accurate values.
+4. Calculation & Analysis
+-------------------------
+Upon simulation completion, the Run Manager invokes :py:class:`~mdse.md.resultMD.ResultMD` objects.
 
-Database
---------
+* **Equilibrium Check:** Data is first filtered to remove non-equilibrated frames (burn-in period) to prevent skewed results.
+* **Property Extraction:** Physical properties are calculated as time-averages over the remaining valid trajectory frames.
 
-MDSE uses two main databases to store material properties. The first one, mongoDB, is hosted locally via a docker compose file.
+5. Storage
+----------
+Results are committed to the storage backend.
 
-<Babbla lite om databaserna och hur de hanteras>
-
-CLI
----
-
-MDSE is developed to operate via the command line interface. Here the user is able to run all pre configured MD simulations by specifying a configuration file. There are also terminal flags implemented which lets the user <?overwrite?> properties specified in the configuration file.
-
+* **MongoDB:** Hosted locally (via Docker), this serves as the primary sink for processed simulation results.
 
 References
 ==========
 
 .. [#] Atomic Simulation Environment (ASE), https://ase-lib.org/
-.. [#] As Soon As Possible (ASAP), https://asap3.readthedocs.io/en/latest/
+.. [#] As Soon As Possible (ASAP), https://asap3.readthedocs.io/en/latest
 .. [#] The High-Throughput Toolkit (httk), https://docs.httk.org/en/latest/
-
+.. [#] Automatic Defect Analysis and Qualification (ADAQ), https://defects.anyterial.se/

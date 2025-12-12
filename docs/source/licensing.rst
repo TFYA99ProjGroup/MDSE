@@ -1,3 +1,16 @@
+=========
+Licensing
+=========
+
+This repository is primarily licensed under the MIT License.
+
+Important License Exception
+===============================
+
+The code and files contained within :py:mod:`httk4mdse` are governed by the 
+GNU Affero General Public License. A copy of this license can be found within 
+that directory at ``httk4mdse/LICENSE`` in the source code.
+
 License
 =======
 

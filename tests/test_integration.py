@@ -5,7 +5,7 @@
 
 
 from mdse.rm.runmanager import RunManager
-from mdse.parser.parse_yml import main_read
+from mdse.parser import main_read
 from mdse.rm.dbmanager import DBManager
 
 from pathlib import Path

@@ -12,18 +12,18 @@ Welcome to the documentation for the `mdse` package.
    :maxdepth: 4
    :caption: Contents:
 
-   installation
-   examples
-   license
-   changelog
    gettingstarted
    tech_docs
+   examples
+   changelog
+   licensing
 
 .. autosummary::
    :toctree: generated
    :recursive:
 
    mdse
+   httk4mdse
 
 Indices and tables
 ==================

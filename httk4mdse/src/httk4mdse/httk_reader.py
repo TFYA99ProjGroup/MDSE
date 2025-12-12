@@ -232,7 +232,8 @@ def get_defect_formation_energy(store, **query):
 
         .. math::
 
-           E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} - \\sum_i n_i \\mu_i
+            E_\\mathrm{form} = E_\\mathrm{defect} - E_\\mathrm{host} +\
+            \\sum_i n_i \\mu_i
 
       5. Stores the resulting data in a MongoDB collection named "DFT data".
 
@@ -278,7 +279,7 @@ def get_defect_formation_energy(store, **query):
 
         chem_pot = calc_chem_pot(store, stoichiometry)
 
-        defect_formation_energy = match[2] - match[3] - chem_pot
+        defect_formation_energy = match[2] - match[3] + chem_pot
 
         dft_data[str(match[0]) + "_" + str(match[4])] = {
             "defect_key": str(match[0]),
@@ -320,7 +321,7 @@ def calc_chem_pot(store, stoichiometry):
     """
     search = store.searcher()
     pattern = r"([A-Za-z]+):(-?\d+)"
-    matches = {elem: -int(count) for elem, count in re.findall(pattern, stoichiometry)}
+    matches = {elem: int(count) for elem, count in re.findall(pattern, stoichiometry)}
 
     search_chem_pot = search.variable(ChemicalPotential)
     search.add(search_chem_pot.material.is_in(*matches.keys()))

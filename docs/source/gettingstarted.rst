@@ -203,7 +203,7 @@ Example
 
 .. code-block:: python
    
-   from mdse.parser.parse_yml import main_read
+   from mdse.parser import main_read
    from mdse.rm.runmanager import RunManager
    from mdse.rm.dbmanager import DBManager
    
@@ -256,11 +256,11 @@ If using MDSE as a library:
 
 .. code-block:: python
    
-   from mdse.parser.parse_yml import main_read
+   from mdse.parser import main_read
    from mdse.rm.runmanager import RunManager
    from mdse.rm.dbmanager import DBManager
 
-   from mdse.logging.logging_config import setup_logging
+   from mdse.logging import setup_logging
    import logging
    
    logger = logging.getLogger(__name__)
@@ -290,7 +290,7 @@ Full changelog is available in :doc:`changelog`.
 License
 =======
 
-Full license is available in :doc:`license`
+Full license is available in :doc:`licensing`
 
 Credits:
 ========

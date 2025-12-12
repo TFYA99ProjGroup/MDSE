@@ -52,3 +52,9 @@ autodoc_default_options = {
 
 # Mock external dependencies
 autodoc_mock_imports = ["mpi4py", "mpi4py.MPI", "e3nn"]
+
+# -- Options for PDF output -------------------------------------------------
+
+latex_elements = {
+    'classoptions': 'raggedright',
+}
