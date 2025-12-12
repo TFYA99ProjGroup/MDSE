@@ -4,6 +4,35 @@ Changelog
 
 All notable changes to this project are documented here.
 
+Version 1.0.0 (2025-12-12)
+===========================
+
+**Added**
+----------
+- Following calculations can be performed: 
+    - Density of states
+    - Debye temperature
+    - Elastic moduli and constants
+        - Shear modulus
+        - Bulk modulus
+        - Young’s modulus
+    - Coheseive energy (in the form of Atomization energy)
+    - Formation energy
+    - Defect formation energy
+- Ability to run simulations from SQLite database
+    - Creates .cif files and simulates from them.
+- Ability to use a `MACE potential model <https://github.com/ACEsuit/mace>`_ (MLIP)
+- Different types of visualization from our MongoDB
+- Result database is compliant with `OPTIMADE API <https://www.optimade.org/>`_
+- More functions in the CLI 
+
+**Changed**
+------------
+- Added `httk<https://github.com/httk/httk>`_ as a dependency in order to read SQLite db
+
+
+----
+
 Version 0.2.0 (2025-11-12)
 ===========================
 
@@ -11,7 +40,7 @@ Version 0.2.0 (2025-11-12)
 ----------
 - More robust config-files
 - Ability to save simulation results to `MongoDB <https://www.mongodb.com/docs/>`_ database.
-- Parallelisme for running on a supercomputer.
+- Parallelism for running on a supercomputer.
 - Plotting functions
 
 
