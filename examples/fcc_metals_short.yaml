@@ -17,10 +17,10 @@ Copper:
       - 300
   SIMULATION:
     Timestep: 2 #fs
-    Length: 2000
+    Length: 500
     TrajInterval: 5
     Calculator: EMT
-    Create_traj: True
+    Create_traj: False
 
 Nickel:
   CRYSTAL:
@@ -44,4 +44,4 @@ Nickel:
     Length: 600
     TrajInterval: 5
     Calculator: EMT
-    Create_traj: True
+    Create_traj: False

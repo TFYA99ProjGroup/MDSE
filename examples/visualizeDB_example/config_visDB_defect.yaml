@@ -12,5 +12,5 @@ plots:
     y: "interstitial"
   plot_3_defect:
     type: heatmap
-    x: "interstitial"
-    y: "substitution"
+    x: "combined"
+    y: "combined"

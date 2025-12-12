@@ -2,11 +2,11 @@ data:
   data_source: "mongo" #mongo when using mongoDB
   uri: "mongodb://admin:secret@localhost:27017/"
 plots:
-  plot_1_defect:
+  plot_1_mongo:
     type: "single"
     average: False
     fix_y: False
-  plot_2_defect:
+  plot_2_mongo:
     type: "heatmap"
     x: "interstitial"
     y: "substitution"
@@ -14,10 +14,10 @@ plots:
   #  type: "heatmap"
   #  x: "combined"
   #  y: "combined"
-  plot_4_defect: #To get sub-sub. Dont think we have int-int
+  plot_4_mongo: #To get sub-sub. Dont think we have int-int
     type: "sub-sub"
     average: False
-  plot_scatt:
+  plot_scatt_mongo:
     type: scatter
     x: lindemann
     y: self_diffusion

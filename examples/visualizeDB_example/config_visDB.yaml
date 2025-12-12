@@ -6,13 +6,13 @@ plots:
     type: "scatter"
     x: "temperature"
     y: "MSD"
-    z: "Lindeman"
+    z: "lindemann"
   plot_2:
     type: "scatter"
     x: "temperature"
-    y: "energy"
-  plot_3: #See so we get error
-    type: "All plot"
-  plot_4: #Should get errror
-    type: "scatter"
-    x: "temperature"
+    y: "total_energy"
+  #plot_3: #See so we get error
+  #  type: "All plot"
+  #plot_4: #Should get errror
+  #  type: "scatter"
+  #  x: "temperature"

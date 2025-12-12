@@ -1,0 +1,20 @@
+Copper:
+  CRYSTAL:
+    TYPE: BULK
+    Name: Cu
+    Structure: fcc
+    Lattice_a: 3.6149
+    Cubic: True
+    Supercell: 
+      - 5 
+      - 5
+      - 5
+  ENSAMBLE:
+    Ensamble: NVE
+    Temp: 100
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 500
+    TrajInterval: 5
+    Calculator: EMT
+    Create_traj: False
