@@ -356,12 +356,13 @@ def expand_parameter(simulation_to_expand, parameter, overwrite_config={}):
     if values_as_list:
         logger.debug(f"Parameter {parameter} was a list, extracting...")
         logger.debug(param_list)
-        logger.debug(overwrite_config.keys())
-        if param_list in overwrite_config.keys():
-            logger.debug(
-                f"overwriting {values_as_list} with {overwrite_config[param_list]}"
-            )
-            values_as_list = overwrite_config[param_list]
+        if overwrite_config:
+            logger.debug(overwrite_config.keys())
+            if param_list in overwrite_config.keys():
+                logger.debug(
+                    f"overwriting {values_as_list} with {overwrite_config[param_list]}"
+                )
+                values_as_list = overwrite_config[param_list]
         for value in values_as_list:
             # Shallow copy, might need more for nested structures
             new_params = deepcopy(sim_params)

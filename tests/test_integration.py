@@ -117,6 +117,14 @@ def validate_db_document(doc):
         "self_diffusion",
         "isobaric_specific_heat",
         "debye",
+        "mean_square_displacement",
+        "shear_modulus",
+        "bulk_modulus",
+        "youngs_modulus",
+        "internal_pressure",
+        "crystal_structure",
+        "lattice_constants",
+        "cohesive_energy",
     ]
 
     for prop in numeric_properties:

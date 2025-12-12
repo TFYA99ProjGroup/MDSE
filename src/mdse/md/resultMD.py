@@ -60,6 +60,7 @@ logger = logging.getLogger(__name__)
 
 the_mace_calculator = None
 
+
 class ResultMD:
     """Class representing the result of a molecular dynamics (MD) simulation.
 
@@ -67,7 +68,7 @@ class ResultMD:
     calculate and visualize the mean squared displacement (MSD).
     """
 
-    def __init__(self, data, conv_crystal = None, calc_params = None):
+    def __init__(self, data, conv_crystal=None, calc_params=None):
         """Initialize the ResultMD object.
 
         Parameters
@@ -88,7 +89,7 @@ class ResultMD:
         self.name = ""
         self.reached_equilibrium = False
 
-        #For calculating lattice constant
+        # For calculating lattice constant
         self.crystal_conv = conv_crystal
         self.calc_params = calc_params
         self.crystal_struct = None
@@ -593,7 +594,7 @@ class ResultMD:
 
         logger.debug(f"au_to_Pa: {constants.eV / (constants.angstrom**3)}")
 
-        #Check if potential energy is saved. If not, calculate it
+        # Check if potential energy is saved. If not, calculate it
         self._attach_pot_energy_to_frames()
 
         for frame in self.frames:
@@ -673,7 +674,7 @@ class ResultMD:
         """
         E_eV, T_K = [], []
 
-        #Check if potential energy is saved. If not, calculate it
+        # Check if potential energy is saved. If not, calculate it
         self._attach_pot_energy_to_frames()
 
         for frame in self.frames:
@@ -717,7 +718,7 @@ class ResultMD:
             The potential energy of the strained crystal in Joules.
         """
         logger.debug("calc strained energy")
-        crystal = self._attach_calc(crystal)
+        crystal.calc = self._check_calc_2()
         cell = crystal.cell.copy()
 
         strained_cell = (np.eye(3) + strain_matrix) @ cell
@@ -745,7 +746,7 @@ class ResultMD:
             The C11 elastic constant in Pascals.
         """
         logger.debug("Calculating C11")
-        crystal_equil = self._attach_calc(crystal_equil)
+        crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         compression = np.array([[epsilon, 0, 0], [0, 0, 0], [0, 0, 0]])
@@ -782,7 +783,7 @@ class ResultMD:
             The C12 elastic constant in Pascals.
         """
         logger.debug("Caluculating C12")
-        crystal_equil = self._attach_calc(crystal_equil)
+        crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         compression = np.array([[epsilon, 0, 0], [0, -epsilon, 0], [0, 0, 0]])
@@ -818,11 +819,11 @@ class ResultMD:
             The C44 elastic constant in Pascals.
         """
         logger.debug("C44")
-        crystal_equil = self._attach_calc(crystal_equil)
+        crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
         def energy_with_shear_strain(crystal, gamma):
-            crystal = self._attach_calc(crystal)
+            crystal.calc = self._check_calc_2()
             cell = crystal.cell.copy()
             shear = np.array([[0, gamma / 2, 0], [gamma / 2, 0, 0], [0, 0, 0]])
             shear_cell = (np.eye(3) + shear) @ cell
@@ -966,7 +967,7 @@ class ResultMD:
         list
             A list of potential energy values (eV) for each frame.
         """
-        #Check if pot_energy is calculated. If not, calculates it
+        # Check if pot_energy is calculated. If not, calculates it
         self._attach_pot_energy_to_frames()
         return [frame.info["pot_energy"] for frame in self.frames]
 
@@ -991,7 +992,7 @@ class ResultMD:
         """
         logger.debug("Get total energies")
 
-        #Check if potential energy is saved. If not, calculate it
+        # Check if potential energy is saved. If not, calculate it
         self._attach_pot_energy_to_frames()
         return [
             frame.get_kinetic_energy() + frame.info["pot_energy"]
@@ -1020,20 +1021,18 @@ class ResultMD:
         for every frame, storing the result in `frame.info['pot_energy']`.
         """
         logger.debug("Potential energy was needed, check if stored in frames")
-        #Check if SM saved potential energy
+        # Check if SM saved potential energy
         if "pot_energy" in self.frames[0].info:
             logger.debug("Potential energy already saved in frames")
             return
 
         logger.debug("No potential energy was saved in frames, calc. it")
-        #No pot energy was saved, need to init calculator and re-calculate
+        # No pot energy was saved, need to init calculator and re-calculate
         calculator = self._check_calc_2()
         for frame in self.frames:
             frame.calc = calculator
             frame.info["pot_energy"] = frame.get_potential_energy()
         logger.debug("pot_energy was added to all frames")
-
-
 
     def single_atom_energy(self):
         """Calculate the average potential energy of isolated atoms.
@@ -1054,6 +1053,7 @@ class ResultMD:
         import re
         from functools import reduce
         import math
+
         formula_super = self.frames[0].get_chemical_formula()
 
         # Get "lowest" chemical formula. Ie Na4Cl4 -> NaCl
@@ -1068,24 +1068,23 @@ class ResultMD:
         E_atom = 0
         calc = self._check_calc_2()
 
-        #If EMT with paramater, first attachment must be to compound,
-        #not single element.
-        #Will crash otherwise
+        # If EMT with paramater, first attachment must be to compound,
+        # not single element.
+        # Will crash otherwise
         if self.calculator == "EMT" and self.calc_params.get("use_glass"):
             el_tot = list(formula_unit.keys())
             dummy_atom = Atoms(
                 el_tot,
-                            positions = [(i*1,0,0) for i in range (len(el_tot))],
-                            cell = [5,5,5],
-                            pbc=False
-                            )
+                positions=[(i * 1, 0, 0) for i in range(len(el_tot))],
+                cell=[5, 5, 5],
+                pbc=False,
+            )
             dummy_atom.calc = calc
-
 
         # for each element  in the chemical formula, simulate it alone
         for element, n in formula_unit.items():
             atom = Atoms(
-                [element], #list(element): Cu -> ['C','u']
+                [element],  # list(element): Cu -> ['C','u']
                 positions=[(0, 0, 0)],
                 cell=[15, 15, 15],
                 pbc=False,
@@ -1093,12 +1092,11 @@ class ResultMD:
             atom.calc = calc
 
             # add energy weighted by count
-            E_atom += atom.get_potential_energy()*n
+            E_atom += atom.get_potential_energy() * n
 
         # normalize so we return average energy per atom
-        tot_nr_of_atoms = sum(formula_unit.values()) #{Cu : 2, Mg : 1} ==> 2+1=3 atoms
-        return E_atom / tot_nr_of_atoms  #len(self.crystal)
-
+        tot_nr_of_atoms = sum(formula_unit.values())  # {Cu : 2, Mg : 1} ==> 2+1=3 atoms
+        return E_atom / tot_nr_of_atoms  # len(self.crystal)
 
     def get_cohesive_energy(self):
         """Calculate the cohesive energy per atom.
@@ -1154,7 +1152,6 @@ class ResultMD:
 
         return pressure
 
-
     def get_pressure(self, frame):
         """Get pressure for a single frame.
 
@@ -1176,7 +1173,7 @@ class ResultMD:
         """
         frame.calc = self._check_calc_2()
         stress = frame.get_stress()
-        pressure = - (stress[0] + stress[1] + stress[2])/ 3
+        pressure = -(stress[0] + stress[1] + stress[2]) / 3
 
         return pressure
 
@@ -1316,34 +1313,6 @@ class ResultMD:
 
         return len(Tot_energy) - 2
 
-    def _attach_calc(self, crystal_equil):
-        """Attach the correct calculator to an Atoms object.
-
-        This helper function reads the calculator type from `self.frames[0].info`
-        and attaches a new instance of that calculator to the provided Atoms object.
-
-        Parameters
-        ----------
-        crystal_equil : ase.Atoms
-            The Atoms object to which the calculator will be attached.
-
-        Returns
-        -------
-        ase.Atoms
-            The same Atoms object with the calculator attached.
-        """
-        calc = self.frames[0].info["calc"]
-        if calc == "EMT":
-            crystal_equil.calc = EMT()
-        elif calc == "LennardJones":
-            crystal_equil.calc = LennardJones()
-        elif calc == "MACE":
-            from mace.calculators import MACECalculator
-
-            crystal_equil.calc = MACECalculator()
-
-        return crystal_equil
-
     def _check_keys(self, name, d, keys):
         """Check for the presence of required keys in a dictionary.
 
@@ -1365,7 +1334,6 @@ class ResultMD:
         if missing:
             raise KeyError(f"Missing keys in {name}: {missing}")
 
-
     def _check_calc_2(self):
         """Initialize and return a calculator based on stored parameters.
 
@@ -1380,8 +1348,9 @@ class ResultMD:
             An initialized ASE calculator instance.
         """
         if not self.crystal_conv:
-            raise RuntimeError("ResultMD object was not given conventional" \
-            " cell when init.")
+            raise RuntimeError(
+                "ResultMD object was not given conventional cell when init."
+            )
 
         self.calculator = self.frames[0].info["calc"]
         if self.calculator == "EMT":
@@ -1400,6 +1369,7 @@ class ResultMD:
             calculator = LennardJones(**self.calc_params)
         elif self.calculator == "MACE":
             from mace.calculators import MACECalculator
+
             logger.debug("We want to use mace!")
             global the_mace_calculator
 
@@ -1454,163 +1424,142 @@ class ResultMD:
         This method sets `self.crystal_struct` based on the cell geometry.
         """
         logger.debug("Starting estimate_lattice()")
-        a0,b0,c0,alfa,beta,gamma= self.crystal_conv.get_cell_lengths_and_angles()
+        a0, b0, c0, alfa, beta, gamma = self.crystal_conv.get_cell_lengths_and_angles()
 
-        if (alfa == beta == gamma == 90 and a0==b0==c0):
-                 self.crystal_struct = "cubic"
-        elif (alfa == beta != gamma and a0 == b0 == c0):
+        if alfa == beta == gamma == 90 and a0 == b0 == c0:
+            self.crystal_struct = "cubic"
+        elif alfa == beta != gamma and a0 == b0 == c0:
             self.crystal_struct = "trigonal"
-        elif (alfa == beta != gamma and a0 == b0 != c0):
+        elif alfa == beta != gamma and a0 == b0 != c0:
             self.crystal_struct = "hexagonal"
-        elif (alfa == beta == gamma and a0 == b0 != c0):
+        elif alfa == beta == gamma and a0 == b0 != c0:
             self.crystal_struct = "tetragonal"
-        elif (alfa == beta == gamma and a0 != b0 != c0):
+        elif alfa == beta == gamma and a0 != b0 != c0:
             self.crystal_struct = "orthorhombic"
-        elif (alfa == gamma != beta and a0 != b0 != c0):
+        elif alfa == gamma != beta and a0 != b0 != c0:
             self.crystal_struct = "monoclinic"
-        elif (alfa != beta != gamma and a0 != b0 != c0):
+        elif alfa != beta != gamma and a0 != b0 != c0:
             self.crystal_struct = "triclinic"
         else:
             raise RuntimeError("esimate_lattice() could not determine structure type")
 
         logger.debug(f"Found structure {self.crystal_struct}")
         conv_atoms = Atoms(
-                    symbols=self.crystal_conv.get_chemical_symbols(),
-                    positions=self.crystal_conv.get_positions(),
-                    cell=self.crystal_conv.get_cell(),
-                    pbc=True,
-                )
+            symbols=self.crystal_conv.get_chemical_symbols(),
+            positions=self.crystal_conv.get_positions(),
+            cell=self.crystal_conv.get_cell(),
+            pbc=True,
+        )
 
-        if (
-            self.crystal_struct == "cubic" or
-            self.crystal_struct == "triagonal"
-            ):
-            #Same lattice const. in all directions.
-            #Find optimal using EOS fit in result
-            logger.debug(f"Start calculating energy vs volume\
-                         for: {self.crystal_struct}")
+        if self.crystal_struct == "cubic" or self.crystal_struct == "triagonal":
+            # Same lattice const. in all directions.
+            # Find optimal using EOS fit in result
+            logger.debug(
+                f"Start calculating energy vs volume\
+                         for: {self.crystal_struct}"
+            )
             cell0 = self.crystal_conv.get_cell()
 
-            a0 = self.crystal_conv.get_cell()[0,0]
+            a0 = self.crystal_conv.get_cell()[0, 0]
 
             energy_vs_vol = []
 
-            for scaling in np.linspace(0.95,1.05,50): #increase for better result
+            for scaling in np.linspace(0.95, 1.05, 50):  # increase for better result
                 scaled = conv_atoms.copy()
-                scaled.set_cell(cell0*scaling, scale_atoms = True)
+                scaled.set_cell(cell0 * scaling, scale_atoms=True)
                 scaled.calc = self._check_calc_2()
-                energy_vs_vol.append([scaled.get_potential_energy(),scaled.get_volume()])
+                energy_vs_vol.append(
+                    [scaled.get_potential_energy(), scaled.get_volume()]
+                )
 
             logger.debug("Sucesfully calculated energy vs vol.")
             return energy_vs_vol
 
-        if (
-            self.crystal_struct == "hexagonal" or
-            self.crystal_struct == "tetragonal"
-        ):
-            #Need to scale axis independant of eachoter
-            logger.debug(f"Start calculating energy vs [a,a,c]\
-                         for: {self.crystal_struct}")
-            scaling_step = np.linspace(0.95,1.05,50) #increase to get better result
+        if self.crystal_struct == "hexagonal" or self.crystal_struct == "tetragonal":
+            # Need to scale axis independant of eachoter
+            logger.debug(
+                f"Start calculating energy vs [a,a,c]\
+                         for: {self.crystal_struct}"
+            )
+            scaling_step = np.linspace(0.95, 1.05, 50)  # increase to get better result
 
             energy_vs_lat = []
 
-            #Convention that a and b are the same ones.
+            # Convention that a and b are the same ones.
             for scale_a in scaling_step:
                 for scale_c in scaling_step:
                     scaled = conv_atoms.copy()
                     new_cell = (
-                        a0*scale_a,
-                        b0*scale_a,
-                        c0*scale_c,
+                        a0 * scale_a,
+                        b0 * scale_a,
+                        c0 * scale_c,
                         alfa,
                         beta,
-                        gamma
+                        gamma,
                     )
-                    scaled.set_cell(new_cell, scale_atoms = True)
+                    scaled.set_cell(new_cell, scale_atoms=True)
                     scaled.calc = self._check_calc_2()
-                    energy_vs_lat.append([scaled.get_potential_energy(),
-                                            [a0*scale_a,b0*scale_a,c0*scale_c]])
+                    energy_vs_lat.append(
+                        [
+                            scaled.get_potential_energy(),
+                            [a0 * scale_a, b0 * scale_a, c0 * scale_c],
+                        ]
+                    )
 
             logger.debug("Sucesfully calculated energy vs [a,a,c]")
             return energy_vs_lat
 
         if (
-            self.crystal_struct == "orthorhomic" or
-            self.crystal_struct == "monoclinic" or
-            self.crystal_struct == "triclinic"
+            self.crystal_struct == "orthorhomic"
+            or self.crystal_struct == "monoclinic"
+            or self.crystal_struct == "triclinic"
         ):
-            #Need to scale axis independant of eachoter
-            #Would require 3-time nested for-loop. For performance assume a,b,c
-            #not strongly coupled,
-            #and optimize one axis at time
-            logger.debug(f"Start calculating which [a,b,c]\
-                         minimizes: {self.crystal_struct}")
-            scaling_step = np.linspace(0.95,1.05,50) #Increase to get better result
+            # Need to scale axis independant of eachoter
+            # Would require 3-time nested for-loop. For performance assume a,b,c
+            # not strongly coupled,
+            # and optimize one axis at time
+            logger.debug(
+                f"Start calculating which [a,b,c]\
+                         minimizes: {self.crystal_struct}"
+            )
+            scaling_step = np.linspace(0.95, 1.05, 50)  # Increase to get better result
 
             energy_vs_lat = []
 
-            #Start by keeping b and c fixed
+            # Start by keeping b and c fixed
             for scale_a in scaling_step:
                 scaled = conv_atoms.copy()
-                new_cell = (
-                    a0*scale_a,
-                    b0*1,
-                    c0*1,
-                    alfa,
-                    beta,
-                    gamma
-                )
-                scaled.set_cell(new_cell, scale_atoms = True)
+                new_cell = (a0 * scale_a, b0 * 1, c0 * 1, alfa, beta, gamma)
+                scaled.set_cell(new_cell, scale_atoms=True)
                 scaled.calc = self._check_calc_2()
-                energy_vs_lat.append([scaled.get_potential_energy(),
-                                        scale_a])
+                energy_vs_lat.append([scaled.get_potential_energy(), scale_a])
             logger.debug("Sucesfully found min a")
 
-            #Find lowest a, keep that and c fixed. Vary b
+            # Find lowest a, keep that and c fixed. Vary b
             _, min_a = min(energy_vs_lat, key=lambda x: x[0])
             energy_vs_lat = []
             for scale_b in scaling_step:
                 scaled = conv_atoms.copy()
-                new_cell = (
-                    a0*min_a,
-                    b0*scale_b,
-                    c0,
-                    alfa,
-                    beta,
-                    gamma
-                )
-                scaled.set_cell(new_cell, scale_atoms = True)
+                new_cell = (a0 * min_a, b0 * scale_b, c0, alfa, beta, gamma)
+                scaled.set_cell(new_cell, scale_atoms=True)
                 scaled.calc = self._check_calc_2()
-                energy_vs_lat.append([scaled.get_potential_energy(),
-                                        scale_b])
+                energy_vs_lat.append([scaled.get_potential_energy(), scale_b])
             logger.debug("Sucesfully found min b")
 
-            #With lowest a and b, vary c
+            # With lowest a and b, vary c
             _, min_b = min(energy_vs_lat, key=lambda x: x[0])
             energy_vs_lat = []
             for scale_c in scaling_step:
                 scaled = conv_atoms.copy()
-                new_cell = (
-                    a0*min_a,
-                    b0*min_b,
-                    c0*scale_c,
-                    alfa,
-                    beta,
-                    gamma
-                )
-                scaled.set_cell(new_cell, scale_atoms = True)
+                new_cell = (a0 * min_a, b0 * min_b, c0 * scale_c, alfa, beta, gamma)
+                scaled.set_cell(new_cell, scale_atoms=True)
                 scaled.calc = self._check_calc_2()
-                energy_vs_lat.append([scaled.get_potential_energy(),
-                                        scale_c])
+                energy_vs_lat.append([scaled.get_potential_energy(), scale_c])
             logger.debug("Sucesfully found min c")
 
-            #Return the lowest a,b and c
+            # Return the lowest a,b and c
             _, min_c = min(energy_vs_lat, key=lambda x: x[0])
-            return [min_a*a0,min_b*b0,min_c*c0]
-
-
-
+            return [min_a * a0, min_b * b0, min_c * c0]
 
     def calc_lattice(self):
         """Determine the equilibrium lattice constants for the conventional cell.
@@ -1638,58 +1587,57 @@ class ResultMD:
         """
         logger.debug("Start calculating/extracting which optimal lattice const is.")
 
-        energy_v_lattice = self._estimate_lattice() # Will update self.crystal_struct
+        energy_v_lattice = self._estimate_lattice()  # Will update self.crystal_struct
         cov_structure = self.crystal_struct
 
         if not self.crystal_conv:
             logger.debug("No conventional crystal found in resultMD object")
-            raise RuntimeError("Cant calc lattice, as no conventional cell\
+            raise RuntimeError(
+                "Cant calc lattice, as no conventional cell\
                                was given when"
-            "resultMD object was created")
+                "resultMD object was created"
+            )
 
         logger.debug("Succsesfully called _estimate_lattice()")
         if cov_structure == "cubic" or cov_structure == "triagonal":
-            #Do EOS-fit
+            # Do EOS-fit
             logger.debug("Do EOS-fit")
-            energies = np.array([e1 for e1,e2 in energy_v_lattice ])
-            volumes = np.array([e2 for e1,e2 in energy_v_lattice ])
+            energies = np.array([e1 for e1, e2 in energy_v_lattice])
+            volumes = np.array([e2 for e1, e2 in energy_v_lattice])
 
             sort_indx = np.argsort(volumes)
             volumes = volumes[sort_indx]
             energies = energies[sort_indx]
 
-            eos = EquationOfState(volumes, energies, eos = "birchmurnaghan")
+            eos = EquationOfState(volumes, energies, eos="birchmurnaghan")
             v0, e0, B = eos.fit()
             logger.debug("Suscsesfully did EOS-fit")
-            return cov_structure, [v0**(1/3),v0**(1/3),v0**(1/3)]
+            return cov_structure, [v0 ** (1 / 3), v0 ** (1 / 3), v0 ** (1 / 3)]
 
-
-        if (
-            cov_structure == "hexagonal" or
-            cov_structure == "tetragonal"
-        ):
-            #Since 2 independent axis, need to do a line-fit
+        if cov_structure == "hexagonal" or cov_structure == "tetragonal":
+            # Since 2 independent axis, need to do a line-fit
             logger.debug("Do quadratic fit")
-            energies = np.array([e1 for e1,e2 in energy_v_lattice ])
-            lattice_consts = np.array([e2 for e1,e2 in energy_v_lattice ])
+            energies = np.array([e1 for e1, e2 in energy_v_lattice])
+            lattice_consts = np.array([e2 for e1, e2 in energy_v_lattice])
 
-            latt_a = lattice_consts[:,0]
-            latt_c = lattice_consts[:,2]
+            latt_a = lattice_consts[:, 0]
+            latt_c = lattice_consts[:, 2]
 
-            funcs = np.array([latt_a**0, latt_a, latt_c, latt_a**2,
-                              latt_a*latt_c,latt_c**2])
-            p = np.linalg.lstsq(funcs.T, energies, rcond = -1)[0]
+            funcs = np.array(
+                [latt_a**0, latt_a, latt_c, latt_a**2, latt_a * latt_c, latt_c**2]
+            )
+            p = np.linalg.lstsq(funcs.T, energies, rcond=-1)[0]
 
             p1 = p[1:3]
             p2 = np.array([(2 * p[3], p[4]), (p[4], 2 * p[5])])
             a0, c0 = np.linalg.solve(p2.T, -p1)
             logger.debug("Sucssesfully did quadratic fit")
-            return cov_structure, [a0,a0,c0]
+            return cov_structure, [a0, a0, c0]
 
-
-
-        #If none of the above, it had 3 independent lattice constants, which we
-        #minimized/optimized already.
-        logger.debug("Crystal had 3 independent axis. Return the\
-                     optimal lattice consts")
+        # If none of the above, it had 3 independent lattice constants, which we
+        # minimized/optimized already.
+        logger.debug(
+            "Crystal had 3 independent axis. Return the\
+                     optimal lattice consts"
+        )
         return cov_structure, energy_v_lattice

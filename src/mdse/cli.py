@@ -481,6 +481,7 @@ def write_to_database(args):
         logger.info(f"Writing data from {path} to {args.address}")
         writer.write_jsonfiles_to_db(path)
 
+
 def calculate_defect_formation_energy(args):
     """
     From an existing database calculate the defect formation energies
@@ -494,6 +495,7 @@ def calculate_defect_formation_energy(args):
     """
     db = DBManager(args.address)
     defect_formation_energy(db)
+
 
 def visualize_DB(args):
     """
@@ -537,10 +539,7 @@ def outlier_detection(args):
     try:
         db_manager = DBManager(args.address)
     except Exception as e:
-        logger.error(
-            f"Failed to connect to MongoDB. "
-            f"Ensure it is running. Error: {e}"
-        )
+        logger.error(f"Failed to connect to MongoDB. Ensure it is running. Error: {e}")
         return
 
     logger.debug(
@@ -740,8 +739,8 @@ def create_parser():
     visualize_db.set_defaults(func=visualize_DB)
 
     formation_energy_db = subparsers.add_parser(
-        "calc_defect_formation_energy", help="Calculates the defect formation energy " +
-                                             "from a database."
+        "calc_defect_formation_energy",
+        help="Calculates the defect formation energy " + "from a database.",
     )
 
     formation_energy_db.add_argument(
