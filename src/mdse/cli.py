@@ -210,7 +210,7 @@ def simulate(args):
     Parses the input YAML using ``main_read()``, creates a ``RunManager``,
     and executes all simulations.
     """
- 
+
     if args.mpi:
         simulate_mpi(args)
         return
