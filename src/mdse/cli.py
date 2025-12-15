@@ -351,6 +351,7 @@ def calc_msd(args):
         - filepath (list[str]): Paths to `.traj` files containing simulation
           results.
     """
+
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running msd calculation from {path}")
@@ -373,6 +374,7 @@ def calc_lindemann(args):
         - filepath (list[str]): Paths to `.traj` files containing simulation
           results.
     """
+
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running lindemann calculation from {path}")
@@ -395,6 +397,7 @@ def calc_self_diff(args):
         - filepath (list[str]): Paths to `.traj` files containing simulation
           results.
     """
+
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running self_diff calculation from {path}")
@@ -417,6 +420,7 @@ def calc_isobaric_specific_heat(args):
         - filepath (list[str]): Paths to `.traj` files containing simulation
           results.
     """
+
     paths = args.filepath
     for path in paths:
         logger.debug(f"Running isobaric_specific_heat calculation from {path}")
@@ -493,6 +497,7 @@ def calculate_defect_formation_energy(args):
 
         - filepath (str): Path to database
     """
+
     db = DBManager(args.address)
     defect_formation_energy(db)
 
@@ -652,6 +657,7 @@ def create_parser():
     parser_calc_msd.add_argument(
         "-f",
         "--filepath",
+        required=True,
         nargs="+",
         metavar="FILEPATH",
         help="The filepath to be calculated",
@@ -667,6 +673,7 @@ def create_parser():
         nargs="+",
         metavar="FILEPATH",
         help="The filepath to be calculated",
+        required=True,
     )
     parser_calc_lindemann.set_defaults(func=calc_lindemann)
 
@@ -679,6 +686,7 @@ def create_parser():
         nargs="+",
         metavar="FILEPATH",
         help="The filepath to be calculated",
+        required=True,
     )
     parser_calc_self_diff.set_defaults(func=calc_self_diff)
 
@@ -691,6 +699,7 @@ def create_parser():
         nargs="+",
         metavar="FILEPATH",
         help="The filepath to be calculated",
+        required=True,
     )
     parser_calc_isobaric_specific_heat.set_defaults(func=calc_isobaric_specific_heat)
 
