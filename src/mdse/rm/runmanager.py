@@ -324,7 +324,11 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
-                logger.info(f"[Master] Received {msg} from worker {src}")
+                if type(msg) is MongoDBEntry:
+                    msg_str = type(msg)
+                    logger.info(f"[Master] Received {msg_str} from worker {src}")
+                else:
+                    logger.info(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
                     if msg is None:
