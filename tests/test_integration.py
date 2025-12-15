@@ -122,14 +122,15 @@ def validate_db_document(doc):
         "bulk_modulus",
         "youngs_modulus",
         "internal_pressure",
-        "crystal_structure",
         "lattice_constants",
         "cohesive_energy",
     ]
 
+    assert isinstance(doc["crystal_structure"], str)
+
     for prop in numeric_properties:
         assert prop in doc, f"Missing property {prop}"
-        assert isinstance(doc[prop], (float, int, str))
+        assert isinstance(doc[prop], (float, int))
 
     # last_modified timestamp
     assert "last_modified" in doc
