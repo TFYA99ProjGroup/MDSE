@@ -35,6 +35,7 @@ The following material properties can be calculated with mdse:
 - Coheseive energy (in the form of Atomization energy)
 - Formation energy
 - Defect formation energy
+
 Installation
 ============
 
@@ -118,6 +119,68 @@ Write your first simulation results to the database!
 You can view the database in a web browser on the address http://localhost:8081/
 with the default username *webadmin* and the default password *websecret*.
 
+Run simulations from a sqlite database
+======================================
+
+MDSE can use atomic position from a sqlite database in order to begin simulations.
+
+Example of yaml
+---------------
+
+.. code-block:: yaml
+
+    # challange.yaml 
+    Simulation:
+        CRYSTAL:
+        TYPE: DATABASE
+        Name: diamondsqliterunde
+        Filepath: ../../defects.sqlite
+        Structure_folder: "./defect"
+        Query:
+          charge: 0
+          hulldistance: 1e-5
+    ...
+
+.. code-block:: bash
+
+    mdse simulate -f challange.yaml
+
+Here we use the defects.sqlite database and query all materials with charge :math:`=0` and hull distance :math:`< 10^{-5}`.
+
+
+Visualize results
+=================
+
+It may be interesting to visualize the results from the database.
+This is an example how to do it.
+
+.. code-block:: yaml
+
+    # visualize.yaml
+    data:
+      data_source: "mongo" #mongo when using mongoDB
+      uri: "mongodb://admin:secret@localhost:27017/"
+    plots:
+      plot_1_defect:
+        type: "single"
+        average: False
+        fix_y: False
+      plot_2_defect:
+        type: "heatmap"
+        x: "interstitial"
+        y: "substitution"
+      plot_3_defect: #To get sub-sub. Dont think we have int-int
+        type: "sub-sub"
+        average: False
+      plot_scatt:
+        type: scatter
+        x: lindemann
+        y: self_diffusion
+        z: debye
+   
+.. code-block:: bash
+   
+   mdse visualize -f visualize.yaml
 
 CLI Usage
 =========================
