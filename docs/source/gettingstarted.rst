@@ -76,6 +76,8 @@ Run your first simulation:
 
     mdse simulate --filepath examples/test_result_sim.yaml
 
+For a detailed example of the yaml-file, see :py:mod:`mdse.parser`
+
 If you want to see the ASE GUI for the trajectory:
 
 .. code-block:: bash
@@ -100,7 +102,7 @@ In order to Set up the server docker is highly recommended and a docker-compose 
 .. code-block:: bash
 
     cd database
-    docker compose up -d
+    docker compose up -d --build
     cd ..
 
 In order to shut down the database:
@@ -118,6 +120,22 @@ Write your first simulation results to the database!
 
 You can view the database in a web browser on the address http://localhost:8081/
 with the default username *webadmin* and the default password *websecret*.
+
+
+OPTIMADE rest api
+=================
+
+You can query the database through the `OPTIMADE rest api <https://www.optimade.org/>`_ using the defualt port 8000.
+
+Example:
+--------
+
+To get all entries when nsites is 15.
+
+.. code-block:: bash
+
+    curl http://localhost:8000/v1/structures?filter=nsites=15
+
 
 Run simulations from a sqlite database
 ======================================
