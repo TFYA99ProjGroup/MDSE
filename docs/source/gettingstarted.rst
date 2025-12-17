@@ -90,7 +90,7 @@ If you want to clean up your directory from ``*.traj`` files:
 
     mdse clean
 
-Some interesting results are saved in the /results folder in ``*.json`` files. 
+Some interesting results are saved in the results/ directory in ``*.json`` files. 
 
 
 Set up your own server
