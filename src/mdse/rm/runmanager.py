@@ -237,6 +237,8 @@ class RunManager:
 
         logger.debug(crystal)
 
+        crystal_structure, lattice_constants = result.calc_lattice()
+
         entry = MongoDBEntry(
             id=str(crystal["Name"])
             + "_"
@@ -248,11 +250,19 @@ class RunManager:
             elements=list(set(final_frame.get_chemical_symbols())),
             nelements=len(list(set(final_frame.get_chemical_symbols()))),
             mdse_fields={
+                "mean_square_displacement": result.calc_msd(),
                 "lindemann": result.calc_lindemann(),
                 "self_diffusion": result.calc_self_diff(),
                 "isobaric_specific_heat": \
                     result.calc_isochoric_heat_capacity_per_atom(),
                 "debye": result.calc_debye_temperature(),
+                "internal_pressure": result.get_pressure(final_frame),
+                "crystal_structure": crystal_structure,
+                "lattice_constants": lattice_constants,
+                "bulk_modulus": result.calc_bulk_modulus(),
+                "shear_modulus": result.calc_shear_modulus(),
+                "youngs_modulus": result.calc_youngs_modulus(),
+                "cohesive_energy": result.get_cohesive_energy(),
                 "total_energy": final_frame.info["pot_energy"]
                 + final_frame.get_kinetic_energy(),
                 **crystal.get("Defect", {}),
@@ -314,7 +324,11 @@ class RunManager:
                 msg = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
                 src = status.Get_source()
                 tag = status.Get_tag()
-                logger.info(f"[Master] Received {msg} from worker {src}")
+                if type(msg) is MongoDBEntry:
+                    msg_str = type(msg)
+                    logger.info(f"[Master] Received {msg_str} from worker {src}")
+                else:
+                    logger.info(f"[Master] Received {msg} from worker {src}")
 
                 if tag == TAG_DONE:
                     if msg is None:

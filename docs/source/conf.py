@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath("../../src/mdse"))
 project = "MDSE"
 copyright = "2025, A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik, S. Lukas"
 author = "A. Emil, B. Oskar, J. Petter, K. Axel, M. Patrik, S. Lukas"
-release = "0.2.0"
+release = "1.0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
