@@ -335,6 +335,8 @@ class ResultMD:
         numpy.ndarray
             A 1D array containing the normalized VACF.
         """
+        if len(self.frames) == 2:
+            return None
         self.check_equilibrium()
 
         if self.reached_equilibrium:
@@ -407,6 +409,9 @@ class ResultMD:
         )
 
         vacf = self._calc_vacf(frame_skip)
+        if vacf is None:
+            return None, None
+
         n = len(vacf)
 
         freqs = np.fft.rfftfreq(n, d=dt)
@@ -490,6 +495,10 @@ class ResultMD:
             frame_skip = equilibrium_frame / len(self.frames)
 
         dos, omega = self.calc_density_of_states(frame_skip)
+
+        if dos is None and omega is None:
+            logger.error("Unable to calculate Debye temperature.")
+            return None
 
         cum_int = np.cumsum(0.5 * (dos[1:] + dos[:-1]) * (omega[1:] + omega[:-1]))
 
@@ -1587,7 +1596,12 @@ class ResultMD:
         """
         logger.debug("Start calculating/extracting which optimal lattice const is.")
 
-        energy_v_lattice = self._estimate_lattice()  # Will update self.crystal_struct
+        try:
+            energy_v_lattice = self._estimate_lattice()  # Updates self.crystal_struct
+        except Exception as e:
+            logger.error(e)
+            return None, None
+
         cov_structure = self.crystal_struct
 
         if not self.crystal_conv:
