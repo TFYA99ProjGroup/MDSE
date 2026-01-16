@@ -88,6 +88,8 @@ class ResultMD:
         self.frames_in_fs = 50
         self.name = ""
         self.reached_equilibrium = False
+        self.equilibrium_frame = 0
+        self.ensemble = None
 
         # For calculating lattice constant
         self.crystal_conv = conv_crystal
@@ -726,13 +728,11 @@ class ResultMD:
         float
             The potential energy of the strained crystal in Joules.
         """
-        logger.debug("calc strained energy")
         crystal.calc = self._check_calc_2()
         cell = crystal.cell.copy()
 
         strained_cell = (np.eye(3) + strain_matrix) @ cell
         crystal.set_cell(strained_cell, scale_atoms=True)
-        logger.debug("calc strained energy complete!")
         return crystal.get_potential_energy() * constants.eV
 
     def calc_C11(self, crystal_equil, epsilon=0.01):
@@ -754,7 +754,6 @@ class ResultMD:
         float
             The C11 elastic constant in Pascals.
         """
-        logger.debug("Calculating C11")
         crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
@@ -767,7 +766,6 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
         C11 = deriv / volume
-        logger.debug(f"C11: {C11}")
 
         return C11
 
@@ -791,7 +789,6 @@ class ResultMD:
         float
             The C12 elastic constant in Pascals.
         """
-        logger.debug("Caluculating C12")
         crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
@@ -804,7 +801,6 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (epsilon**2)
 
         C12 = deriv / volume
-        logger.debug(f"C12: {C12}")
 
         return C12
 
@@ -827,7 +823,6 @@ class ResultMD:
         float
             The C44 elastic constant in Pascals.
         """
-        logger.debug("C44")
         crystal_equil.calc = self._check_calc_2()
         volume = crystal_equil.get_volume() * (constants.angstrom**3)
 
@@ -848,7 +843,6 @@ class ResultMD:
         deriv = (E_plus + E_minus - 2 * E0) / (gamma**2)
 
         C44 = deriv / volume
-        logger.debug(f"C44: {C44}")
 
         return C44
 
@@ -1205,6 +1199,11 @@ class ResultMD:
             Returns 0 if no equilibrium is detected.
         """
         logger.debug("Started check if equilibrium was reached")
+        if self.reached_equilibrium:
+            logger.debug("Equilibrium already found, returning frame: "
+                f"{self.equilibrium_frame}.")
+            return self.equilibrium_frame
+
         kin_energy = self.get_kin_energies()
         pot_energy = self.get_pot_energies()
         Tot_energy = [kin + pot for (kin, pot) in zip(kin_energy, pot_energy)]
@@ -1217,29 +1216,35 @@ class ResultMD:
             return 0
         # ----Based on total energy-----
 
-        energy_frame = self._check_equilibrium_const(Tot_energy, 0.0001)
+        logger.debug(f"ENSEMBLE: {self.ensemble}")
+        if self.ensemble != "nve":
+            energy_frame = self._check_equilibrium_const(Tot_energy, 0.0001)
 
-        if energy_frame != len(Tot_energy) - 2:  # We found equilibrium
-            self.reached_equilibrium = True
-            logger.debug("Found equilibrium, energy reaches const value")
-            return energy_frame
+            if energy_frame != len(Tot_energy) - 2:  # We found equilibrium
+                self.reached_equilibrium = True
+                self.equilibrium_frame = energy_frame
+                logger.debug("Found equilibrium, energy reaches const value")
+                return energy_frame
+
+            # ----If oscillating system----
+
+            oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.005)
+            if oscill_frame != len(Tot_energy) - 2:  # We found equilibrium
+                self.reached_equilibrium = True
+                self.equilibrium_frame = oscill_frame
+                logger.debug("Found equilibrium, energy oscillates")
+                return oscill_frame
 
         # ----Based on temperature-----
 
-        temp_frame = self._check_equilibrium_const(temperatures, 0.001)
+        else:
+            temp_frame = self._check_equilibrium_const(temperatures, 0.00001)
 
-        if temp_frame != len(temperatures) - 2:  # We found equilibrium
-            self.reached_equilibrium = True
-            logger.debug("Found equilibrium, temperature reaches const value")
-            return temp_frame
-
-        # ----If oscillating system----
-
-        oscill_frame = self._check_equilibrium_oscill(Tot_energy, 0.005)
-        if oscill_frame != len(Tot_energy) - 2:  # We found equilibrium
-            self.reached_equilibrium = True
-            logger.debug("Found equilibrium, energy oscillates")
-            return oscill_frame
+            if temp_frame != len(temperatures) - 2:  # We found equilibrium
+                self.reached_equilibrium = True
+                self.equilibrium_frame = temp_frame
+                logger.debug("Found equilibrium, temperature reaches const value")
+                return temp_frame
 
         # ----No equilibrium---
         self.reached_equilibrium = False
@@ -1266,8 +1271,8 @@ class ResultMD:
         """
         logger.debug("Check if we have equilibrium in the form of constant property")
         difference = [
-            abs(property[i + 1] - property[i]) / property[i]
-            for i in range(len(property) - 1)
+            abs(property[i + 1] - property[i]) / (property[i])
+            for i in range(1, len(property)-1)
         ]
 
         for pos, diff in enumerate(difference):
@@ -1276,6 +1281,7 @@ class ResultMD:
             else:
                 pass
 
+        logger.debug(f"Equilibrium value {property[pos]} at frame {pos}")
         return pos
 
     def _check_equilibrium_oscill(self, Tot_energy, tol):

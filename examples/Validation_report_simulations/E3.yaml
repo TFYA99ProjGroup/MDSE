@@ -1,0 +1,23 @@
+Al_NPT:  
+  CRYSTAL:
+    TYPE: BULK
+    Name: Al
+    Structure: fcc
+    Lattice_a: 4.05
+    Cubic: True
+    Supercell: 
+      - 10
+      - 10
+      - 10
+  ENSAMBLE:
+    Ensamble: NPT
+    Temp: 200
+    Pressure: 3.85e-2
+    ThermoTime: 100
+    BaroTime: 1000
+  SIMULATION:
+    Timestep: 1 #fs
+    Length: 10000
+    TrajInterval: 5
+    Calculator: EMT
+    Calc_pot: True

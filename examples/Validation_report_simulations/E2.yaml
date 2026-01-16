@@ -1,0 +1,21 @@
+Al_NVT:  
+  CRYSTAL:
+    TYPE: BULK
+    Name: Al
+    Structure: fcc
+    Lattice_a: 4.05
+    Cubic: True
+    Supercell: 
+      - 10
+      - 10
+      - 10
+  ENSAMBLE:
+    Ensamble: NVT
+    Temp: 200
+    ThermoTime: 100
+  SIMULATION:
+    Timestep: 2 #fs
+    Length: 10000
+    TrajInterval: 5
+    Calculator: EMT
+    Calc_pot: True
