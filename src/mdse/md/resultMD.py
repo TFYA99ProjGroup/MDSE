@@ -1217,7 +1217,7 @@ class ResultMD:
         # ----Based on total energy-----
 
         logger.debug(f"ENSEMBLE: {self.ensemble}")
-        if self.ensemble == None:
+        if self.ensemble is None:
             return 0
         if self.ensemble != "nve":
             energy_frame = self._check_equilibrium_const(Tot_energy, 0.0001)
