@@ -1603,7 +1603,7 @@ class ResultMD:
         logger.debug("Start calculating/extracting which optimal lattice const is.")
 
         try:
-            energy_v_lattice = self._estimate_lattice()  # Will update self.crystal_struct
+            energy_v_lattice = self._estimate_lattice() # Updates self.crystal_struct
         except Exception as e:
             logger.error(e)
             return None, None
