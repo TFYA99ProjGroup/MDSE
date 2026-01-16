@@ -63,7 +63,7 @@ def mock_frames_non_equil():
             np.random.rand(5, 3),
             np.random.uniform(1, 200),
             0,
-            np.random.uniform(1, 60),
+            np.random.uniform(1, 200),
         )
         for _ in range(20)
     ]
@@ -370,11 +370,11 @@ def test_equilibrium_check_oscill(mock_oscillation_walk):
 
     # Const energy check, should not trigger
     equil_index = result._check_equilibrium_const(Tot_energy, 0.0001)
-    assert equil_index == (len(Tot_energy) - 2)
+    assert equil_index == (len(Tot_energy) - 3)
 
     # Const temperature, should not trigger
     equil_index = result._check_equilibrium_const(temperatures, 0.001)
-    assert equil_index == (len(Tot_energy) - 2)
+    assert equil_index == (len(Tot_energy) - 3)
 
     #Oscillating energy, should trigger
     equil_index = result._check_equilibrium_oscill(Tot_energy,0.005)

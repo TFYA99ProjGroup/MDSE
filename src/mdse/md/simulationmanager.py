@@ -471,6 +471,7 @@ class SimulationManager:
             "Please use one of following: NVE, NVT, NPT"
             logger.error(msg)
             raise ValueError(msg)
+        result.ensemble = self.ensamble.lower()
         return result
 
     def simulate_nve(
