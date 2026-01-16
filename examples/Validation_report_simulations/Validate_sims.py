@@ -1,8 +1,6 @@
 from mdse.md.simulationmanager import SimulationManager
 from mdse.parser.parse_yml import main_read
 from mdse.md.visualize import VisualizeResult
-from mdse.md.resultMD import ResultMD
-
 
 
 def main():
@@ -15,7 +13,6 @@ def main():
     resS1 = sm.simulate_nve()
     resS1.name = "S1"
 
-    
     print(f"Bulk modulus: {resS1.calc_bulk_modulus()}")
     print(f"Shear modulus: {resS1.calc_shear_modulus()}")
     print(f"Lattice constant: {resS1.calc_lattice()}")
@@ -46,7 +43,7 @@ def main():
 
 
     print("*"*32)
-    
+
     #--------------Simulation3, MgCu2, EMT(MetalGlass)------------
     print("*"*10 + "Simulation 3" + "*"*10)
     config = main_read("S3.yaml")
@@ -64,7 +61,7 @@ def main():
     print(f"Debye temp: {resS3.calc_debye_temperature()}")
 
     print("*"*32)
-    
+
     #--------------Simulation4, Au, EMT------------
     print("*"*10 + "Simulation 4" + "*"*10)
     config = main_read("S4.yaml")
@@ -84,7 +81,7 @@ def main():
     print(f"Debye temp: {resS4.calc_debye_temperature()}")
 
     print("*"*32)
-    
+
     #--------------Simulation5, Zn, Mace------------
     print("*"*10 + "Simulation 5" + "*"*10)
     config = main_read("S5.yaml")
@@ -102,7 +99,7 @@ def main():
     print(f"Debye temp: {resS5.calc_debye_temperature()}")
 
     print("*"*32)
-    
+
     #------Visualize-----
     print("*"*10 + "Generate plot" + "*"*10)
     vis_S = VisualizeResult([resS1,resS2,resS3,resS4, resS5])
@@ -111,35 +108,35 @@ def main():
 
     """
 
-    #--------------Ensemble1, Al, EMT------------
-    
-    print("*"*10 + "Ensemble 1" + "*"*10)
+    # --------------Ensemble1, Al, EMT------------
+
+    print("*" * 10 + "Ensemble 1" + "*" * 10)
     config = main_read("E1.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
     res1 = sm.simulate_nve()
-    print("*"*32)
-    
-    #--------------Ensemble2, Al, EMT------------
-    
-    print("*"*10 + "Ensemble 2" + "*"*10)
+    print("*" * 32)
+
+    # --------------Ensemble2, Al, EMT------------
+
+    print("*" * 10 + "Ensemble 2" + "*" * 10)
     config = main_read("E2.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
     res2 = sm.simulate_nvt()
-    print("*"*32)
-    
-    #--------------Ensemble3, Al, EMT------------
-    
-    print("*"*10 + "Ensemble 3" + "*"*10)
+    print("*" * 32)
+
+    # --------------Ensemble3, Al, EMT------------
+
+    print("*" * 10 + "Ensemble 3" + "*" * 10)
     config = main_read("E3.yaml")
     sm = SimulationManager(list(config[0].values())[0])
 
     res3 = sm.simulate_npt()
-    print("*"*32)
+    print("*" * 32)
 
-    #------Visualize-----
-    print("*"*10 + "Generate plot" + "*"*10)
+    # ------Visualize-----
+    print("*" * 10 + "Generate plot" + "*" * 10)
     res1.name = "E1"
     res2.name = "E2"
     res3.name = "E3"
@@ -147,29 +144,30 @@ def main():
     vis_e2 = VisualizeResult([res2])
     vis_e3 = VisualizeResult([res3])
 
-    #vis_e1.plot_pressure()
-    #vis_e2.plot_pressure()
-    #vis_e3.plot_pressure()
+    # vis_e1.plot_pressure()
+    # vis_e2.plot_pressure()
+    # vis_e3.plot_pressure()
 
-    #vis_e1.plot_pressure()
-    #vis_e1.plot_energy("tot")
-    #vis_e1.plot_energy("kin")
-    #vis_e1.plot_energy("pot")
+    # vis_e1.plot_pressure()
+    # vis_e1.plot_energy("tot")
+    # vis_e1.plot_energy("kin")
+    # vis_e1.plot_energy("pot")
     vis_e1.plot_temp()
 
-    #vis_e2.plot_energy("tot")
-    #vis_e2.plot_energy("kin")
-    #vis_e2.plot_energy("pot")
+    # vis_e2.plot_energy("tot")
+    # vis_e2.plot_energy("kin")
+    # vis_e2.plot_energy("pot")
     vis_e2.plot_temp()
 
-    #vis_e3.plot_energy("tot")
-    #vis_e3.plot_energy("kin")
-    #vis_e3.plot_energy("pot")
+    # vis_e3.plot_energy("tot")
+    # vis_e3.plot_energy("kin")
+    # vis_e3.plot_energy("pot")
     vis_e3.plot_temp()
 
 
-def rel_error(value1,ref):
-    return abs(value1 - ref)/abs(ref)*100
+def rel_error(value1, ref):
+    return abs(value1 - ref) / abs(ref) * 100
+
 
 if __name__ == "__main__":
     main()
