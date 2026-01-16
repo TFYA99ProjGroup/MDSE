@@ -137,7 +137,7 @@ def main():
 
     res3 = sm.simulate_npt()
     print("*"*32)
-    
+
     #------Visualize-----
     print("*"*10 + "Generate plot" + "*"*10)
     res1.name = "E1"
@@ -147,23 +147,29 @@ def main():
     vis_e2 = VisualizeResult([res2])
     vis_e3 = VisualizeResult([res3])
 
-    vis_e1.plot_pressure()
-    vis_e2.plot_pressure()
-    vis_e3.plot_pressure()
+    #vis_e1.plot_pressure()
+    #vis_e2.plot_pressure()
+    #vis_e3.plot_pressure()
 
     #vis_e1.plot_pressure()
     #vis_e1.plot_energy("tot")
     #vis_e1.plot_energy("kin")
     #vis_e1.plot_energy("pot")
-    #vis_e1.plot_temp()
+    vis_e1.plot_temp()
+
+    #vis_e2.plot_energy("tot")
+    #vis_e2.plot_energy("kin")
+    #vis_e2.plot_energy("pot")
+    vis_e2.plot_temp()
+
+    #vis_e3.plot_energy("tot")
+    #vis_e3.plot_energy("kin")
+    #vis_e3.plot_energy("pot")
+    vis_e3.plot_temp()
 
 
 def rel_error(value1,ref):
     return abs(value1 - ref)/abs(ref)*100
 
 if __name__ == "__main__":
-    #main()
-    print(rel_error(53.744,  48))
-    print(rel_error(65.384, 48))
-    print(rel_error(25.609, 30.53))
-    print(rel_error(46.751, 27))
+    main()

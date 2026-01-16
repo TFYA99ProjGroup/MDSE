@@ -175,7 +175,7 @@ class VisualizeResult:
             plt.text(time[-1],temp[-1], f"{name}")
         logger.debug("Energy and time where succsesfully fetched")
         plt.xlabel("Time (fs)")
-        plt.ylabel("Temperature")
+        plt.ylabel("Temperature (K)")
         plt.title(f"Temperature for {len(self.results)} simulations")
         plt.show()
 
